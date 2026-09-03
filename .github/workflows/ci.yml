@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, test and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+      - name: Formatting
+        run: npm run format:check
+
+      # Runs before the tests: an unlicensed or tampered asset should fail the
+      # build immediately, not after five minutes of browser tests.
+      - name: Verify asset manifest
+        run: npm run assets:verify
+
+      - name: Unit tests
+        run: npm run test:coverage
+      - name: Build
+        run: npm run build
+
+  e2e:
+    name: Browser tests
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Optional assets. The site is built to work without them, so a blocked
+      # or missing host must not fail the run.
+      - name: Fetch assets
+        run: npm run assets:fetch || echo "optional assets unavailable, continuing"
+
+      - name: Run Playwright
+        run: npm run e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

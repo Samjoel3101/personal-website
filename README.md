@@ -1,110 +1,74 @@
-# Kart Résumé
+# Drive my résumé
 
-An interactive résumé you drive through. A kart, a procedurally generated city,
-and six landmarks — each one opens a card with part of my background.
+An interactive résumé you drive through: a WebGL kart racer around a
+procedurally generated city, where each of six landmarks opens a card with part
+of my background.
 
-Rendered with a **Mode 7** ground raster: for every scanline below the horizon
-the renderer works out how far away that line of the world is, then walks
-across the row sampling a city texture with a constant per-pixel step.
-Buildings sit on top as real projected boxes sharing the same focal length, so
-perspective agrees between the road and the skyline.
+There is also a **Text version** button. A recruiter with four minutes should
+not have to learn to drive.
 
-## Two resolutions
+```bash
+npm install
+npm run dev
+```
 
-The ground is the only thing that has to be a per-pixel software loop, so it
-renders at a fraction of the canvas and is bilinearly upscaled — on a
-texture-mapped road that is invisible. Everything else is drawn at the
-display's own resolution with anti-aliasing on, which is what keeps the edges
-of buildings, karts and trees clean rather than stepped.
+## What it is made of
 
-Because "the display's own resolution" is ambitious on a weak device — or on
-any browser that has fallen back to a software canvas — the loop watches its
-own frame interval and moves the render scale between 55% and 100% to suit.
-The canvas is stretched by CSS either way, so the only thing that changes is
-sharpness. Timing the renderer's own work instead would not do: canvas calls
-are queued and rasterised after the function returns, so the number comes back
-small on a machine that is visibly struggling.
+|                      |                                                          |
+| -------------------- | -------------------------------------------------------- |
+| Rendering            | three.js (WebGL2) — instanced meshes, shadow maps, bloom |
+| Build                | Vite                                                     |
+| Tests                | Vitest (unit) + Playwright (browser)                     |
+| Quality              | ESLint, Prettier, size and complexity limits             |
+| Runtime dependencies | one: `three`                                             |
 
-## No asset files
-
-There are no images, no sprite sheets, no audio files, no 3D models, and no
-rendering library in this repository. Everything is generated in the browser at
-load time:
-
-| Thing | How it is made |
-| --- | --- |
-| City texture (2048²) | Canvas fills + noise tiles, `js/tilemap.js` |
-| Buildings | Flat-shaded boxes projected per frame, `js/mode7.js` |
-| Kart, trees, lamps, signs | Canvas draw calls into offscreen buffers, `js/sprites.js` |
-| Sky and skyline | Gradient + procedural cloud and building silhouettes |
-| Engine, boost, chimes, impacts | Web Audio oscillators and noise buffers, `js/audio.js` |
-| Physics | Hand-rolled arcade model, `js/kart.js` |
-
-The only external resource on the whole site is the Fredoka webfont, and it is
-loaded non-blocking with a system fallback — the site works fully without it.
+The city, the kart, the trees, the sky, the road markings and every sound are
+generated in code. Third-party assets are optional upgrades declared in
+`assets/manifest.json`; the site is complete without any of them.
 
 ## Making it yours
 
-Edit **`js/content.js`**. That is the only file with anything personal in it:
-your name, contact links, and the six landmark cards. The game world, the
-minimap, the compass, and the plain-text résumé all read from it.
+Edit **`src/content/resume.js`**. That is the only file with anything personal
+in it — the landmark cards, the compass, the minimap and the plain-text résumé
+all read from it. Landmark coordinates must sit on a block centre; a unit test
+enforces it.
 
-To move a landmark, keep its `x`/`z` on a block centre — a combination of
-`256`, `768`, `1280`, `1792` — or it will end up inside a building.
+## Documentation
 
-## Running it
+| File                                           | For                                            |
+| ---------------------------------------------- | ---------------------------------------------- |
+| [`CLAUDE.md`](CLAUDE.md)                       | **Start here.** Commands, rules, and the traps |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How it fits together and why                   |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md)           | What to build next, specified                  |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md)           | Conventions                                    |
+| [`CREDITS.md`](CREDITS.md)                     | Attribution, generated from the manifest       |
 
-It is a static site with no build step:
+## Commands
 
-```bash
-npx http-server -p 8000 .   # or: python3 -m http.server 8000
-```
-
-Then open <http://localhost:8000>.
+| Command                            |                                                           |
+| ---------------------------------- | --------------------------------------------------------- |
+| `npm run dev`                      | Dev server                                                |
+| `npm run check`                    | Lint, format, assets, tests, build — run before finishing |
+| `npm test`                         | Unit tests                                                |
+| `npm run e2e`                      | Browser tests                                             |
+| `npm run assets:fetch -- --record` | Download and pin third-party assets                       |
 
 ## Deploying
 
-Push to GitHub, then **Settings → Pages → Build and deployment → Deploy from a
-branch**, and pick the branch with the site root. No build configuration is
-needed.
+Static output. `npm run build`, then serve `dist/`. For GitHub Pages, point
+Pages at the branch and directory; `base` is already relative so it works from
+a repository subpath.
 
 ## Controls
 
-| Input | Action |
-| --- | --- |
-| `W` / `↑` | Accelerate |
-| `S` / `↓` | Brake, then reverse |
-| `A` `D` / `←` `→` | Steer |
-| `Shift` / `Space` | Drift |
-| `M` | Mute |
-| `Esc` / `Enter` | Close a card |
-
-On a touch device the on-screen pedals and steering buttons appear
-automatically.
+`W`/`↑` accelerate · `S`/`↓` brake and reverse · `A`/`D` steer · `Shift` drift ·
+`M` mute · `Esc` close a card. Touch controls appear automatically on a phone.
 
 ## Notes
 
-- The city is a torus: drive off one edge and you arrive at the other, so there
-  are no invisible walls and you cannot get permanently lost.
-- The layout is seeded, so it is identical on every visit.
+- The city is a torus — drive off one edge and arrive at the other, so there
+  are no invisible walls and no way to get lost.
+- The layout is seeded, so it is identical on every visit and in every test.
 - Physics runs at a fixed 120 Hz regardless of display refresh rate.
-- Sprites are authored in a design space and rasterised through a context
-  scale; the kart is rebuilt whenever the canvas resizes, so it is drawn 1:1
-  and never resampled.
-- **Text version** in the HUD renders the same content as an ordinary scrolling
-  page, for anyone who would rather not play a game to read a résumé.
-
-## Layout
-
-```
-index.html          markup and overlays
-css/style.css       arcade chrome
-js/core.js          world constants, RNG, wrap-aware maths
-js/content.js       ← your résumé lives here
-js/tilemap.js       city layout, ground texture, surface map
-js/sprites.js       every bitmap in the game
-js/mode7.js         the renderer
-js/kart.js          physics and collision
-js/audio.js         synthesised sound
-js/game.js          loop, input, HUD, cards
-```
+- Quality adapts to the machine: three tiers, chosen from measured frame
+  intervals.

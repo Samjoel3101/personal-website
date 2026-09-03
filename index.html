@@ -1,147 +1,151 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kart Resume — YOUR NAME</title>
-<meta name="description" content="An interactive résumé you drive through. Explore the city and each landmark reveals part of my story.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Loaded non-blocking. A stylesheet in the head blocks every script below
-     it, so a slow or firewalled font CDN would otherwise stall the whole site
-     until the request times out. The media swap defers it; the CSS font stack
-     falls back to monospace and the site works fully without it. -->
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap"
-      media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap"></noscript>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🏎️</text></svg>">
-<link rel="stylesheet" href="css/style.css">
-</head>
-<body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Drive my résumé</title>
+    <meta
+      name="description"
+      content="An interactive résumé you drive through. Explore the city and each landmark reveals part of my story."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Loaded non-blocking. A stylesheet in the head blocks every script below
+      it, so a slow or firewalled font CDN would otherwise stall the whole site
+      until the request times out. The CSS falls back to a system stack.
+    -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      media="print"
+      onload="this.media = 'all'"
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🏎️</text></svg>"
+    />
+  </head>
+  <body>
+    <canvas id="scene" aria-label="A kart driving through a procedurally generated city"></canvas>
+    <div id="vignette" aria-hidden="true"></div>
 
-<div id="stage">
-  <canvas id="screen" width="400" height="232" aria-label="Driving view of a procedurally generated city"></canvas>
-  <div id="crt" aria-hidden="true"></div>
-
-  <!-- ------------------------------------------------------------- HUD --- -->
-  <div id="hud" hidden>
-    <div class="hud-row hud-top">
-      <div class="chip" id="progress">FOUND 0/6</div>
-      <div class="chip compass" id="compass">
-        <span class="arrow" id="compass-arrow">▲</span>
-        <span class="compass-text"><b id="compass-name">—</b><i id="compass-dist"></i></span>
-      </div>
-      <div class="hud-buttons">
-        <button class="chip btn" id="mute" title="Toggle sound">SOUND ON</button>
-        <button class="chip btn" id="open-resume" title="Read it as a plain page">TEXT VERSION</button>
-      </div>
-    </div>
-
-    <div class="hud-row hud-bottom">
-      <div class="map-wrap">
-        <canvas id="minimap" width="132" height="132" aria-hidden="true"></canvas>
-        <div class="map-label">CITY MAP</div>
-      </div>
-      <div id="hint">Follow the arrow. Drive into a glowing ring to read a stop.</div>
-      <div class="speedo">
-        <span id="kph">0</span><small>KM/H</small>
-        <div class="boost" id="boost-bar"><i></i></div>
-      </div>
-    </div>
-
-    <!-- touch controls, shown only on pointer:coarse devices -->
-    <div id="touch" aria-hidden="true">
-      <div class="pad">
-        <button class="tbtn" data-key="left">◀</button>
-        <button class="tbtn" data-key="right">▶</button>
-      </div>
-      <div class="pedals">
-        <button class="tbtn brake" data-key="brake">BRAKE</button>
-        <button class="tbtn gas" data-key="gas">GAS</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- --------------------------------------------------------- overlays --- -->
-  <div id="loading" class="overlay">
-    <div class="panel">
-      <h1 class="glow">BUILDING CITY</h1>
-      <p class="mono">Generating 2048 × 2048 of streets, blocks and windows…</p>
-      <div class="loadbar"><i></i></div>
-    </div>
-  </div>
-
-  <div id="intro" class="overlay" hidden>
-    <div class="panel wide">
-      <p class="kicker">AN INTERACTIVE RÉSUMÉ</p>
-      <h1 class="glow" id="intro-name">YOUR NAME</h1>
-      <p class="tagline" id="intro-tagline">Software Engineer</p>
-      <p class="blurb">
-        Six landmarks are scattered across the city. Drive into one and it tells you
-        something about me — where I have worked, what I have built, what I do at
-        the weekend. There is no timer and nothing to lose.
-      </p>
-      <div class="keys">
-        <div><kbd>W</kbd><kbd>↑</kbd><span>Accelerate</span></div>
-        <div><kbd>S</kbd><kbd>↓</kbd><span>Brake / reverse</span></div>
-        <div><kbd>A</kbd><kbd>D</kbd><span>Steer</span></div>
-        <div><kbd>SHIFT</kbd><span>Drift</span></div>
-        <div><kbd>M</kbd><span>Mute</span></div>
-        <div><kbd>ESC</kbd><span>Close a card</span></div>
-      </div>
-      <button class="cta" id="start">START ENGINE</button>
-      <button class="ghost" id="skip">Skip the game — read the plain résumé</button>
-    </div>
-  </div>
-
-  <div id="card" class="overlay" hidden>
-    <div class="panel card-panel">
-      <div class="card-head">
-        <span class="card-icon" id="card-icon">🏢</span>
-        <div>
-          <h2 id="card-title">Title</h2>
-          <p id="card-sub">Subtitle</p>
+    <div id="hud" hidden>
+      <div class="hud-row hud-top">
+        <div class="chip" id="progress">Found 0/6</div>
+        <div class="chip compass">
+          <span class="arrow" id="compass-arrow">▲</span>
+          <span class="compass-text">
+            <b id="compass-name">—</b>
+            <i id="compass-distance"></i>
+          </span>
         </div>
-        <button class="close" id="card-close" aria-label="Close">✕</button>
+        <div class="hud-buttons">
+          <button class="chip btn" id="mute" type="button">Sound on</button>
+          <button class="chip btn" id="open-resume" type="button">Text version</button>
+        </div>
       </div>
-      <div id="card-body"></div>
-      <div id="card-links" class="card-links" hidden></div>
-      <p class="card-foot">Press <kbd>ESC</kbd> or <kbd>ENTER</kbd> to get back in the kart</p>
+
+      <div class="hud-row hud-bottom">
+        <div class="map-wrap">
+          <canvas id="minimap" aria-hidden="true"></canvas>
+          <div class="map-label">City map</div>
+        </div>
+        <div id="hint">Follow the arrow. Drive into a glowing ring to read a stop.</div>
+        <div class="speedo">
+          <span id="speed">0</span><small>km/h</small>
+          <div class="boost"><i id="boost-bar"></i></div>
+        </div>
+      </div>
+
+      <div id="touch" aria-hidden="true">
+        <div class="pad">
+          <button class="tbtn" data-action="left" type="button">◀</button>
+          <button class="tbtn" data-action="right" type="button">▶</button>
+        </div>
+        <div class="pedals">
+          <button class="tbtn brake" data-action="brake" type="button">Brake</button>
+          <button class="tbtn gas" data-action="accelerate" type="button">Go</button>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <div id="complete" class="overlay" hidden>
-    <div class="panel">
-      <h1 class="glow">ALL STOPS FOUND</h1>
-      <p class="blurb" id="complete-line">That is the whole tour.</p>
-      <div id="complete-links" class="card-links"></div>
-      <button class="cta" id="complete-close">KEEP DRIVING</button>
+    <div id="loading" class="overlay">
+      <div class="panel">
+        <h1 class="glow">Building the city</h1>
+        <p class="mono">Laying out streets, blocks and windows…</p>
+        <div class="loadbar"><i></i></div>
+      </div>
     </div>
-  </div>
 
-  <!-- Plain, fully accessible version of exactly the same content. -->
-  <div id="resume-view" hidden>
-    <div class="resume-inner" id="resume-inner"></div>
-    <button class="cta floating" id="resume-back">BACK TO THE KART</button>
-  </div>
-</div>
+    <div id="intro" class="overlay" hidden>
+      <div class="panel wide">
+        <p class="kicker">An interactive résumé</p>
+        <h1 class="glow" id="intro-name">Your name</h1>
+        <p class="tagline" id="intro-tagline">Software engineer</p>
+        <p class="blurb">
+          Six landmarks are scattered across the city. Drive into one and it tells you something
+          about me — where I have worked, what I have built, what I do at the weekend. There is no
+          timer and nothing to lose.
+        </p>
+        <div class="keys">
+          <div><kbd>W</kbd><kbd>↑</kbd><span>Accelerate</span></div>
+          <div><kbd>S</kbd><kbd>↓</kbd><span>Brake and reverse</span></div>
+          <div><kbd>A</kbd><kbd>D</kbd><span>Steer</span></div>
+          <div><kbd>Shift</kbd><span>Drift</span></div>
+          <div><kbd>M</kbd><span>Mute</span></div>
+          <div><kbd>Esc</kbd><span>Close a card</span></div>
+        </div>
+        <button class="cta" id="start" type="button">Start engine</button>
+        <button class="ghost" id="skip" type="button">Skip the game — read the plain résumé</button>
+      </div>
+    </div>
 
-<noscript>
-  <div class="noscript">
-    <h1>This page needs JavaScript</h1>
-    <p>The résumé is rendered by a small game engine. With JavaScript disabled there is
-       nothing to show — email me instead and I will send a PDF.</p>
-  </div>
-</noscript>
+    <div id="card" class="overlay" hidden>
+      <div class="panel card-panel">
+        <div class="card-head">
+          <span class="card-icon" id="card-icon">🏢</span>
+          <div>
+            <h2 id="card-title">Title</h2>
+            <p id="card-subtitle">Subtitle</p>
+          </div>
+          <button class="close" id="card-close" type="button" aria-label="Close">✕</button>
+        </div>
+        <div id="card-body"></div>
+        <div id="card-links" class="card-links" hidden></div>
+        <p class="card-foot">Press <kbd>Esc</kbd> to get back in the kart</p>
+      </div>
+    </div>
 
-<script src="js/core.js"></script>
-<script src="js/content.js"></script>
-<script src="js/sprites.js"></script>
-<script src="js/tilemap.js"></script>
-<script src="js/mode7.js"></script>
-<script src="js/kart.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/game.js"></script>
-</body>
+    <div id="complete" class="overlay" hidden>
+      <div class="panel">
+        <h1 class="glow">All stops found</h1>
+        <p class="blurb" id="complete-line">That is the whole tour.</p>
+        <div id="complete-links" class="card-links"></div>
+        <button class="cta" id="complete-close" type="button">Keep driving</button>
+      </div>
+    </div>
+
+    <div id="resume-view" hidden>
+      <div class="resume-inner" id="resume-inner"></div>
+      <button class="cta floating" id="resume-back" type="button">Back to the kart</button>
+    </div>
+
+    <noscript>
+      <div class="noscript">
+        <h1>This page needs JavaScript</h1>
+        <p>
+          The résumé is rendered by a small game engine. With JavaScript disabled there is nothing
+          to show — email me instead and I will send a PDF.
+        </p>
+      </div>
+    </noscript>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>

@@ -1,0 +1,99 @@
+{
+  "comment": [
+    "Declarative registry of every third-party asset. Nothing binary is committed:",
+    "`npm run assets:fetch` downloads into public/assets/, verifies the hash, and",
+    "regenerates CREDITS.md. `npm run assets:verify` runs in CI and fails on an",
+    "unlicensed entry, a missing attribution, or a hash mismatch.",
+    "",
+    "sha256 null means the hash has not been recorded yet. Run",
+    "`npm run assets:fetch -- --record` on a machine that can reach the host and",
+    "the hash is written back here, pinning the file from then on.",
+    "",
+    "required:false assets are optional. The renderer falls back to procedural",
+    "geometry when they are absent, so the site always builds and always runs.",
+    "",
+    "role tells the runtime what an asset is FOR. Only assets with a role the",
+    "app asks for are ever downloaded by the browser; everything else is",
+    "reference material that the fetch script pins but the page never requests."
+  ],
+  "licenses": {
+    "allowed": ["CC0-1.0", "CC-BY-4.0", "CC-BY-3.0", "MIT", "Apache-2.0", "OFL-1.1", "Unlicense"],
+    "attributionRequired": ["CC-BY-4.0", "CC-BY-3.0", "MIT", "Apache-2.0", "OFL-1.1"]
+  },
+  "assets": [
+    {
+      "id": "model.toycar",
+      "kind": "model",
+      "file": "models/toycar.glb",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/ToyCar/glTF-Binary/ToyCar.glb",
+      "sha256": "01a60862de55cd4b9f3acfab0b0def86451800f9c42467fcd61052c16cb9838c",
+      "license": "CC0-1.0",
+      "title": "Toy Car",
+      "author": "Ryan Martin, published by the Khronos Group",
+      "source": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/ToyCar",
+      "required": false,
+      "notes": "High-quality PBR glTF, and the entry that proves fetch/verify/credits end to end. Not used as the kart: it is a car under a dust sheet, which reads worse than the procedural kart. Give a purpose-built kart model role 'kart' to have it loaded.",
+      "role": "reference"
+    },
+    {
+      "id": "texture.asphalt",
+      "kind": "texture",
+      "file": "textures/asphalt/",
+      "url": "https://ambientcg.com/get?file=Asphalt026C_2K-JPG.zip",
+      "sha256": null,
+      "license": "CC0-1.0",
+      "title": "Asphalt 026 C",
+      "author": "ambientCG",
+      "source": "https://ambientcg.com/view?id=Asphalt026C",
+      "required": false,
+      "hostBlockedHere": true,
+      "notes": "Road surface: colour, normal, roughness. Host is blocked by this workspace's egress policy; fetch from a machine with access.",
+      "role": "ground"
+    },
+    {
+      "id": "texture.concrete",
+      "kind": "texture",
+      "file": "textures/concrete/",
+      "url": "https://ambientcg.com/get?file=Concrete034_2K-JPG.zip",
+      "sha256": null,
+      "license": "CC0-1.0",
+      "title": "Concrete 034",
+      "author": "ambientCG",
+      "source": "https://ambientcg.com/view?id=Concrete034",
+      "required": false,
+      "hostBlockedHere": true,
+      "notes": "Pavement and plaza surfaces.",
+      "role": "ground"
+    },
+    {
+      "id": "env.sky",
+      "kind": "hdri",
+      "file": "env/kloppenheim_1k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/kloppenheim_06_puresky_1k.hdr",
+      "sha256": null,
+      "license": "CC0-1.0",
+      "title": "Kloppenheim 06 Pure Sky",
+      "author": "Greg Zaal, Poly Haven",
+      "source": "https://polyhaven.com/a/kloppenheim_06_puresky",
+      "required": false,
+      "hostBlockedHere": true,
+      "notes": "Image-based lighting and sky. Falls back to the procedural gradient sky.",
+      "role": "environment"
+    },
+    {
+      "id": "kit.city",
+      "kind": "model-kit",
+      "file": "models/city-kit/",
+      "url": "https://kenney.nl/media/pages/assets/city-kit-commercial/city-kit-commercial.zip",
+      "sha256": null,
+      "license": "CC0-1.0",
+      "title": "City Kit (Commercial)",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/city-kit-commercial",
+      "required": false,
+      "hostBlockedHere": true,
+      "notes": "Modular building meshes to replace the procedural boxes. The single biggest visual upgrade available.",
+      "role": "buildings"
+    }
+  ]
+}
