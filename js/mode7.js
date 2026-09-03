@@ -12,10 +12,15 @@
    roughly radially symmetric — trees, lamps, name plates — stay billboards,
    where facing the camera costs nothing.
 
-   It all renders into a small buffer that is upscaled with smoothing off. */
+   Two resolutions. The ground is the one thing that has to be a per-pixel
+   software loop, so it renders at a fraction of the canvas and is bilinearly
+   upscaled — on a texture-mapped road that is invisible. Everything else is
+   drawn at the display's own resolution with anti-aliasing on, which is what
+   keeps the edges of buildings, karts and trees clean instead of stepped. */
 
 const R = (function () {
   let canvas, ctx, W, H, HZ, F;
+  let gCanvas, gCtx, GW, GROWS;   // the reduced-resolution ground buffer
   let groundImg, ground32;
   let detail = null;          // fine grain layered over the ground up close
   let wantWindows = false;
@@ -31,6 +36,8 @@ const R = (function () {
   function init(cv) {
     canvas = cv;
     ctx = canvas.getContext('2d', { alpha: false });
+    gCanvas = document.createElement('canvas');
+    gCtx = gCanvas.getContext('2d', { alpha: false });
 
     /* Fine luminance grain, tiled in world space at a few times the density
        of the city texture. Up close a 1-texel-per-unit texture magnifies into
@@ -38,7 +45,7 @@ const R = (function () {
        aggregate rather than as a low-resolution image. */
     detail = new Int8Array(DETAIL_N * DETAIL_N);
     const rng = makeRng(31337);
-    for (let i = 0; i < detail.length; i++) detail[i] = (rng() - 0.5) * 26;
+    for (let i = 0; i < detail.length; i++) detail[i] = (rng() - 0.5) * 11;
 
     /* Corner whose dot product with the shadow offset is smallest, over the
        corner order (x0,z0) (x1,z0) (x1,z1) (x0,z1). */
@@ -52,48 +59,61 @@ const R = (function () {
     resize(K.RW, K.RH);
   }
 
-  /* The internal buffer tracks the viewport's shape instead of being fixed, so
-     a wide monitor sees more city and a phone in portrait gets a taller strip
-     of road rather than a letterboxed sliver. The focal length is always half
-     the width, which pins the horizontal field of view at 90 degrees and lets
-     the vertical field of view follow the buffer's shape. The horizon sits at
-     a constant fraction of the height — above centre, so you see more road
-     than sky, the way a chase camera should. */
+  /* The render target tracks the viewport's shape and pixel density instead of
+     being fixed, so a wide monitor sees more city and a high-DPI screen gets
+     the pixels it actually has. The focal length is always half the width,
+     which pins the horizontal field of view at 90 degrees and lets the
+     vertical field of view follow the target's shape. The horizon sits at a
+     constant fraction of the height — above centre, so you see more road than
+     sky, the way a chase camera should. */
   function resize(w, h) {
-    W = Math.max(200, Math.round(w / 2) * 2);
-    H = Math.max(180, Math.round(h / 2) * 2);
+    W = Math.max(240, Math.round(w / 2) * 2);
+    H = Math.max(200, Math.round(h / 2) * 2);
     HZ = Math.round(H * (K.HORIZON / K.RH));
     canvas.width = W; canvas.height = H;
-    ctx.imageSmoothingEnabled = false;
     F = W / 2;
-    groundImg = ctx.createImageData(W, H - HZ);
+
+    /* Smoothing stays on for everything: this is not pixel art. */
+    ctx.imageSmoothingEnabled = true;
+
+    const sc = K.GROUND_SCALE;
+    GW = Math.max(200, Math.round(W * sc));
+    GROWS = Math.max(100, Math.round((H - HZ) * sc));
+    gCanvas.width = GW; gCanvas.height = GROWS;
+    groundImg = gCtx.createImageData(GW, GROWS);
     ground32 = new Uint32Array(groundImg.data.buffer);
+
     /* Re-rasterise the kart at the size it will actually be drawn, so it is
        never resampled and never softens. */
     Sprites.setKartHeight(H * 0.27);
   }
 
-  /* ---------------------------------------------------------------- ground -- */
-  const DETAIL_FADE = 340;   // grain is gone by this depth
+  /* ---------------------------------------------------------------- ground --
+     Rendered into the reduced buffer, then stretched over the whole area below
+     the horizon. The projection has to agree exactly with the full-resolution
+     geometry drawn on top, so depth and lateral step are derived from the two
+     scale factors separately rather than from one rounded number. */
+  const DETAIL_FADE = 300;   // grain is gone by this depth
 
   function drawGround(cam) {
     const tex = City.texture, N = K.WORLD, MASK = K.WORLD_MASK;
     const FR = FOG_RGB[0], FG = FOG_RGB[1], FB = FOG_RGB[2];
-    const rows = H - HZ;
+    const Frow = F * (GROWS / (H - HZ));   // focal in ground-buffer rows
+    const Fcol = F * (GW / W);             // focal in ground-buffer columns
 
-    for (let row = 0; row < rows; row++) {
+    for (let row = 0; row < GROWS; row++) {
       const dy = row + 0.5;                    // distance below the horizon
-      const z = (cam.h * F) / dy;              // world depth of this scanline
-      const o = row * W;
+      const z = (cam.h * Frow) / dy;           // world depth of this scanline
+      const o = row * GW;
 
       if (z > K.FAR) {                         // beyond the draw distance
-        ground32.fill(K.FOG, o, o + W);
+        ground32.fill(K.FOG, o, o + GW);
         continue;
       }
 
-      /* One world-space step per screen pixel, constant along the row. */
-      const step = z / F;
-      const lat0 = -(W / 2) * step;
+      /* One world-space step per buffer pixel, constant along the row. */
+      const step = z / Fcol;
+      const lat0 = -(GW / 2) * step;
       let wx = cam.x + cam.sin * z + cam.cos * lat0;
       let wz = cam.z + cam.cos * z - cam.sin * lat0;
       const sx = cam.cos * step, sz = -cam.sin * step;
@@ -106,7 +126,7 @@ const R = (function () {
       const f = fogAt(z);
       const fi = (f * 256) | 0, inv = 256 - fi;
 
-      for (let x = 0; x < W; x++) {
+      for (let x = 0; x < GW; x++) {
         const c = tex[(wz & MASK) * N + (wx & MASK)];
         let r = c & 255, g = (c >> 8) & 255, b = (c >> 16) & 255;
 
@@ -129,7 +149,8 @@ const R = (function () {
         wx += sx; wz += sz;
       }
     }
-    ctx.putImageData(groundImg, 0, HZ);
+    gCtx.putImageData(groundImg, 0, 0);
+    ctx.drawImage(gCanvas, 0, 0, GW, GROWS, 0, HZ, W, H - HZ);
   }
 
   /* ------------------------------------------------------------ projection -- */
@@ -211,9 +232,9 @@ const R = (function () {
       const g = ctx.createLinearGradient(
         (p0.x + p1.x) / 2, (p0.y + p1.y) / 2,
         (p2.x + p3.x) / 2, (p2.y + p3.y) / 2);
-      g.addColorStop(0, shadeFog(hex, mul * 0.68, fog));
-      g.addColorStop(0.28, shadeFog(hex, mul * 0.94, fog));
-      g.addColorStop(1, shadeFog(hex, mul * 1.1, fog));
+      g.addColorStop(0, shadeFog(hex, mul * 0.82, fog));
+      g.addColorStop(0.30, shadeFog(hex, mul * 0.97, fog));
+      g.addColorStop(1, shadeFog(hex, mul * 1.07, fog));
       ctx.fillStyle = g;
     } else {
       ctx.fillStyle = shadeFog(hex, mul, fog);
@@ -227,7 +248,7 @@ const R = (function () {
     /* A darker edge, so two faces of the same building do not merge into one
        flat silhouette. Skipped in the haze, where it would only add noise. */
     if (fog < 0.55) {
-      ctx.strokeStyle = shadeFog(hex, mul * 0.55, fog);
+      ctx.strokeStyle = shadeFog(hex, mul * 0.74, fog);
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -247,16 +268,33 @@ const R = (function () {
     drawWindows(cam, ax, az, bx, bz, y0, y1, depth, fog, mul, hex);
   }
 
-  /* Glass. Near enough to matter, each window is a recessed frame, a pane,
-     and — on unlit panes — a bright wedge across the top where the sky is
-     reflected. Further out it collapses to a single pane, because at eight
-     pixels tall the frame is the same colour as the wall anyway. */
+  /* Glass. Near enough to matter, each window is a recessed reveal, a pane,
+     and — on unlit panes — a diagonal glint of sky.
+
+     Every window on a wall shares at most four fill colours, so the quads are
+     accumulated into four paths and filled four times rather than three times
+     per window. That is the difference between eight hundred fills a frame
+     and two hundred, for pixel-identical output. */
+  const GLASS_DARK = '#4d7ba8', GLASS_LIT = '#ffe9a8', GLASS_GLINT = '#a9d2ea';
+
+  function addQuad(path, p0, p1, p2, p3) {
+    path.moveTo(p0.x, p0.y);
+    path.lineTo(p1.x, p1.y);
+    path.lineTo(p2.x, p2.y);
+    path.lineTo(p3.x, p3.y);
+    path.closePath();
+  }
+
   function drawWindows(cam, ax, az, bx, bz, y0, y1, depth, fog, mul, hex) {
     const fw = Math.hypot(bx - ax, bz - az), fh = y1 - y0 - PARAPET;
     const cols = clamp(Math.round(fw / 21), 1, 7);
     const rows = clamp(Math.round(fh / 26), 1, 11);
     const seed = ((ax * 7 + az * 13) | 0) >>> 0;
-    const detailed = depth < 190;
+    const detailed = depth < 200;
+
+    const reveals = new Path2D(), dark = new Path2D();
+    const lightsOn = new Path2D(), glints = new Path2D();
+    let nReveal = 0, nDark = 0, nLit = 0, nGlint = 0;
 
     for (let i = 0; i < cols; i++) {
       for (let j = 0; j < rows; j++) {
@@ -275,30 +313,37 @@ const R = (function () {
         const a2 = project(cam, x1, z1, v1);
         const a3 = project(cam, x0, z0, v1);
 
-        if (detailed) {
-          /* The reveal is the wall's own colour in shadow, not a black
-             outline — a window is a recess in the facade, not a sticker. */
-          quad(a0, a1, a2, a3, shadeFog(hex, mul * 0.42, fog));
-          const iu0 = (i + 0.27) / cols, iu1 = (i + 0.73) / cols;
-          const iv0 = y0 + fh * ((j + 0.29) / rows), iv1 = y0 + fh * ((j + 0.71) / rows);
-          const ix0 = ax + (bx - ax) * iu0, iz0 = az + (bz - az) * iu0;
-          const ix1 = ax + (bx - ax) * iu1, iz1 = az + (bz - az) * iu1;
-          const b0 = project(cam, ix0, iz0, iv0), b1 = project(cam, ix1, iz1, iv0);
-          const b2 = project(cam, ix1, iz1, iv1), b3 = project(cam, ix0, iz0, iv1);
-          quad(b0, b1, b2, b3, shadeFog(lit ? '#ffe2a0' : '#39485f', mul, fog));
-          if (!lit) {
-            /* A slanted glint of sky across the pane. Cutting it on the
-               diagonal rather than straight across is what separates glass
-               from a rectangle painted two shades of blue. */
-            const rl = iv0 + (iv1 - iv0) * 0.62, rr = iv0 + (iv1 - iv0) * 0.26;
-            quad(project(cam, ix0, iz0, rl), project(cam, ix1, iz1, rr), b2, b3,
-              shadeFog('#89a6c6', mul, fog));
-          }
-        } else {
-          quad(a0, a1, a2, a3, shadeFog(lit ? '#ffe2a0' : '#2b3346', mul, fog));
+        if (!detailed) {
+          addQuad(lit ? lightsOn : dark, a0, a1, a2, a3);
+          if (lit) nLit++; else nDark++;
+          continue;
         }
+
+        addQuad(reveals, a0, a1, a2, a3); nReveal++;
+
+        const iu0 = (i + 0.27) / cols, iu1 = (i + 0.73) / cols;
+        const iv0 = y0 + fh * ((j + 0.29) / rows), iv1 = y0 + fh * ((j + 0.71) / rows);
+        const ix0 = ax + (bx - ax) * iu0, iz0 = az + (bz - az) * iu0;
+        const ix1 = ax + (bx - ax) * iu1, iz1 = az + (bz - az) * iu1;
+        const b0 = project(cam, ix0, iz0, iv0), b1 = project(cam, ix1, iz1, iv0);
+        const b2 = project(cam, ix1, iz1, iv1), b3 = project(cam, ix0, iz0, iv1);
+        addQuad(lit ? lightsOn : dark, b0, b1, b2, b3);
+        if (lit) { nLit++; continue; }
+        nDark++;
+
+        /* A slanted glint of sky across the pane. Cutting it on the diagonal
+           rather than straight across is what separates glass from a
+           rectangle painted two shades of blue. */
+        const rl = iv0 + (iv1 - iv0) * 0.62, rr = iv0 + (iv1 - iv0) * 0.26;
+        addQuad(glints, project(cam, ix0, iz0, rl), project(cam, ix1, iz1, rr), b2, b3);
+        nGlint++;
       }
     }
+
+    if (nReveal) { ctx.fillStyle = shadeFog(hex, mul * 0.5, fog); ctx.fill(reveals); }
+    if (nDark) { ctx.fillStyle = shadeFog(GLASS_DARK, mul, fog); ctx.fill(dark); }
+    if (nLit) { ctx.fillStyle = shadeFog(GLASS_LIT, mul, fog); ctx.fill(lightsOn); }
+    if (nGlint) { ctx.fillStyle = shadeFog(GLASS_GLINT, mul, fog); ctx.fill(glints); }
   }
 
   function drawBox(cam, b) {
@@ -327,10 +372,9 @@ const R = (function () {
   }
 
   /* Camera-facing sprite standing on the ground (or floating at `baseY`).
-     `smooth` turns interpolation on for this one blit — the pixel look is
-     right for scenery, but a name plate scaled down to twenty pixels needs
-     filtering or the text turns to confetti. */
-  function drawBillboard(cam, spr, wx, wz, worldH, baseY, smooth) {
+     Sprites are authored well above the size they are usually drawn at, so
+     the filtered scale is nearly always a reduction. */
+  function drawBillboard(cam, spr, wx, wz, worldH, baseY) {
     const p = project(cam, wx, wz, baseY || 0);
     if (p.depth < K.NEAR || p.depth > K.FAR) return;
     const inv = F / p.depth;
@@ -345,9 +389,7 @@ const R = (function () {
     if (near <= 0) return;
 
     ctx.globalAlpha = (1 - fogAt(p.depth) * 0.85) * near;
-    if (smooth) ctx.imageSmoothingEnabled = true;
     ctx.drawImage(spr, p.x - wpx / 2, p.y - hpx, wpx, hpx);
-    if (smooth) ctx.imageSmoothingEnabled = false;
     ctx.globalAlpha = 1;
   }
 
@@ -361,10 +403,8 @@ const R = (function () {
     const skyW = W * 4;
     let off = ((cam.a / (Math.PI * 2)) * skyW) % skyW;
     if (off < 0) off += skyW;
-    ctx.imageSmoothingEnabled = true;
     ctx.drawImage(sky, -off, 0, skyW, HZ + 2);
     ctx.drawImage(sky, -off + skyW, 0, skyW, HZ + 2);
-    ctx.imageSmoothingEnabled = false;
 
     drawGround(cam);
 
@@ -413,7 +453,7 @@ const R = (function () {
            leaves the top of the screen exactly when you drive up to it. */
         const bob = Math.sin(t * 0.002 + it.label.x) * 5;
         drawBillboard(cam, Sprites.labelFor(it.label.id), it.label.x, it.label.z,
-          34, it.label.structure.h + 18 + bob, true);
+          34, it.label.structure.h + 18 + bob);
       } else {
         const p = it.prop;
         if (p.type === 'tree') {
@@ -437,23 +477,32 @@ const R = (function () {
      Two depth bands, so shadows fade into the haze instead of staying full
      strength to the horizon. Each band is one path filled once, so overlapping
      shadows merge rather than stacking into darker patches. */
-  const SHADOW_BANDS = [[0, 340, '#8e97ab'], [340, 800, '#bcc3d1']];
+  const SHADOW_BANDS = [[0, 340, '#a3aec4'], [340, 800, '#ccd4e0']];
+  const PROP_SHADOW = '#ccd2de';   // trees get a lighter touch than a tower
 
   function drawShadows(cam) {
+    ctx.globalCompositeOperation = 'multiply';
     for (const [lo, hi, tint] of SHADOW_BANDS) {
       const path = new Path2D();
       let any = false;
       for (const c of casters) {
-        if (c.depth < lo || c.depth >= hi) continue;
-        if (c.box) addShadow(path, cam, c.box); else addPropShadow(path, cam, c.prop);
+        if (!c.box || c.depth < lo || c.depth >= hi) continue;
+        addShadow(path, cam, c.box);
         any = true;
       }
       if (!any) continue;
-      ctx.globalCompositeOperation = 'multiply';
       ctx.fillStyle = tint;
       ctx.fill(path, 'nonzero');
-      ctx.globalCompositeOperation = 'source-over';
     }
+    const props = new Path2D();
+    let anyProp = false;
+    for (const c of casters) {
+      if (c.box) continue;
+      addPropShadow(props, cam, c.prop);
+      anyProp = true;
+    }
+    if (anyProp) { ctx.fillStyle = PROP_SHADOW; ctx.fill(props, 'nonzero'); }
+    ctx.globalCompositeOperation = 'source-over';
   }
 
   function drawKart(kart, t) {

@@ -108,7 +108,10 @@ const City = (function () {
     return out;
   }
 
-  const PALETTE = ['#6f7480', '#7d7566', '#5d6b74', '#84766e', '#66707c', '#7a7a86', '#6b6255'];
+  /* Pastel city block colours. Kept light so the flat lighting model never
+     pushes a facade toward grey. */
+  const PALETTE = ['#ecdfc2', '#8fd4c8', '#f2a684', '#accbee', '#f4dc86',
+                   '#d6acd9', '#a4d684', '#eeb4a4', '#c3ccd8', '#f0c9a0'];
 
   function buildLayout() {
     const rng = makeRng(20260903);
@@ -176,8 +179,8 @@ const City = (function () {
        they read as vehicles rather than crates, and collidable like anything
        else, which is what makes the driving lane feel like a lane. Bays near
        intersections and boost pads are left empty. */
-    const CARS = ['#b8402f', '#2f5f9e', '#d5cfc0', '#394049', '#2e7d5b',
-                  '#c2a02a', '#7f858f', '#6d3560'];
+    const CARS = ['#ef5544', '#3d84d8', '#f2f0e8', '#5c6472', '#3fb87a',
+                  '#f5c73c', '#a9b2c0', '#b062c0', '#ff9a4d', '#57d0d8'];
     const parkCar = (x, z, along, color) => {
       const hw = along === 'z' ? 8 : 20, hd = along === 'z' ? 20 : 8;
       buildings.push({ x, z, hw, hd, y0: 0, h: 11, color, windows: false, car: true });
@@ -220,13 +223,16 @@ const City = (function () {
     const deco = mode === 'color';
     const rng = makeRng(777);
 
+    /* Bright, clean materials with only enough grain to stop them reading as
+       flat swatches. A cartoon racer's world is saturated and legible, not
+       weathered. */
     const pat = deco
       ? {
-          grass: ctx.createPattern(noiseTile('#3f6b41', 11, 11), 'repeat'),
-          road: ctx.createPattern(noiseTile('#3a3a40', 8, 22), 'repeat'),
-          walk: ctx.createPattern(noiseTile('#9a978f', 7, 33), 'repeat'),
-          plaza: ctx.createPattern(noiseTile('#b0aa9c', 6, 44), 'repeat'),
-          dirt: ctx.createPattern(noiseTile('#57513f', 10, 55), 'repeat')
+          grass: ctx.createPattern(noiseTile('#57b04a', 9, 11), 'repeat'),
+          road: ctx.createPattern(noiseTile('#565b66', 6, 22), 'repeat'),
+          walk: ctx.createPattern(noiseTile('#cdc8bc', 5, 33), 'repeat'),
+          plaza: ctx.createPattern(noiseTile('#ded6c3', 5, 44), 'repeat'),
+          dirt: ctx.createPattern(noiseTile('#9c9377', 7, 55), 'repeat')
         }
       : null;
 
@@ -292,30 +298,30 @@ const City = (function () {
              and every copy has to come out identical or the seam shows. */
           const wear = makeRng(4100 + g);
           /* polished wheel tracks, two per lane */
-          c.fillStyle = 'rgba(255,255,255,0.045)';
+          c.fillStyle = 'rgba(255,255,255,0.05)';
           for (const o of [-32, -14, 14, 32]) {
             c.fillRect(line + o - 5, 0, 10, N);
             c.fillRect(0, line + o - 5, N, 10);
           }
           /* darker grime down the crown and the gutters */
-          c.fillStyle = 'rgba(0,0,0,0.10)';
+          c.fillStyle = 'rgba(0,0,0,0.07)';
           for (const o of [-K.ROAD_HALF + 4, K.ROAD_HALF - 4]) {
             c.fillRect(line + o - 3, 0, 6, N);
             c.fillRect(0, line + o - 3, N, 6);
           }
           /* kerb: a bright top edge against a dark shadow line */
-          c.fillStyle = 'rgba(226,224,214,0.75)';
+          c.fillStyle = 'rgba(248,246,238,0.9)';
           for (const s of [-1, 1]) {
             c.fillRect(line + s * K.ROAD_HALF - 1, 0, 2.5, N);
             c.fillRect(0, line + s * K.ROAD_HALF - 1, N, 2.5);
           }
-          c.fillStyle = 'rgba(0,0,0,0.28)';
+          c.fillStyle = 'rgba(0,0,0,0.18)';
           for (const s of [-1, 1]) {
             c.fillRect(line + s * (K.ROAD_HALF - 2) - 1, 0, 2, N);
             c.fillRect(0, line + s * (K.ROAD_HALF - 2) - 1, N, 2);
           }
           /* paving joints across the sidewalk */
-          c.fillStyle = 'rgba(0,0,0,0.13)';
+          c.fillStyle = 'rgba(0,0,0,0.09)';
           for (let t = 0; t < N; t += 34) {
             for (const s of [-1, 1]) {
               c.fillRect(line + s * K.ROAD_HALF, t, s * K.WALK, 1.6);
@@ -323,26 +329,26 @@ const City = (function () {
             }
           }
           /* lane lines */
-          c.fillStyle = 'rgba(230,230,220,0.5)';
+          c.fillStyle = 'rgba(255,255,255,0.82)';
           for (const s of [-1, 1]) {
             c.fillRect(line + s * (K.ROAD_HALF - 7) - 1.5, 0, 3, N);
             c.fillRect(0, line + s * (K.ROAD_HALF - 7) - 1.5, N, 3);
           }
-          c.fillStyle = 'rgba(240,206,90,0.8)';
+          c.fillStyle = 'rgba(255,214,74,0.95)';
           for (let t = 0; t < N; t += 46) {
             c.fillRect(line - 2, t, 4, 24);
             c.fillRect(t, line - 2, 24, 4);
           }
           /* manholes and patched repairs */
           for (let t = 24; t < N; t += 190) {
-            c.fillStyle = 'rgba(0,0,0,0.30)';
+            c.fillStyle = 'rgba(0,0,0,0.20)';
             c.beginPath(); c.arc(line - 20, t, 7, 0, Math.PI * 2); c.fill();
             c.beginPath(); c.arc(t, line + 20, 7, 0, Math.PI * 2); c.fill();
             c.fillStyle = 'rgba(255,255,255,0.06)';
             c.beginPath(); c.arc(line - 20, t - 1, 5.5, 0, Math.PI * 2); c.fill();
             c.beginPath(); c.arc(t, line + 19, 5.5, 0, Math.PI * 2); c.fill();
           }
-          c.fillStyle = 'rgba(0,0,0,0.11)';
+          c.fillStyle = 'rgba(0,0,0,0.055)';
           for (let i = 0; i < 26; i++) {
             const t = wear() * N, w = 12 + wear() * 40, l = 20 + wear() * 70;
             c.fillRect(line - K.ROAD_HALF + wear() * (K.ROAD_HALF * 2 - w), t, w, l);
@@ -355,7 +361,7 @@ const City = (function () {
         for (let gj = 0; gj < GRID; gj++) {
           const ax = gi * K.BLOCK, az = gj * K.BLOCK;
           wrapDraw(ctx, (c) => {
-            c.fillStyle = 'rgba(235,235,228,0.7)';
+            c.fillStyle = 'rgba(255,255,255,0.85)';
             for (let i = -4; i <= 4; i++) {
               const o = i * 9;
               c.fillRect(ax + o - 3, az - K.ROAD_HALF - 2, 6, 14);
@@ -376,10 +382,10 @@ const City = (function () {
         if (b.dir === 'h') c.rotate(Math.PI / 2);
         const pw = K.ROAD_HALF - 12, ph = 26;   // half-extents
         if (deco) {
-          c.fillStyle = '#24262e';
+          c.fillStyle = '#2e3442';
           c.fillRect(-pw, -ph, pw * 2, ph * 2);
           for (let i = 0; i < 3; i++) {
-            c.fillStyle = ['#e8623c', '#f0a03c', '#ffe07a'][i];
+            c.fillStyle = ['#ff6a3c', '#ffb03c', '#ffef7a'][i];
             c.beginPath();
             const y = -20 + i * 15;
             c.moveTo(-pw + 4, y + 9); c.lineTo(0, y); c.lineTo(pw - 4, y + 9);
@@ -398,16 +404,12 @@ const City = (function () {
           the renderer projects them from the real sun direction, so they move
           around the geometry properly instead of being a fixed dark offset. */
     if (deco) {
-      ctx.fillStyle = 'rgba(0,0,0,0.05)';
-      for (let i = 0; i < 900; i++) {
-        const s = 6 + rng() * 26;
-        ctx.fillRect(rng() * N, rng() * N, s, s);
-      }
-      /* patchy colour variation over the open ground, so plazas and lots do
-         not read as one flat swatch */
-      for (let i = 0; i < 420; i++) {
-        const s = 30 + rng() * 110;
-        ctx.fillStyle = rng() < 0.5 ? 'rgba(120,110,80,0.07)' : 'rgba(190,200,210,0.06)';
+      /* Soft, broad tonal variation over the open ground so plazas and lots
+         are not one flat swatch. Deliberately gentle — grime would fight the
+         palette rather than sit under it. */
+      for (let i = 0; i < 360; i++) {
+        const s = 40 + rng() * 130;
+        ctx.fillStyle = rng() < 0.5 ? 'rgba(150,140,100,0.045)' : 'rgba(220,235,245,0.05)';
         ctx.beginPath();
         ctx.ellipse(rng() * N, rng() * N, s, s * (0.5 + rng() * 0.6), rng() * 3, 0, Math.PI * 2);
         ctx.fill();

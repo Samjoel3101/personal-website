@@ -3,11 +3,27 @@
 An interactive résumé you drive through. A kart, a procedurally generated city,
 and six landmarks — each one opens a card with part of my background.
 
-Rendered with a SNES-style **Mode 7** ground raster: for every scanline below
-the horizon the renderer works out how far away that line of the world is, then
-walks across the row sampling a city texture with a constant per-pixel step.
+Rendered with a **Mode 7** ground raster: for every scanline below the horizon
+the renderer works out how far away that line of the world is, then walks
+across the row sampling a city texture with a constant per-pixel step.
 Buildings sit on top as real projected boxes sharing the same focal length, so
 perspective agrees between the road and the skyline.
+
+## Two resolutions
+
+The ground is the only thing that has to be a per-pixel software loop, so it
+renders at a fraction of the canvas and is bilinearly upscaled — on a
+texture-mapped road that is invisible. Everything else is drawn at the
+display's own resolution with anti-aliasing on, which is what keeps the edges
+of buildings, karts and trees clean rather than stepped.
+
+Because "the display's own resolution" is ambitious on a weak device — or on
+any browser that has fallen back to a software canvas — the loop watches its
+own frame interval and moves the render scale between 55% and 100% to suit.
+The canvas is stretched by CSS either way, so the only thing that changes is
+sharpness. Timing the renderer's own work instead would not do: canvas calls
+are queued and rasterised after the function returns, so the number comes back
+small on a machine that is visibly struggling.
 
 ## No asset files
 
@@ -24,9 +40,8 @@ load time:
 | Engine, boost, chimes, impacts | Web Audio oscillators and noise buffers, `js/audio.js` |
 | Physics | Hand-rolled arcade model, `js/kart.js` |
 
-The only external resource on the whole site is the Press Start 2P webfont, and
-it is loaded non-blocking with a monospace fallback — the site works fully
-without it.
+The only external resource on the whole site is the Fredoka webfont, and it is
+loaded non-blocking with a system fallback — the site works fully without it.
 
 ## Making it yours
 
@@ -73,8 +88,9 @@ automatically.
   are no invisible walls and you cannot get permanently lost.
 - The layout is seeded, so it is identical on every visit.
 - Physics runs at a fixed 120 Hz regardless of display refresh rate.
-- The kart sprite is re-rasterised whenever the buffer resizes, so it is
-  drawn 1:1 and never resampled.
+- Sprites are authored in a design space and rasterised through a context
+  scale; the kart is rebuilt whenever the canvas resizes, so it is drawn 1:1
+  and never resampled.
 - **Text version** in the HUD renders the same content as an ordinary scrolling
   page, for anyone who would rather not play a game to read a résumé.
 

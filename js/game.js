@@ -26,6 +26,16 @@
   let last = 0, acc = 0, clock = 0;
   let shake = 0;
 
+  /* Dynamic resolution. The renderer draws at the display's own pixel count,
+     which is right on hardware that can afford it and far too ambitious on
+     hardware that cannot — including any browser that has fallen back to a
+     software canvas. Rather than pick a resolution for the worst machine, the
+     loop measures how long its own work takes and moves the render scale up
+     or down to suit. The canvas is stretched by CSS either way, so the only
+     thing that changes is sharpness. */
+  let renderScale = 1;
+  let frameSum = 0, frameCount = 0, upCooldown = 0;
+
   /* ------------------------------------------------------------------ boot -- */
   function boot() {
     el.hint.textContent = 'Follow the arrow. Drive into a glowing ring to read a stop.';
@@ -36,8 +46,8 @@
     buildResumeView();
     wireEvents();
 
-    /* The name-plate sprites bake text into a bitmap, so they need the pixel
-       font to have arrived or they come out with monospace metrics. Wait for
+    /* The name-plate sprites bake text into a bitmap, so they need the UI
+       font to have arrived or they come out with fallback metrics. Wait for
        it, but never for long — the font is a nicety, not a dependency. */
     fontsReady().then(() => requestAnimationFrame(() => setTimeout(() => {
       Sprites.init();
@@ -56,7 +66,10 @@
 
   function fontsReady() {
     if (!document.fonts) return Promise.resolve();
-    const want = document.fonts.load('10px "Press Start 2P"').catch(() => {});
+    const want = Promise.all([
+      document.fonts.load('600 26px "Fredoka"'),
+      document.fonts.load('400 16px "Fredoka"')
+    ]).catch(() => {});
     return Promise.race([
       Promise.all([want, document.fonts.ready]),
       new Promise((r) => setTimeout(r, 1500))
@@ -66,20 +79,28 @@
   /* ------------------------------------------------------------------ view -- */
   function fitScreen() {
     const vw = window.innerWidth, vh = window.innerHeight;
-    const aspect = vw / vh;
-    /* Landscape: hold the height and let the width follow the aspect ratio.
-       Portrait: hold a usable width and grow the height instead, so a phone
-       gets a tall view of the street rather than a thin letterboxed band.
-       Both are capped so the per-frame pixel count stays bounded. */
-    if (aspect >= 1) {
-      R.resize(clamp(Math.round(K.RH * aspect), 300, 620), K.RH);
-    } else {
-      R.resize(330, clamp(Math.round(330 / aspect), K.RH, 430));
-    }
-    const view = R.view;
-    const scale = Math.min(vw / view.W, vh / view.H);
-    el.screen.style.width = Math.round(view.W * scale) + 'px';
-    el.screen.style.height = Math.round(view.H * scale) + 'px';
+    /* Render at the display's real pixel density, capped: past a certain
+       point extra pixels cost frames and buy nothing visible. */
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    /* The canvas takes the viewport's shape, but only within a range. A phone
+       held upright is far taller than any sensible field of view, and matching
+       it exactly would stretch the world; clamping instead leaves a thin band
+       above and below, which the HUD sits in. */
+    const aspect = clamp(vw / vh, 0.72, 2.4);
+    let h = Math.round(vh * dpr * renderScale);
+    let w = Math.round(h * aspect);
+    if (w > K.MAX_W) { w = K.MAX_W; h = Math.round(w / aspect); }
+    if (h > K.MAX_H) { h = K.MAX_H; w = Math.round(h * aspect); }
+    R.resize(w, h);
+
+    /* The displayed box comes from the clamped aspect, not from the rounded
+       render dimensions — otherwise a resolution change nudges the canvas a
+       pixel or two sideways and the whole frame appears to twitch. */
+    let cw = vw, ch = vw / aspect;
+    if (ch > vh) { ch = vh; cw = vh * aspect; }
+    el.screen.style.width = Math.round(cw) + 'px';
+    el.screen.style.height = Math.round(ch) + 'px';
     if (state !== 'loading') drawFrame(clock);
   }
 
@@ -153,7 +174,8 @@
   /* ------------------------------------------------------------------ loop -- */
   function loop(now) {
     if (state !== 'drive') return;
-    let dt = (now - last) / 1000;
+    const rawDt = now - last;
+    let dt = rawDt / 1000;
     last = now;
     /* A backgrounded tab hands back a huge dt; clamp it so nothing tunnels
        through a wall on the first frame after you come back. */
@@ -178,7 +200,34 @@
 
     drawFrame(now);
     updateHud();
+    tuneResolution(rawDt);
     requestAnimationFrame(loop);
+  }
+
+  /* Timing our own work is misleading — canvas calls are queued and rasterised
+     after the function returns, so the number comes back small on a machine
+     that is visibly struggling. The frame interval is what the viewer actually
+     experiences, so that is what drives the scale.
+
+     Coming back up is deliberately slow. Without the cooldown the scale
+     oscillates: raising it costs exactly the frames that made raising it look
+     safe, and the viewer sees the picture breathe. */
+  function tuneResolution(ms) {
+    if (ms > 200) return;                  // a tab that was backgrounded
+    frameSum += ms;
+    if (++frameCount < 45) return;
+    const avg = frameSum / frameCount;
+    frameSum = 0; frameCount = 0;
+    if (upCooldown > 0) upCooldown--;
+
+    if (avg > 20.5 && renderScale > 0.55) {           // below roughly 49 fps
+      renderScale = Math.max(0.55, renderScale - 0.12);
+      upCooldown = 12;                                 // ~9 seconds of calm
+      fitScreen();
+    } else if (avg < 17.2 && renderScale < 1 && upCooldown === 0) {
+      renderScale = Math.min(1, renderScale + 0.08);
+      fitScreen();
+    }
   }
 
   function drawFrame(now) {

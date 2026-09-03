@@ -12,11 +12,17 @@ const K = {
   /* Surface ids baked into the surface map, sampled by the physics. */
   SURF: { ROAD: 0, WALK: 1, PLAZA: 2, GRASS: 3, BOOST: 4 },
 
-  /* Renderer. Still a small buffer upscaled with smoothing off, but large
-     enough that the pixel grid reads as texture rather than as blocks. */
-  RW: 560,
-  RH: 320,
-  HORIZON: 132,        // scanline of the horizon at the reference height
+  /* Renderer. Geometry is drawn at the display's own resolution with
+     anti-aliasing on. Only the ground raster runs at a fraction of that and
+     is bilinearly upscaled — it is a per-pixel software loop, so it is the
+     one thing that cannot be free at full resolution, and a smooth upscale
+     of a texture-mapped road is indistinguishable from the real thing. */
+  RW: 1280,
+  RH: 720,
+  GROUND_SCALE: 0.5,   // ground raster resolution, relative to the canvas
+  MAX_W: 1800,         // caps on the render target, whatever the display is
+  MAX_H: 1000,
+  HORIZON: 297,        // horizon as a fraction of height: 297/720 = 0.4125
   CAM_H: 30,           // camera height above the road
   CAM_BACK: 34,        // camera distance behind the kart
   NEAR: 12,            // near clip for projected geometry
@@ -25,9 +31,9 @@ const K = {
 
   /* Sky. The haze colour is also the fog colour, so distant geometry melts
      into the horizon instead of ending at a visible line. */
-  SKY_TOP: '#2f5599',
-  SKY_MID: '#7ba9d9',
-  SKY_HAZE: '#a8c4dc',
+  SKY_TOP: '#1f7fd4',
+  SKY_MID: '#6cc2f2',
+  SKY_HAZE: '#c2e2f5',
 
   /* Kart */
   MAX_SPEED: 250,
@@ -48,7 +54,12 @@ const K = {
    agree — which is most of what makes a flat-shaded scene read as lit. */
 const SUN = { x: 0.30, y: 0.82, z: -0.49 };   // direction toward the sun
 const FILL = { x: -0.30, y: 0.60, z: 0.49 };  // direction toward the sky bounce
-const AMBIENT = 0.52, KEY = 1.10, FILLK = 0.35;
+
+/* Deliberately flat and bright. A physically-weighted key light gives you
+   near-black shadow sides, which is exactly the look a cartoon racer avoids:
+   its world is lit so that every surface stays saturated and readable, and
+   the sun only tips faces a little brighter or darker than each other. */
+const AMBIENT = 0.62, KEY = 0.80, FILLK = 0.30;
 
 function faceLight(nx, ny, nz) {
   const k = Math.max(0, nx * SUN.x + ny * SUN.y + nz * SUN.z);
@@ -57,11 +68,11 @@ function faceLight(nx, ny, nz) {
 }
 
 K.FACE = {
-  PX: faceLight(1, 0, 0),    // ~0.85  east-facing, catches the sun obliquely
-  NX: faceLight(-1, 0, 0),   // ~0.62  in shade, lit only by bounce
-  PZ: faceLight(0, 0, 1),    // ~0.69
-  NZ: faceLight(0, 0, -1),   // ~1.06  square to the sun, the bright side
-  TOP: faceLight(0, 1, 0)    // ~1.63  clamped in practice
+  PX: faceLight(1, 0, 0),    // ~0.86  east-facing, catches the sun obliquely
+  NX: faceLight(-1, 0, 0),   // ~0.71  in shade, lit only by bounce
+  PZ: faceLight(0, 0, 1),    // ~0.77
+  NZ: faceLight(0, 0, -1),   // ~1.01  square to the sun, the bright side
+  TOP: faceLight(0, 1, 0)    // clamped in practice
 };
 
 /* Ground offset a shadow travels per unit of height. Straight from the sun
