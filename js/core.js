@@ -1,6 +1,5 @@
-/* core.js — world constants, deterministic RNG, wrap-aware math, colour utils.
-   Loaded before everything else; exposes a single global `K` (constants) plus
-   a handful of free functions. */
+/* core.js — world constants, lighting model, deterministic RNG, wrap-aware
+   math, colour utils. Loaded first; exposes a global `K` plus free functions. */
 
 const K = {
   /* World. Power of two so wrapping is a bitmask instead of a modulo. */
@@ -13,21 +12,22 @@ const K = {
   /* Surface ids baked into the surface map, sampled by the physics. */
   SURF: { ROAD: 0, WALK: 1, PLAZA: 2, GRASS: 3, BOOST: 4 },
 
-  /* Renderer. Deliberately tiny — it is upscaled with smoothing off. */
-  RW: 400,             // internal render width
-  RH: 232,             // internal render height
-  HORIZON: 96,         // scanline of the horizon
+  /* Renderer. Still a small buffer upscaled with smoothing off, but large
+     enough that the pixel grid reads as texture rather than as blocks. */
+  RW: 560,
+  RH: 320,
+  HORIZON: 132,        // scanline of the horizon at the reference height
   CAM_H: 30,           // camera height above the road
   CAM_BACK: 34,        // camera distance behind the kart
   NEAR: 12,            // near clip for projected geometry
-  FAR: 1500,           // draw distance
-  FOG_START: 500,
+  FAR: 1900,           // draw distance
+  FOG_START: 620,
 
-  /* Colours */
-  FOG: 0xffcfa87a,     // packed ABGR (little-endian) haze colour
-  SKY_TOP: '#2a4a8f',
-  SKY_MID: '#7fa8d8',
-  SKY_HAZE: '#7aa8cf',
+  /* Sky. The haze colour is also the fog colour, so distant geometry melts
+     into the horizon instead of ending at a visible line. */
+  SKY_TOP: '#2f5599',
+  SKY_MID: '#7ba9d9',
+  SKY_HAZE: '#a8c4dc',
 
   /* Kart */
   MAX_SPEED: 250,
@@ -39,6 +39,34 @@ const K = {
 
   DISCOVER_R: 115      // how close you must get to a landmark to trigger it
 };
+
+/* --------------------------------------------------------------- lighting --
+   A key light (the sun), a weaker fill from roughly the opposite side
+   standing in for sky bounce, and a flat ambient term. Precomputed per face
+   normal, since the sun does not move: four constants, no per-frame work.
+   The same sun direction drives the ground shadows, so shading and shadows
+   agree — which is most of what makes a flat-shaded scene read as lit. */
+const SUN = { x: 0.30, y: 0.82, z: -0.49 };   // direction toward the sun
+const FILL = { x: -0.30, y: 0.60, z: 0.49 };  // direction toward the sky bounce
+const AMBIENT = 0.52, KEY = 1.10, FILLK = 0.35;
+
+function faceLight(nx, ny, nz) {
+  const k = Math.max(0, nx * SUN.x + ny * SUN.y + nz * SUN.z);
+  const f = Math.max(0, nx * FILL.x + ny * FILL.y + nz * FILL.z);
+  return AMBIENT + KEY * k + FILLK * f;
+}
+
+K.FACE = {
+  PX: faceLight(1, 0, 0),    // ~0.85  east-facing, catches the sun obliquely
+  NX: faceLight(-1, 0, 0),   // ~0.62  in shade, lit only by bounce
+  PZ: faceLight(0, 0, 1),    // ~0.69
+  NZ: faceLight(0, 0, -1),   // ~1.06  square to the sun, the bright side
+  TOP: faceLight(0, 1, 0)    // ~1.63  clamped in practice
+};
+
+/* Ground offset a shadow travels per unit of height. Straight from the sun
+   direction, so the shadows fall the same way the faces are lit. */
+K.SHADOW = { x: -SUN.x / SUN.y, z: -SUN.z / SUN.y };
 
 /* --- deterministic RNG (mulberry32) so the city is identical every load --- */
 function makeRng(seed) {
@@ -68,13 +96,31 @@ function wrapDist(ax, az, bx, bz) {
   return Math.hypot(dx, dz);
 }
 
-/* --- colour utils ---------------------------------------------------------- */
+/* --- colour utils ----------------------------------------------------------
+   `shadeFog` runs a few thousand times a frame, so parsing a hex string every
+   call actually shows up in a profile. The parse is memoised; there are only
+   a couple of dozen distinct colours in the whole city. */
+const RGB_CACHE = new Map();
 function hexToRgb(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  let v = RGB_CACHE.get(hex);
+  if (v === undefined) {
+    const n = parseInt(hex.slice(1), 16);
+    v = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    RGB_CACHE.set(hex, v);
+  }
+  return v;
 }
 
 function rgbToCss(r, g, b) { return `rgb(${r | 0},${g | 0},${b | 0})`; }
+
+/* Pack a hex colour into the ABGR word layout an ImageData buffer uses. */
+function packRGB(hex) {
+  const [r, g, b] = hexToRgb(hex);
+  return (0xff000000 | (b << 16) | (g << 8) | r) >>> 0;
+}
+
+K.FOG = packRGB(K.SKY_HAZE);
+const FOG_RGB = hexToRgb(K.SKY_HAZE);
 
 /* Scale a hex colour's brightness and return CSS. Used for face shading. */
 function shade(hex, mul) {
@@ -83,9 +129,11 @@ function shade(hex, mul) {
 }
 
 /* Mix a shaded hex colour toward the fog colour by `t` (0..1) and return CSS. */
-const FOG_RGB = [K.FOG & 255, (K.FOG >> 8) & 255, (K.FOG >> 16) & 255];
 function shadeFog(hex, mul, t) {
   const [r, g, b] = hexToRgb(hex);
+  if (t <= 0) {
+    return rgbToCss(Math.min(255, r * mul), Math.min(255, g * mul), Math.min(255, b * mul));
+  }
   const s = 1 - t;
   return rgbToCss(
     Math.min(255, r * mul) * s + FOG_RGB[0] * t,

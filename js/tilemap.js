@@ -172,6 +172,38 @@ const City = (function () {
       }
     }
 
+    /* Parked cars down the kerbside. Two boxes each — body and cabin — so
+       they read as vehicles rather than crates, and collidable like anything
+       else, which is what makes the driving lane feel like a lane. Bays near
+       intersections and boost pads are left empty. */
+    const CARS = ['#b8402f', '#2f5f9e', '#d5cfc0', '#394049', '#2e7d5b',
+                  '#c2a02a', '#7f858f', '#6d3560'];
+    const parkCar = (x, z, along, color) => {
+      const hw = along === 'z' ? 8 : 20, hd = along === 'z' ? 20 : 8;
+      buildings.push({ x, z, hw, hd, y0: 0, h: 11, color, windows: false, car: true });
+      buildings.push({
+        x, z, hw: hw * (along === 'z' ? 0.86 : 0.55), hd: hd * (along === 'z' ? 0.55 : 0.86),
+        y0: 11, h: 7, color: '#2b3140', windows: false, car: true
+      });
+    };
+    for (let g = 0; g < GRID; g++) {
+      const line = g * K.BLOCK;
+      for (let seg = 0; seg < GRID; seg++) {
+        for (const off of [130, 380]) {
+          const t = seg * K.BLOCK + off;
+          for (const side of [-1, 1]) {
+            const lane = side * 35;
+            if (rng() > 0.5) {
+              parkCar(wrap(line + lane), wrap(t), 'z', CARS[(rng() * CARS.length) | 0]);
+            }
+            if (rng() > 0.5) {
+              parkCar(wrap(t), wrap(line + lane), 'x', CARS[(rng() * CARS.length) | 0]);
+            }
+          }
+        }
+      }
+    }
+
     /* Boost pads, one on each approach to the middle of every road segment. */
     for (let g = 0; g < GRID; g++) {
       const line = g * K.BLOCK;
@@ -190,11 +222,11 @@ const City = (function () {
 
     const pat = deco
       ? {
-          grass: ctx.createPattern(noiseTile('#3f6b41', 16, 11), 'repeat'),
-          road: ctx.createPattern(noiseTile('#3a3a40', 12, 22), 'repeat'),
-          walk: ctx.createPattern(noiseTile('#9a978f', 10, 33), 'repeat'),
-          plaza: ctx.createPattern(noiseTile('#b0aa9c', 9, 44), 'repeat'),
-          dirt: ctx.createPattern(noiseTile('#57513f', 14, 55), 'repeat')
+          grass: ctx.createPattern(noiseTile('#3f6b41', 11, 11), 'repeat'),
+          road: ctx.createPattern(noiseTile('#3a3a40', 8, 22), 'repeat'),
+          walk: ctx.createPattern(noiseTile('#9a978f', 7, 33), 'repeat'),
+          plaza: ctx.createPattern(noiseTile('#b0aa9c', 6, 44), 'repeat'),
+          dirt: ctx.createPattern(noiseTile('#57513f', 10, 55), 'repeat')
         }
       : null;
 
@@ -249,20 +281,72 @@ const City = (function () {
       });
     }
 
-    /* 5. road markings — purely decorative, so the id map skips them */
+    /* 5. road surface detail and markings — decorative, so the id map skips
+          all of it. Wear along the wheel paths, kerb lines, paving joints and
+          the odd manhole are what stop a road being a flat grey ribbon. */
     if (deco) {
       for (let g = 0; g < GRID; g++) {
         const line = g * K.BLOCK;
         wrapDraw(ctx, (c) => {
-          c.fillStyle = 'rgba(230,230,220,0.55)';
-          for (const s of [-1, 1]) {
-            c.fillRect(line + s * (K.ROAD_HALF - 5) - 1.5, 0, 3, N);
-            c.fillRect(0, line + s * (K.ROAD_HALF - 5) - 1.5, N, 3);
+          /* Seeded per road, not per wrap copy: wrapDraw runs this nine times
+             and every copy has to come out identical or the seam shows. */
+          const wear = makeRng(4100 + g);
+          /* polished wheel tracks, two per lane */
+          c.fillStyle = 'rgba(255,255,255,0.045)';
+          for (const o of [-32, -14, 14, 32]) {
+            c.fillRect(line + o - 5, 0, 10, N);
+            c.fillRect(0, line + o - 5, N, 10);
           }
-          c.fillStyle = 'rgba(240,206,90,0.85)';
+          /* darker grime down the crown and the gutters */
+          c.fillStyle = 'rgba(0,0,0,0.10)';
+          for (const o of [-K.ROAD_HALF + 4, K.ROAD_HALF - 4]) {
+            c.fillRect(line + o - 3, 0, 6, N);
+            c.fillRect(0, line + o - 3, N, 6);
+          }
+          /* kerb: a bright top edge against a dark shadow line */
+          c.fillStyle = 'rgba(226,224,214,0.75)';
+          for (const s of [-1, 1]) {
+            c.fillRect(line + s * K.ROAD_HALF - 1, 0, 2.5, N);
+            c.fillRect(0, line + s * K.ROAD_HALF - 1, N, 2.5);
+          }
+          c.fillStyle = 'rgba(0,0,0,0.28)';
+          for (const s of [-1, 1]) {
+            c.fillRect(line + s * (K.ROAD_HALF - 2) - 1, 0, 2, N);
+            c.fillRect(0, line + s * (K.ROAD_HALF - 2) - 1, N, 2);
+          }
+          /* paving joints across the sidewalk */
+          c.fillStyle = 'rgba(0,0,0,0.13)';
+          for (let t = 0; t < N; t += 34) {
+            for (const s of [-1, 1]) {
+              c.fillRect(line + s * K.ROAD_HALF, t, s * K.WALK, 1.6);
+              c.fillRect(t, line + s * K.ROAD_HALF, 1.6, s * K.WALK);
+            }
+          }
+          /* lane lines */
+          c.fillStyle = 'rgba(230,230,220,0.5)';
+          for (const s of [-1, 1]) {
+            c.fillRect(line + s * (K.ROAD_HALF - 7) - 1.5, 0, 3, N);
+            c.fillRect(0, line + s * (K.ROAD_HALF - 7) - 1.5, N, 3);
+          }
+          c.fillStyle = 'rgba(240,206,90,0.8)';
           for (let t = 0; t < N; t += 46) {
             c.fillRect(line - 2, t, 4, 24);
             c.fillRect(t, line - 2, 24, 4);
+          }
+          /* manholes and patched repairs */
+          for (let t = 24; t < N; t += 190) {
+            c.fillStyle = 'rgba(0,0,0,0.30)';
+            c.beginPath(); c.arc(line - 20, t, 7, 0, Math.PI * 2); c.fill();
+            c.beginPath(); c.arc(t, line + 20, 7, 0, Math.PI * 2); c.fill();
+            c.fillStyle = 'rgba(255,255,255,0.06)';
+            c.beginPath(); c.arc(line - 20, t - 1, 5.5, 0, Math.PI * 2); c.fill();
+            c.beginPath(); c.arc(t, line + 19, 5.5, 0, Math.PI * 2); c.fill();
+          }
+          c.fillStyle = 'rgba(0,0,0,0.11)';
+          for (let i = 0; i < 26; i++) {
+            const t = wear() * N, w = 12 + wear() * 40, l = 20 + wear() * 70;
+            c.fillRect(line - K.ROAD_HALF + wear() * (K.ROAD_HALF * 2 - w), t, w, l);
+            c.fillRect(t, line - K.ROAD_HALF + wear() * (K.ROAD_HALF * 2 - w), l, w);
           }
         });
       }
@@ -310,20 +394,23 @@ const City = (function () {
       });
     }
 
-    /* 7. contact shadows under the buildings, so they sit on the ground
-          instead of floating. Decorative only. */
+    /* 7. ground weathering. Building shadows are no longer painted here —
+          the renderer projects them from the real sun direction, so they move
+          around the geometry properly instead of being a fixed dark offset. */
     if (deco) {
-      ctx.fillStyle = 'rgba(0,0,0,0.32)';
-      for (const b of buildings) {
-        if (b.y0 > 0) continue;
-        const sk = 8 + Math.min(28, b.h * 0.06);
-        wrapDraw(ctx, (c) => c.fillRect(b.x - b.hw, b.z - b.hd, b.hw * 2 + sk, b.hd * 2 + sk));
-      }
-      /* a little grime so the plazas are not perfectly flat */
       ctx.fillStyle = 'rgba(0,0,0,0.05)';
       for (let i = 0; i < 900; i++) {
         const s = 6 + rng() * 26;
         ctx.fillRect(rng() * N, rng() * N, s, s);
+      }
+      /* patchy colour variation over the open ground, so plazas and lots do
+         not read as one flat swatch */
+      for (let i = 0; i < 420; i++) {
+        const s = 30 + rng() * 110;
+        ctx.fillStyle = rng() < 0.5 ? 'rgba(120,110,80,0.07)' : 'rgba(190,200,210,0.06)';
+        ctx.beginPath();
+        ctx.ellipse(rng() * N, rng() * N, s, s * (0.5 + rng() * 0.6), rng() * 3, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
   }

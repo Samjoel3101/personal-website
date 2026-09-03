@@ -73,6 +73,8 @@ automatically.
   are no invisible walls and you cannot get permanently lost.
 - The layout is seeded, so it is identical on every visit.
 - Physics runs at a fixed 120 Hz regardless of display refresh rate.
+- The kart sprite is re-rasterised whenever the buffer resizes, so it is
+  drawn 1:1 and never resampled.
 - **Text version** in the HUD renders the same content as an ordinary scrolling
   page, for anyone who would rather not play a game to read a résumé.
 
