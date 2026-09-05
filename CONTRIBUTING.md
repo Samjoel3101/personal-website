@@ -48,6 +48,9 @@ résumé all follow automatically.
 **A new kind of object in the world.** Generate it as data in `src/world/`,
 then add a builder in `src/render/builders/` that draws it. Do not generate
 geometry in the world model, and do not invent world data inside a builder.
+`npm run check:boundaries` fails the build if `src/world`, `src/physics`,
+`src/content` or `src/core` end up importing `three` or anything from a
+rendering/DOM-facing directory — that boundary is not just a convention.
 
 **A third-party asset.** Add it to `assets/manifest.json` with its licence,
 author, source and role, then `npm run assets:fetch -- --record`. Never commit

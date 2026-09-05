@@ -26,6 +26,12 @@ jobs:
       - name: Formatting
         run: npm run format:check
 
+      # The world model (src/world, physics, content, core) must stay
+      # renderer- and DOM-free — catches a `three` or src/render import that
+      # would otherwise only surface as an untestable module later.
+      - name: Layer boundaries
+        run: npm run check:boundaries
+
       # Runs before the tests: an unlicensed or tampered asset should fail the
       # build immediately, not after five minutes of browser tests.
       - name: Verify asset manifest

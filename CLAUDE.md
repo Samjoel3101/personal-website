@@ -41,7 +41,10 @@ There is no other setup. Third-party assets are optional — see _Assets_ below.
    `src/content` and `src/core` must run in Node with no DOM and no WebGL. That
    is what makes them unit-testable, and it is why swapping the renderer was a
    contained change rather than a rewrite. A `three` import under any of those
-   directories is a bug.
+   directories is a bug. `npm run check:boundaries` (part of `npm run check`)
+   enforces this — it fails the build on a `three` import or an import
+   reaching into `src/render`, `src/ui`, `src/audio`, `src/input`, `src/game`
+   or `src/assets` from any of the four guarded directories.
 
 3. **Never subtract two world coordinates directly.** The city wraps in both
    axes. Use `wrapDelta` / `wrapDistance` from `src/core/torus.js`. Raw
