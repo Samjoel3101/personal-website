@@ -46,9 +46,9 @@ Mitigations that generalize: lock down evaluation code/rubrics separately from t
 
 ## General diagnosis heuristic
 
-When a harness isn't producing good results, check in this order before adding new infrastructure:
-0. Is there actually a failure to diagnose, or is this a fresh repo with no track record yet? Don't manufacture a diagnosis where none exists — see "Over-scaffolding failures" above.
+When a harness isn't producing good results, check in this order before adding new infrastructure: 0. Is there actually a failure to diagnose, or is this a fresh repo with no track record yet? Don't manufacture a diagnosis where none exists — see "Over-scaffolding failures" above.
+
 1. Is the feedback loop actually fast and specific, or does it just look like it should be?
 2. Is the always-loaded doc actually being read, or is it too long/stale to trust?
-3. Is the failure a missing constraint (agent *could* do the wrong thing) or a missing feedback signal (agent *did* the wrong thing and didn't find out)? These need different fixes — constraints prevent, feedback loops catch.
+3. Is the failure a missing constraint (agent _could_ do the wrong thing) or a missing feedback signal (agent _did_ the wrong thing and didn't find out)? These need different fixes — constraints prevent, feedback loops catch.
 4. Only after those are ruled out, consider heavier additions (review tiers, multi-agent coordination, new memory systems) — these solve scale problems, not signal problems.
