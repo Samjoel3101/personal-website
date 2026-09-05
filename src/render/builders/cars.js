@@ -1,4 +1,5 @@
 import { BoxGeometry, Group } from 'three';
+import { seatOnGround } from '../ground-follow.js';
 import { instancedTinted, lambert } from '../materials.js';
 import { tiledInstances } from '../geometry/tiling.js';
 
@@ -16,6 +17,7 @@ export function buildCars(city) {
 
   const bodies = city.cars.map((car) => ({
     x: car.x,
+    y: seatOnGround(car.x, car.z),
     z: car.z,
     sx: car.halfWidth * 2,
     sy: car.height,
@@ -27,7 +29,7 @@ export function buildCars(city) {
     const alongZ = car.halfDepth > car.halfWidth;
     return {
       x: car.x,
-      y: car.height,
+      y: car.height + seatOnGround(car.x, car.z),
       z: car.z,
       sx: car.halfWidth * 2 * (alongZ ? 0.86 : 0.55),
       sy: car.cabinHeight,

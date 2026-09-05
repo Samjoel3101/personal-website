@@ -9,18 +9,21 @@ import { lambert } from '../materials.js';
 import { buildRoadMarkings } from './road-markings.js';
 
 /**
- * The ground: one 2048x2048 tile of base, asphalt, pavement and plaza, merged
- * into one geometry per material and instanced across the 3x3 tiling.
+ * The flat ground layers: track, verge and paddock, merged into one geometry
+ * per material and instanced across the 3x3 tiling.
  *
- * Built as geometry rather than as a texture on a plane, because painted lines
- * drawn as quads stay razor sharp at any distance and any resolution — the
- * thing a baked road texture can never quite manage up close.
+ * The rough ground underneath them is no longer a quad — it is the heightfield
+ * in ./terrain.js, which is exactly zero wherever these layers sit. So these
+ * stay flat and stay valid; they are the corridor the terrain leaves alone.
+ *
+ * Built as geometry rather than as a texture on a plane, because marks drawn
+ * as quads stay razor sharp at any distance and any resolution — the thing a
+ * baked road texture can never quite manage up close.
  */
 export function buildGround() {
   const group = new Group();
   group.name = 'ground';
 
-  group.add(slab([lotBase()], TERRAIN.FIELD, false));
   group.add(slab(plazas(), TERRAIN.SAND, true));
   group.add(slab(pavements(), TERRAIN.VERGE, true));
   group.add(slab(roads(), TERRAIN.TRACK, true));
@@ -37,12 +40,6 @@ function slab(geometries, color, receiveShadow) {
   const mesh = tiledSlab(merged, lambert(color));
   mesh.receiveShadow = receiveShadow;
   return mesh;
-}
-
-/** The rough ground every block sits on, before anything is paved over it. */
-function lotBase() {
-  const half = WORLD.SIZE / 2;
-  return flatQuad(WORLD.SIZE, WORLD.SIZE, half, half, GROUND_LAYER.BASE);
 }
 
 /** Landmark blocks are paved, which is also what makes them drivable. */

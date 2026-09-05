@@ -1,6 +1,7 @@
 import { BoxGeometry, CylinderGeometry, Group } from 'three';
 import { mergeParts } from '../geometry/merge.js';
 import { lambert } from '../materials.js';
+import { seatOnGround } from '../ground-follow.js';
 import { tiledInstances } from '../geometry/tiling.js';
 
 const POLE_HEIGHT = 66;
@@ -20,7 +21,7 @@ export function buildLamps(city) {
   const lamps = city.props.filter((prop) => prop.type === 'lamp');
   if (lamps.length === 0) return group;
 
-  const items = lamps.map((lamp) => ({ x: lamp.x, z: lamp.z }));
+  const items = lamps.map((lamp) => ({ x: lamp.x, y: seatOnGround(lamp.x, lamp.z), z: lamp.z }));
 
   const metal = tiledInstances(poleGeometry(), lambert('#5a6069'), items);
   metal.receiveShadow = false;

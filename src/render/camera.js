@@ -1,6 +1,7 @@
 import { PerspectiveCamera, Vector3 } from 'three';
 import { CAMERA } from '../config/render.js';
 import { damp } from '../core/math.js';
+import { createGroundFollow } from './ground-follow.js';
 
 /**
  * Chase camera.
@@ -10,12 +11,21 @@ import { damp } from '../core/math.js';
  * src/render/scene.js). So the camera orbits a fixed point rather than
  * following a moving one, and the lag that makes cornering feel like
  * cornering shows up as the camera swinging around the kart.
+ *
+ * The one thing it has to track is the terrain: the kart is lifted onto the
+ * heightfield in src/render/scene.js, so a camera pinned to y = 0 would sink
+ * into a hill the moment you left the track. It follows the same ground more
+ * softly than the kart does, which reads as suspension rather than as a
+ * camera fighting the scenery.
  */
+/** Softer than the kart's, so the view does not bob over every facet. */
+const CAMERA_GROUND_LAMBDA = 5;
 export function createChaseCamera() {
   const camera = new PerspectiveCamera(CAMERA.FOV, 1, CAMERA.NEAR, CAMERA.FAR);
   const target = new Vector3();
   const desired = new Vector3();
   const lookAt = new Vector3(0, CAMERA.LOOK_HEIGHT, 0);
+  const ground = createGroundFollow(CAMERA_GROUND_LAMBDA);
 
   // Start behind the kart so the first frame is not a swing into place.
   camera.position.set(0, CAMERA.HEIGHT, -CAMERA.DISTANCE);
@@ -29,7 +39,7 @@ export function createChaseCamera() {
     },
 
     /**
-     * @param {{heading: number, slide: number, speed: number}} kart
+     * @param {{x: number, z: number, heading: number, slide: number, speed: number}} kart
      * @param {number} dt seconds
      */
     update(kart, dt) {
@@ -37,11 +47,14 @@ export function createChaseCamera() {
       const sin = Math.sin(kart.heading);
       const cos = Math.cos(kart.heading);
 
+      const groundHeight = ground.update(kart.x, kart.z, dt);
+      lookAt.y = CAMERA.LOOK_HEIGHT + groundHeight;
+
       // Drifting swings the camera wide, which is what sells a slide.
       const lateral = kart.slide * 0.5;
       desired.set(
         -sin * CAMERA.DISTANCE - cos * lateral,
-        CAMERA.HEIGHT,
+        CAMERA.HEIGHT + groundHeight,
         -cos * CAMERA.DISTANCE + sin * lateral,
       );
 

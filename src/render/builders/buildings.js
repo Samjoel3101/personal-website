@@ -1,5 +1,6 @@
 import { BoxGeometry, Group } from 'three';
 import { createFacadeMaterial } from '../facade-material.js';
+import { seatOnGround } from '../ground-follow.js';
 import { instancedTinted } from '../materials.js';
 import { tiledInstances } from '../geometry/tiling.js';
 
@@ -38,7 +39,9 @@ export function unitBox() {
 function toInstance(box) {
   return {
     x: box.x,
-    y: box.base,
+    // Seated on the heightfield. The physics still treats this as a 2-D
+    // footprint at y = 0; only the picture knows about the hill.
+    y: box.base + seatOnGround(box.x, box.z, box.halfWidth, box.halfDepth),
     z: box.z,
     sx: box.halfWidth * 2,
     sy: box.height,

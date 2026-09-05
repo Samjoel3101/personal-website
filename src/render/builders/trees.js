@@ -3,6 +3,7 @@ import { mergeParts } from '../geometry/merge.js';
 import { FOLIAGE } from '../../config/palette.js';
 import { createRng } from '../../core/rng.js';
 import { paintGeometry } from '../geometry/paint.js';
+import { seatOnGround } from '../ground-follow.js';
 import { tiledInstances } from '../geometry/tiling.js';
 import { vertexColoured } from '../materials.js';
 
@@ -30,7 +31,14 @@ export function buildTrees(city) {
       .filter((_, index) => index % VARIANTS === variant)
       .map((tree) => {
         const scale = tree.height / REFERENCE_HEIGHT;
-        return { x: tree.x, z: tree.z, sx: scale, sy: scale, sz: scale };
+        return {
+          x: tree.x,
+          y: seatOnGround(tree.x, tree.z),
+          z: tree.z,
+          sx: scale,
+          sy: scale,
+          sz: scale,
+        };
       });
     if (items.length === 0) continue;
 
