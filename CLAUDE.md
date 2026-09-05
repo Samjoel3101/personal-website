@@ -1,8 +1,8 @@
 # Start here
 
 An interactive résumé you drive through: a WebGL kart racer around a
-procedurally generated city, where each landmark opens a card with part of the
-owner's background.
+procedurally generated backcountry rally stage, where each landmark opens a
+card with part of the owner's background.
 
 **If you are picking up work on this repository, read this file, then
 `docs/ARCHITECTURE.md`, then the task you were given. Nothing else is required
@@ -41,12 +41,14 @@ There is no other setup. Third-party assets are optional — see _Assets_ below.
    `src/content` and `src/core` must run in Node with no DOM and no WebGL. That
    is what makes them unit-testable, and it is why swapping the renderer was a
    contained change rather than a rewrite. A `three` import under any of those
-   directories is a bug. `npm run check:boundaries` (part of `npm run check`)
+   directories is a bug. The corollary that catches people: `src/world/terrain.js`
+   lives there and gives the ground height, but **only `src/render` may read
+   it** — the physics is two-dimensional and stays that way. `npm run check:boundaries` (part of `npm run check`)
    enforces this — it fails the build on a `three` import or an import
    reaching into `src/render`, `src/ui`, `src/audio`, `src/input`, `src/game`
    or `src/assets` from any of the four guarded directories.
 
-3. **Never subtract two world coordinates directly.** The city wraps in both
+3. **Never subtract two world coordinates directly.** The world wraps in both
    axes. Use `wrapDelta` / `wrapDistance` from `src/core/torus.js`. Raw
    subtraction works everywhere except across the seam, which is exactly the
    case nobody tests by hand.
@@ -65,7 +67,7 @@ src/
   config/      numbers, colours, tuning — no logic
   core/        maths, RNG, the torus helpers, the loop, an event bus
   content/     the résumé, and its schema
-  world/       city layout and surface classification (pure data)
+  world/       stage layout, track curve, terrain, surfaces (pure data)
   physics/     kart handling and collision (pure)
   render/      everything WebGL; nothing outside talks past render/stage.js
   audio/       synthesised sound
@@ -84,15 +86,29 @@ src/
   non-indexed inputs and signals it by returning `null`, which fails much later
   as a null dereference. Use `mergeParts` from
   `src/render/geometry/merge.js`.
-- **Ground layer order.** Flat road layers are coplanar; the pavement quad is
-  wider than the road it flanks, so it must sit _below_ it. See
+- **Ground layer order.** Flat ground layers are coplanar; the verge ribbon is
+  wider than the track it flanks, so it must sit _below_ it. See
   `GROUND_LAYER` in `src/render/geometry/flat.js`.
-- **Draw distance.** The city is tiled 3×3 to hide its edges, which only works
+- **Draw distance.** The stage is tiled 3×3 to hide its edges, which only works
   while you cannot see more than half a world. Do not raise
   `ATMOSPHERE.FOG_FAR` past `MAX_VISIBLE` without increasing the tiling.
 - **Boost pads.** They sit at every block midpoint. Any test that drives in a
   straight line for more than a couple of seconds will cross one, which will
   raise the speed you were expecting to fall.
+- **The track is not straight.** It snakes:
+  `TRACK.WOBBLE · sin(2π · along / BLOCK)`. Anything positioned against a grid
+  line — a prop, a ribbon, a test sample, a spawn point — must add
+  `trackOffsetAt` first, or it ends up in a ditch. Drive in a straight line for
+  three seconds and you are in a field, which is why `tests/kart.test.js` has a
+  `driveTrack` helper.
+- **The wobble's period is load-bearing.** It is zero at every multiple of
+  `BLOCK / 2`, which is how the track passes dead through every junction and
+  every boost pad. Change the period and both break at once.
+- **Terrain height is cosmetic.** `src/world/terrain.js` lifts the picture only.
+  Deriving any gameplay value from it — grip, collision, discovery — breaks the
+  one rule the whole simulation is built on.
+- **`SURFACE` indices are keys.** `GRIP` in `src/config/tuning.js` is an array
+  indexed by them. Rename a member in place, add one on the end, never reorder.
 
 ## Assets
 
@@ -104,12 +120,19 @@ verifies them into `public/assets/`, and regenerates `CREDITS.md`.
 attribution or a hash mismatch. Add assets by editing the manifest, never by
 dropping files into `public/`.
 
-**Known limitation in some sandboxes:** kenney.nl, ambientcg.com,
-polyhaven.com, poly.pizza and jsDelivr are blocked by egress policy in the
-environment this was built in, so four manifest entries could not be fetched or
-pinned here. They are marked `hostBlockedHere` and are all optional. Run
-`npm run assets:fetch -- --record` somewhere with access and commit the
-resulting hashes.
+Everything in the manifest is hosted on `raw.githubusercontent.com`, pinned to
+a commit rather than a branch — kenney.nl, ambientcg.com, polyhaven.com,
+poly.pizza and jsDelivr are all blocked by egress policy in the environment
+this is built in, and a branch URL would fail its own recorded hash the next
+time upstream pushed.
+
+Two things about the rally kit are easy to get wrong. Exactly one entry may
+carry `role: "kart"`. And `kit.rally.atlas` is never requested by id — it only
+has to land in a `Textures/` directory beside the models, which reference it by
+relative URI; put it anywhere else and they load **white**, not broken.
+
+`assets:fetch` writes the manifest and `CREDITS.md` through Prettier, so a
+`--record` run leaves `npm run check` green.
 
 ## What to work on next
 

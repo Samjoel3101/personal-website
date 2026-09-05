@@ -2,6 +2,12 @@
 
 export const CAMERA = Object.freeze({
   FOV: 62,
+  /** Extra degrees of field of view at full boost. Speed reads as speed only
+   *  if the edges of the frame move faster than the middle. */
+  FOV_KICK: 7,
+  /** How quickly the kick comes on and lets go, per second. Slower than the
+   *  camera follow on purpose: a snappy FOV reads as a glitch. */
+  FOV_LAMBDA: 3,
   NEAR: 1,
   FAR: 1100,
   /** Distance the camera trails behind the kart. */

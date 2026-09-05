@@ -1,6 +1,7 @@
 import { PerspectiveCamera, Vector3 } from 'three';
 import { CAMERA } from '../config/render.js';
-import { damp } from '../core/math.js';
+import { KART } from '../config/tuning.js';
+import { clamp, damp } from '../core/math.js';
 import { createGroundFollow } from './ground-follow.js';
 
 /**
@@ -20,6 +21,26 @@ import { createGroundFollow } from './ground-follow.js';
  */
 /** Softer than the kart's, so the view does not bob over every facet. */
 const CAMERA_GROUND_LAMBDA = 5;
+
+/**
+ * Widens the frame as the kart gets fast.
+ *
+ * A chase camera at a fixed distance gives no sense of speed at all: the kart
+ * fills the same pixels at 40 as at 380. Pushing the field of view out drags
+ * the scenery past the edges of the frame faster than the middle, which is the
+ * whole effect. Kept small and slow — a big or snappy kick reads as a glitch.
+ *
+ * updateProjectionMatrix is skipped when nothing moved, so a kart sitting still
+ * costs nothing.
+ */
+function applyFovKick(camera, kart, dt) {
+  const fraction = clamp(Math.abs(kart.speed) / KART.MAX_SPEED, 0, 1.6);
+  const wanted = CAMERA.FOV + fraction * CAMERA.FOV_KICK;
+  const next = damp(camera.fov, wanted, CAMERA.FOV_LAMBDA, dt);
+  if (Math.abs(next - camera.fov) < 0.002) return;
+  camera.fov = next;
+  camera.updateProjectionMatrix();
+}
 export function createChaseCamera() {
   const camera = new PerspectiveCamera(CAMERA.FOV, 1, CAMERA.NEAR, CAMERA.FAR);
   const target = new Vector3();
@@ -63,6 +84,7 @@ export function createChaseCamera() {
       camera.position.y = damp(camera.position.y, target.y, CAMERA.FOLLOW_LAMBDA, dt);
       camera.position.z = damp(camera.position.z, target.z, CAMERA.FOLLOW_LAMBDA, dt);
       camera.lookAt(lookAt);
+      applyFovKick(camera, kart, dt);
     },
   };
 }

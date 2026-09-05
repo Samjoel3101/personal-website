@@ -6,7 +6,7 @@
     <title>Drive my résumé</title>
     <meta
       name="description"
-      content="An interactive résumé you drive through. Explore the city and each landmark reveals part of my story."
+      content="An interactive résumé you drive through. Race a backcountry rally stage and each landmark reveals part of my story."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -32,7 +32,10 @@
     />
   </head>
   <body>
-    <canvas id="scene" aria-label="A kart driving through a procedurally generated city"></canvas>
+    <canvas
+      id="scene"
+      aria-label="A rally kart driving a procedurally generated dirt stage"
+    ></canvas>
     <div id="vignette" aria-hidden="true"></div>
 
     <div id="hud" hidden>
@@ -54,7 +57,7 @@
       <div class="hud-row hud-bottom">
         <div class="map-wrap">
           <canvas id="minimap" aria-hidden="true"></canvas>
-          <div class="map-label">City map</div>
+          <div class="map-label">Stage map</div>
         </div>
         <div id="hint">Follow the arrow. Drive into a glowing ring to read a stop.</div>
         <div class="speedo">
@@ -77,8 +80,8 @@
 
     <div id="loading" class="overlay">
       <div class="panel">
-        <h1 class="glow">Building the city</h1>
-        <p class="mono">Laying out streets, blocks and windows…</p>
+        <h1 class="glow">Grading the stage</h1>
+        <p class="mono">Cutting the track, raising the hills, filling the puddles…</p>
         <div class="loadbar"><i></i></div>
       </div>
     </div>
@@ -89,7 +92,7 @@
         <h1 class="glow" id="intro-name">Your name</h1>
         <p class="tagline" id="intro-tagline">Software engineer</p>
         <p class="blurb">
-          Six landmarks are scattered across the city. Drive into one and it tells you something
+          Six landmarks are scattered across the stage. Drive into one and it tells you something
           about me — where I have worked, what I have built, what I do at the weekend. There is no
           timer and nothing to lose.
         </p>
