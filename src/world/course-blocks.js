@@ -83,8 +83,18 @@ function box(block, kind, at, { halfWidth, halfDepth, height, color }) {
 
 const clampTo = (value, limit) => Math.max(-limit, Math.min(limit, value));
 
-function tree(block, at, min, max) {
-  block.props.push({ type: 'tree', x: at.x, z: at.z, height: rangeFrom(block.rng, min, max) });
+/** How wide a forest stand is, and therefore how wide a forest patch model
+ *  has to be scaled to cover one. */
+const COPSE_RADIUS = 40;
+
+function tree(block, at, min, max, copse = false) {
+  block.props.push({
+    type: 'tree',
+    x: at.x,
+    z: at.z,
+    height: rangeFrom(block.rng, min, max),
+    copse,
+  });
 }
 
 function rock(block, at, size, height) {
@@ -103,16 +113,20 @@ const THEME_BUILDERS = {
   forest(block) {
     for (let stand = 0; stand < 3; stand += 1) {
       const centre = spot(block, 0.7);
+      // The copse marker is what a downloaded forest patch replaces; the
+      // individual trees under it are what stands in for one otherwise.
+      block.props.push({ type: 'copse', x: centre.x, z: centre.z, radius: COPSE_RADIUS });
       const count = 4 + Math.floor(block.rng() * 4);
       for (let i = 0; i < count; i += 1) {
         tree(
           block,
           {
-            x: centre.x + rangeFrom(block.rng, -34, 34),
-            z: centre.z + rangeFrom(block.rng, -34, 34),
+            x: centre.x + rangeFrom(block.rng, -COPSE_RADIUS * 0.85, COPSE_RADIUS * 0.85),
+            z: centre.z + rangeFrom(block.rng, -COPSE_RADIUS * 0.85, COPSE_RADIUS * 0.85),
           },
           44,
           72,
+          true,
         );
       }
     }

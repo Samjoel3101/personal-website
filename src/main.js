@@ -50,6 +50,17 @@ async function loadOptionalAssets(session) {
     if (model) session.stage.useKartModel(model);
   }
 
+  // Scenery upgrades. Requested in parallel and applied as they land; each one
+  // no-ops if its model never arrives, leaving the procedural version alone.
+  await Promise.all(
+    assetIds
+      .filter((id) => assetInfo(id)?.role === 'scenery')
+      .map(async (id) => {
+        const model = await assets.model(id);
+        if (model) session.stage.useSceneryModel(id, model);
+      }),
+  );
+
   if (assets.failures.length > 0) {
     console.warn('Optional assets unavailable, using procedural fallbacks:', assets.failures);
   }

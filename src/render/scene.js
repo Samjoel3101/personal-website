@@ -41,14 +41,17 @@ export function createGameScene(city) {
   scene.add(createSky());
   const lighting = createLighting(scene);
 
+  const scenery = buildScenery(city);
+  const trees = buildTrees(city);
+
   const worldGroup = new Group();
   worldGroup.name = 'world';
   worldGroup.add(
     buildTerrain(),
     buildGround(),
     buildPuddles(city),
-    buildScenery(city),
-    buildTrees(city),
+    scenery.group,
+    trees.group,
     buildLamps(city),
     buildCars(city),
     buildMarkers(),
@@ -77,6 +80,15 @@ export function createGameScene(city) {
       kart.group.position.y = ground.update(kartState.x, kartState.z, dt);
       tiltToGround(kart.group, kartState, dt);
       kart.update(kartState, dt);
+    },
+
+    /**
+     * Hand a downloaded decoration to whichever builder knows what to do with
+     * it. Unknown ids and null models are a no-op by design: the site has to
+     * look finished with no assets fetched at all.
+     */
+    useSceneryModel(id, model) {
+      return scenery.useModel(id, model) || trees.useModel(id, model);
     },
 
     setQuality(tier) {

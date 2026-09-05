@@ -4,6 +4,7 @@ import { FOLIAGE } from '../../config/palette.js';
 import { createRng } from '../../core/rng.js';
 import { paintGeometry } from '../geometry/paint.js';
 import { seatOnGround } from '../ground-follow.js';
+import { instancedModel } from '../model-instances.js';
 import { tiledInstances } from '../geometry/tiling.js';
 import { vertexColoured } from '../materials.js';
 
@@ -20,15 +21,64 @@ const VARIANTS = 3;
  *
  * Two of the three variants are conifers, because a backcountry stage that is
  * two-thirds round broadleaf trees reads as a park.
+ *
+ * The trees that make up a copse are kept in their own sub-group. That is what
+ * lets a downloaded forest patch replace them without touching the lone trees
+ * standing in a meadow, which a 10-unit patch of woodland would look absurd as.
+ *
+ * @returns {{group: Group, useModel: (id: string, model: object|null) => boolean}}
  */
 export function buildTrees(city) {
   const group = new Group();
   group.name = 'trees';
 
   const trees = city.props.filter((prop) => prop.type === 'tree');
-  if (trees.length === 0) return group;
+  const copses = city.props.filter((prop) => prop.type === 'copse');
 
-  // Split across variants so a street is not a row of identical lollipops.
+  const standing = new Group();
+  standing.name = 'copse-trees';
+  addVariants(
+    standing,
+    trees.filter((tree) => tree.copse),
+  );
+  addVariants(
+    group,
+    trees.filter((tree) => !tree.copse),
+  );
+  group.add(standing);
+
+  return {
+    group,
+
+    /** Swap the procedural copses for a downloaded forest patch. */
+    useModel(id, model) {
+      if (id !== 'kit.rally.forest' || copses.length === 0) return false;
+
+      const rng = createRng(51);
+      const meshes = instancedModel(
+        model,
+        copses.map((copse) => ({
+          x: copse.x,
+          y: seatOnGround(copse.x, copse.z),
+          z: copse.z,
+          size: copse.radius * 2,
+          rotationY: rng() * Math.PI * 2,
+        })),
+      );
+      if (meshes.length === 0) return false;
+
+      standing.visible = false;
+      for (const mesh of meshes) group.add(mesh);
+      return true;
+    },
+  };
+}
+
+/** Splits a list of trees across the variants so a stand is not a row of
+ *  identical lollipops, and adds one instanced mesh per variant. */
+function addVariants(target, trees) {
+  if (trees.length === 0) return;
+
   for (let variant = 0; variant < VARIANTS; variant += 1) {
     const items = trees
       .filter((_, index) => index % VARIANTS === variant)
@@ -47,10 +97,8 @@ export function buildTrees(city) {
 
     const mesh = tiledInstances(treeGeometry(variant), vertexColoured(), items);
     mesh.receiveShadow = false; // foliage self-shadowing reads as dirt, not depth
-    group.add(mesh);
+    target.add(mesh);
   }
-
-  return group;
 }
 
 function treeGeometry(variant) {

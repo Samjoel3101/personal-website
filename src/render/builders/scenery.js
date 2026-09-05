@@ -12,6 +12,8 @@ import {
 import { seatOnGround } from '../ground-follow.js';
 import { tiledInstances } from '../geometry/tiling.js';
 import { instancedTinted, lambert } from '../materials.js';
+import { instancedModel } from '../model-instances.js';
+import { WORLD } from '../../config/world.js';
 
 /**
  * Everything solid on the stage that is not the kart: boulders, barns, bale
@@ -26,6 +28,8 @@ import { instancedTinted, lambert } from '../materials.js';
  * Every mesh here tints PER INSTANCE. None of these geometries carries a
  * `color` attribute, so none of these materials may set vertexColors: see the
  * colour trap at the top of ../materials.js.
+ *
+ * @returns {{group: Group, useModel: (id: string, model: object|null) => boolean}}
  */
 
 /** Rock variants, so a quarry is not a row of identical lumps. */
@@ -41,13 +45,64 @@ export function buildScenery(city) {
     byKind.get(item.kind).push(item);
   }
 
+  const stands = byKind.get('stand') ?? [];
   addRocks(group, byKind.get('rock') ?? []);
   addBarns(group, byKind.get('barn') ?? []);
   addSimple(group, byKind.get('bales') ?? [], baleStackGeometry());
-  addStands(group, byKind.get('stand') ?? []);
+  const procedural = addStands(group, stands);
   addLandmarks(group, byKind.get('landmark') ?? []);
 
-  return group;
+  return {
+    group,
+
+    /**
+     * Upgrade one kind of scenery with a downloaded model.
+     *
+     * Both paths must no-op cleanly when the model is null or has no meshes:
+     * deleting public/assets has to leave a site that still looks finished.
+     */
+    useModel(id, model) {
+      if (id === 'kit.rally.tents') return useTents(group, procedural, stands, model);
+      if (id === 'kit.rally.gantry') return useGantry(group, model);
+      return false;
+    },
+  };
+}
+
+/** Spectator camps replace the procedural stands, at the same sites. */
+function useTents(group, procedural, stands, model) {
+  if (!procedural || stands.length === 0) return false;
+
+  const meshes = instancedModel(
+    model,
+    stands.map((stand) => ({
+      x: stand.x,
+      y: seatOnGround(stand.x, stand.z, stand.halfWidth, stand.halfDepth),
+      z: stand.z,
+      size: Math.max(stand.halfWidth, stand.halfDepth) * 2,
+      rotationY: stand.halfDepth > stand.halfWidth ? Math.PI / 2 : 0,
+    })),
+  );
+  if (meshes.length === 0) return false;
+
+  procedural.visible = false;
+  for (const mesh of meshes) group.add(mesh);
+  return true;
+}
+
+/**
+ * The gantry stands over the chequered start line at the origin junction.
+ *
+ * It has no procedural counterpart to hide — the start line is already painted
+ * on the dirt — so this is a pure addition and its absence costs nothing.
+ */
+function useGantry(group, model) {
+  const meshes = instancedModel(model, [
+    { x: 0, y: 0, z: 0, size: WORLD.ROAD_HALF * 2 + 24, rotationY: 0 },
+  ]);
+  if (meshes.length === 0) return false;
+  for (const mesh of meshes) group.add(mesh);
+  return true;
 }
 
 /** Instance description for a box-shaped thing, seated on the terrain. */
@@ -97,7 +152,7 @@ function addBarns(group, barns) {
  * the axis-aligned collision box exactly where it was.
  */
 function addStands(group, stands) {
-  if (stands.length === 0) return;
+  if (stands.length === 0) return null;
 
   const instances = stands.map((stand) => {
     const instance = toInstance(stand);
@@ -105,7 +160,11 @@ function addStands(group, stands) {
     return { ...instance, rotationY: Math.PI / 2, sx: instance.sz, sz: instance.sx };
   });
 
-  group.add(tiledInstances(standGeometry(), instancedTinted(), instances));
+  const holder = new Group();
+  holder.name = 'stands';
+  holder.add(tiledInstances(standGeometry(), instancedTinted(), instances));
+  group.add(holder);
+  return holder;
 }
 
 /**
