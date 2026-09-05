@@ -20,7 +20,7 @@ export function createRenderer(canvas) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFSoftShadowMap;
   // Filmic tone mapping keeps the bright sky from clipping to flat white
-  // without desaturating the pastel facades the palette depends on.
+  // without desaturating the earth and moss the palette depends on.
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
 

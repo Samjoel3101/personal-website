@@ -1,7 +1,7 @@
 import { WORLD } from '../config/world.js';
 
 /**
- * The city wraps in both axes, so it has no edges and no invisible walls: you
+ * The stage wraps in both axes, so it has no edges and no invisible walls: you
  * cannot get permanently lost, and the renderer never has to fake a boundary.
  *
  * The cost is that no two positions can be compared directly. Every distance

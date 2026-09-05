@@ -91,9 +91,9 @@ that. Flat where you drive, hills where you look.
 ## Rendering
 
 Everything outside `src/render` talks to `src/render/stage.js` and nothing
-else. It exposes four verbs — `resize`, `render`, `sampleFrameTime`,
-`useKartModel` — and owns the context, the camera, the scene, the post chain
-and the quality ladder.
+else. It exposes five verbs — `resize`, `render`, `sampleFrameTime`,
+`useKartModel`, `useSceneryModel` — and owns the context, the camera, the
+scene, the post chain and the quality ladder.
 
 Inside:
 

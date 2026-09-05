@@ -89,13 +89,21 @@ describe('terrain', () => {
     expect(flatSlope.dx).toBe(0);
     expect(flatSlope.dz).toBe(0);
 
-    // Somewhere on a hillside, the gradient must point uphill.
-    const x = 700;
-    const z = 700;
-    const { dx } = slopeAt(x, z);
-    if (dx !== 0) {
-      const uphill = heightAt(x + Math.sign(dx) * 6, z);
-      expect(uphill).toBeGreaterThan(heightAt(x - Math.sign(dx) * 6, z));
+    // On a hillside the gradient must actually point uphill. The probe steps
+    // 12 units, not the 6 slopeAt samples at: probing at slopeAt's own epsilon
+    // would just restate its subtraction and could never fail.
+    const PROBE = 12;
+    let hillsides = 0;
+    for (let x = 0; x < WORLD.SIZE; x += 61) {
+      for (let z = 0; z < WORLD.SIZE; z += 67) {
+        const { dx } = slopeAt(x, z);
+        if (Math.abs(dx) < 0.02) continue; // too flat to have a direction
+        hillsides += 1;
+        expect(heightAt(x + Math.sign(dx) * PROBE, z), `at ${x},${z}`).toBeGreaterThan(
+          heightAt(x - Math.sign(dx) * PROBE, z),
+        );
+      }
     }
+    expect(hillsides).toBeGreaterThan(100);
   });
 });

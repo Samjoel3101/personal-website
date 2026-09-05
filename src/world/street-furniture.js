@@ -23,7 +23,8 @@ const POST_HEIGHT = 78;
  *  they sit at the wobble's extremes, where the track runs straight, so an
  *  axis-aligned vehicle still looks parallel to the dirt. */
 const PARKING_OFFSETS = [130, 380];
-/** Distance from the track centre line to the lay-by. */
+/** Distance from the track centre line to the lay-by. Inside ROAD_HALF, so a
+ *  parked vehicle narrows the dirt rather than standing clear of it. */
 const PARKING_LANE = 35;
 const BAY_OCCUPANCY = 0.5;
 
@@ -58,9 +59,12 @@ export function buildLamps() {
 }
 
 /**
- * Service vehicles pulled onto the verge. They are collidable like anything
- * else, which is what makes the racing line feel like a line rather than an
- * empty corridor. `axis` is the track direction the vehicle is aligned with.
+ * Service vehicles pulled over at the edge of the dirt. They stand ON the
+ * track, not on the verge — PARKING_LANE is inside ROAD_HALF — and that is the
+ * point: they are collidable like anything else, which is what makes the racing
+ * line feel like a line rather than an empty corridor. tests/city.test.js pins
+ * the lane they leave clear. `axis` is the track direction the vehicle is
+ * aligned with.
  */
 function parkedCar(x, z, axis, color) {
   const alongZ = axis === 'z';

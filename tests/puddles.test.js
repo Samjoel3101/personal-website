@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SURFACE, WORLD } from '../src/config/world.js';
+import { wrapDistance } from '../src/core/torus.js';
 import { CLEARANCE, buildPuddles, createPuddleSampler } from '../src/world/puddles.js';
 import { distanceToTrack } from '../src/world/track.js';
 import { createCity } from '../src/world/city.js';
@@ -35,7 +36,10 @@ describe('puddles', () => {
       for (let j = i + 1; j < puddles.length; j += 1) {
         const a = puddles[i];
         const b = puddles[j];
-        expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThan(a.radius + b.radius);
+        // wrapDistance, not raw subtraction: two puddles either side of the
+        // seam are neighbours, and a raw hypot would call them half a world
+        // apart and pass over the one overlap this test exists to catch.
+        expect(wrapDistance(a.x, a.z, b.x, b.z)).toBeGreaterThan(a.radius + b.radius);
       }
     }
   });
