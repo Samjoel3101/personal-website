@@ -2,7 +2,7 @@ import { Group } from 'three';
 import { mergeParts } from '../geometry/merge.js';
 import { LANDMARKS } from '../../content/resume.js';
 import { LOT_HALF, WORLD } from '../../config/world.js';
-import { GROUND } from '../../config/palette.js';
+import { TERRAIN } from '../../config/palette.js';
 import { GROUND_LAYER, flatQuad } from '../geometry/flat.js';
 import { tiledSlab } from '../geometry/tiling.js';
 import { lambert } from '../materials.js';
@@ -20,10 +20,10 @@ export function buildGround() {
   const group = new Group();
   group.name = 'ground';
 
-  group.add(slab([lotBase()], GROUND.LOT, false));
-  group.add(slab(plazas(), GROUND.PLAZA, true));
-  group.add(slab(pavements(), GROUND.PAVEMENT, true));
-  group.add(slab(roads(), GROUND.ROAD, true));
+  group.add(slab([lotBase()], TERRAIN.FIELD, false));
+  group.add(slab(plazas(), TERRAIN.SAND, true));
+  group.add(slab(pavements(), TERRAIN.VERGE, true));
+  group.add(slab(roads(), TERRAIN.TRACK, true));
 
   for (const layer of buildRoadMarkings()) {
     group.add(slab(layer.geometries, layer.color, true));

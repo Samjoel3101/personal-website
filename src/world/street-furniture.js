@@ -1,5 +1,5 @@
 import { WORLD, blockCentre } from '../config/world.js';
-import { CARS } from '../config/palette.js';
+import { VEHICLES } from '../config/palette.js';
 import { chanceFrom, pickFrom } from '../core/rng.js';
 import { wrap } from '../core/torus.js';
 
@@ -68,10 +68,10 @@ function fillBays(rng, cars, line, along) {
   for (const side of [-1, 1]) {
     const lane = side * PARKING_LANE;
     if (chanceFrom(rng, BAY_OCCUPANCY)) {
-      cars.push(parkedCar(wrap(line + lane), wrap(along), 'z', pickFrom(rng, CARS)));
+      cars.push(parkedCar(wrap(line + lane), wrap(along), 'z', pickFrom(rng, VEHICLES)));
     }
     if (chanceFrom(rng, BAY_OCCUPANCY)) {
-      cars.push(parkedCar(wrap(along), wrap(line + lane), 'x', pickFrom(rng, CARS)));
+      cars.push(parkedCar(wrap(along), wrap(line + lane), 'x', pickFrom(rng, VEHICLES)));
     }
   }
 }

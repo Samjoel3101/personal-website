@@ -1,5 +1,5 @@
 import { BOOST_PAD, WORLD, blockCentre } from '../../config/world.js';
-import { GROUND } from '../../config/palette.js';
+import { PROPS, TERRAIN } from '../../config/palette.js';
 import { GROUND_LAYER, flatQuad } from '../geometry/flat.js';
 
 const LANE_LINE_INSET = 7;
@@ -23,10 +23,10 @@ export function buildRoadMarkings() {
   const pads = boostPads();
 
   return [
-    { color: GROUND.KERB, geometries: white },
-    { color: GROUND.LINE_YELLOW, geometries: yellow },
-    { color: '#2e3442', geometries: pads.plates },
-    { color: GROUND.LINE_YELLOW, geometries: pads.chevrons },
+    { color: TERRAIN.MUD, geometries: white },
+    { color: TERRAIN.TRACK_WET, geometries: yellow },
+    { color: TERRAIN.MUD, geometries: pads.plates },
+    { color: PROPS.FLAG_WHITE, geometries: pads.chevrons },
   ];
 }
 

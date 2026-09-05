@@ -1,5 +1,5 @@
 import { LOT_HALF, WORLD, blockCentre } from '../config/world.js';
-import { BUILDINGS } from '../config/palette.js';
+import { STRUCTURES } from '../config/palette.js';
 import { chanceFrom, pickFrom, rangeFrom } from '../core/rng.js';
 
 /** Lots per block edge; the gaps between them are the alleys. */
@@ -51,7 +51,7 @@ export function buildBlock(rng, blockX, blockZ) {
         halfDepth: (span / 2 - LOT_PADDING) * shrink,
         base: 0,
         height: rangeFrom(rng, MIN_HEIGHT, MAX_HEIGHT),
-        color: pickFrom(rng, BUILDINGS),
+        color: pickFrom(rng, STRUCTURES),
         windows: true,
       });
     }
