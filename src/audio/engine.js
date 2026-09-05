@@ -68,7 +68,11 @@ export function createEngineSound(mixer) {
       nodes.gain.gain.setTargetAtTime(0.06 + fraction * 0.2, now, 0.1);
 
       const roughness =
-        kart.surface === SURFACE.GRASS ? 1 : kart.surface === SURFACE.WALK ? 0.5 : 0.08;
+        kart.surface === SURFACE.FIELD || kart.surface === SURFACE.MUD
+          ? 1
+          : kart.surface === SURFACE.VERGE
+            ? 0.5
+            : 0.08;
       nodes.bandpass.frequency.setTargetAtTime(600 + fraction * 2400, now, 0.1);
       nodes.roadGain.gain.setTargetAtTime(roughness * fraction * 0.28, now, 0.08);
     },

@@ -1,7 +1,8 @@
 import { LANDMARKS } from '../content/resume.js';
 import { createRng } from '../core/rng.js';
 import { buildBlock, decorateLandmarkPlaza, eachBlock } from './city-blocks.js';
-import { landmarkBoxes, plazaBlockKeys } from './landmarks.js';
+import { landmarkBoxes, paddockBlockKeys } from './landmarks.js';
+import { buildPuddles } from './puddles.js';
 import { buildBoostPads, buildLamps, buildParkedCars } from './street-furniture.js';
 import { createSurfaceSampler } from './surfaces.js';
 
@@ -18,7 +19,8 @@ export const CITY_SEED = 20260903;
  *
  * @returns {{
  *   buildings: object[], cars: object[], props: object[], boostPads: object[],
- *   colliders: object[], surfaceAt: (x: number, z: number) => number
+ *   puddles: object[], colliders: object[],
+ *   surfaceAt: (x: number, z: number) => number
  * }}
  */
 export function createCity(seed = CITY_SEED) {
@@ -45,6 +47,7 @@ export function createCity(seed = CITY_SEED) {
   }
 
   const cars = buildParkedCars(rng);
+  const puddles = buildPuddles();
   props.push(...buildLamps());
 
   return {
@@ -55,6 +58,7 @@ export function createCity(seed = CITY_SEED) {
     /* Everything the kart can hit, in one list: only boxes that stand on the
        ground, since spires and awnings are overhead. */
     colliders: [...buildings, ...cars].filter((box) => box.base === 0),
-    surfaceAt: createSurfaceSampler(plazaBlockKeys),
+    puddles,
+    surfaceAt: createSurfaceSampler(paddockBlockKeys, puddles),
   };
 }

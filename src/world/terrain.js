@@ -1,7 +1,7 @@
 import { LOT_HALF, WORLD } from '../config/world.js';
 import { LANDMARKS } from '../content/resume.js';
 import { wrapDelta } from '../core/torus.js';
-import { distanceToRoadLine } from './surfaces.js';
+import { distanceToTrack } from './track.js';
 
 /**
  * Rolling ground, as a pure function of position.
@@ -98,9 +98,7 @@ function ramp(distance, flatTo) {
  * able to drive without the ground moving under it.
  */
 function corridorMask(x, z) {
-  // Phase 2 keeps the roads straight; phase 3 swaps this for distanceToTrack.
-  const toTrack = Math.min(distanceToRoadLine(x), distanceToRoadLine(z));
-  let mask = ramp(toTrack, FLAT_HALF_WIDTH);
+  let mask = ramp(distanceToTrack(x, z), FLAT_HALF_WIDTH);
   if (mask === 0) return 0;
 
   for (const landmark of LANDMARKS) {

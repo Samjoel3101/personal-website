@@ -1,12 +1,13 @@
 import { WORLD } from '../config/world.js';
 import { LANDMARKS } from '../content/resume.js';
+import { trackOffsetAt } from '../world/track.js';
 
 const SIZE = 150;
 
 /**
- * North-up city map.
+ * North-up stage map.
  *
- * The static half — streets and building footprints — is painted once into an
+ * The static half — tracks and scenery footprints — is painted once into an
  * offscreen canvas and blitted each frame. Redrawing two hundred footprints
  * sixty times a second to move one triangle would be the single most expensive
  * thing the UI does.
@@ -57,10 +58,10 @@ function paintBase(city, scale) {
   canvas.height = SIZE;
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#12172a';
+  ctx.fillStyle = '#1b2417';
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  ctx.fillStyle = '#1c2440';
+  ctx.fillStyle = '#3b4a2c';
   for (const box of city.buildings) {
     if (box.base > 0) continue;
     ctx.fillRect(
@@ -71,19 +72,29 @@ function paintBase(city, scale) {
     );
   }
 
-  ctx.strokeStyle = '#39456b';
-  ctx.lineWidth = Math.max(1, WORLD.ROAD_HALF * 2 * scale);
-  for (let i = 0; i < WORLD.GRID; i += 1) {
-    const at = i * WORLD.BLOCK * scale;
-    ctx.beginPath();
-    ctx.moveTo(at, 0);
-    ctx.lineTo(at, SIZE);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, at);
-    ctx.lineTo(SIZE, at);
-    ctx.stroke();
-  }
-
+  paintTracks(ctx, scale);
   return canvas;
+}
+
+/** The tracks snake, so the map has to snake with them or it lies about where
+ *  the dirt is — which is the one thing a map is for. */
+function paintTracks(ctx, scale) {
+  const STEP = 16;
+  ctx.strokeStyle = '#7a5c34';
+  ctx.lineWidth = Math.max(1, WORLD.ROAD_HALF * 2 * scale);
+  ctx.lineCap = 'round';
+
+  for (let i = 0; i < WORLD.GRID; i += 1) {
+    const line = i * WORLD.BLOCK;
+    for (const axis of ['z', 'x']) {
+      ctx.beginPath();
+      for (let along = 0; along <= WORLD.SIZE; along += STEP) {
+        const across = (line + trackOffsetAt(along)) * scale;
+        const down = along * scale;
+        if (along === 0) ctx.moveTo(...(axis === 'z' ? [across, down] : [down, across]));
+        else ctx.lineTo(...(axis === 'z' ? [across, down] : [down, across]));
+      }
+      ctx.stroke();
+    }
+  }
 }

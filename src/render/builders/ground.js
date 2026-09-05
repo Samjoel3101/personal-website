@@ -4,9 +4,10 @@ import { LANDMARKS } from '../../content/resume.js';
 import { LOT_HALF, WORLD } from '../../config/world.js';
 import { TERRAIN } from '../../config/palette.js';
 import { GROUND_LAYER, flatQuad } from '../geometry/flat.js';
+import { everyTrackRibbon } from '../geometry/ribbon.js';
 import { tiledSlab } from '../geometry/tiling.js';
 import { lambert } from '../materials.js';
-import { buildRoadMarkings } from './road-markings.js';
+import { buildTrackDressing } from './track-dressing.js';
 
 /**
  * The flat ground layers: track, verge and paddock, merged into one geometry
@@ -16,19 +17,19 @@ import { buildRoadMarkings } from './road-markings.js';
  * in ./terrain.js, which is exactly zero wherever these layers sit. So these
  * stay flat and stay valid; they are the corridor the terrain leaves alone.
  *
- * Built as geometry rather than as a texture on a plane, because marks drawn
- * as quads stay razor sharp at any distance and any resolution — the thing a
- * baked road texture can never quite manage up close.
+ * Built as geometry rather than as a texture on a plane, because marks drawn as
+ * strips stay razor sharp at any distance and any resolution — the thing a
+ * baked ground texture can never quite manage up close.
  */
 export function buildGround() {
   const group = new Group();
   group.name = 'ground';
 
-  group.add(slab(plazas(), TERRAIN.SAND, true));
-  group.add(slab(pavements(), TERRAIN.VERGE, true));
-  group.add(slab(roads(), TERRAIN.TRACK, true));
+  group.add(slab(paddocks(), TERRAIN.SAND, true));
+  group.add(slab(verges(), TERRAIN.VERGE, true));
+  group.add(slab(tracks(), TERRAIN.TRACK, true));
 
-  for (const layer of buildRoadMarkings()) {
+  for (const layer of buildTrackDressing()) {
     group.add(slab(layer.geometries, layer.color, true));
   }
 
@@ -42,34 +43,25 @@ function slab(geometries, color, receiveShadow) {
   return mesh;
 }
 
-/** Landmark blocks are paved, which is also what makes them drivable. */
-function plazas() {
+/** Landmark blocks are packed service areas, which is what makes them drivable. */
+function paddocks() {
   return LANDMARKS.map((landmark) =>
-    flatQuad(LOT_HALF * 2, LOT_HALF * 2, landmark.x, landmark.z, GROUND_LAYER.PLAZA),
+    flatQuad(LOT_HALF * 2, LOT_HALF * 2, landmark.x, landmark.z, GROUND_LAYER.PADDOCK),
   );
 }
 
-/** Asphalt: a strip down every grid line, in both axes. */
-function roads() {
-  const width = WORLD.ROAD_HALF * 2;
-  return eachRoadLine((line) => [
-    flatQuad(width, WORLD.SIZE, line, WORLD.SIZE / 2, GROUND_LAYER.ROAD),
-    flatQuad(WORLD.SIZE, width, WORLD.SIZE / 2, line, GROUND_LAYER.ROAD),
-  ]);
+/** Packed dirt: a strip down every track line, in both axes. */
+function tracks() {
+  return everyTrackRibbon({ halfWidth: WORLD.ROAD_HALF, y: GROUND_LAYER.TRACK });
 }
 
-/** Pavement bands either side of every road. */
-function pavements() {
-  const width = (WORLD.ROAD_HALF + WORLD.WALK) * 2;
-  return eachRoadLine((line) => [
-    flatQuad(width, WORLD.SIZE, line, WORLD.SIZE / 2, GROUND_LAYER.PAVEMENT),
-    flatQuad(WORLD.SIZE, width, WORLD.SIZE / 2, line, GROUND_LAYER.PAVEMENT),
-  ]);
-}
-
-/** Runs `make` for every road centre line and flattens the result. */
-function eachRoadLine(make) {
-  const out = [];
-  for (let g = 0; g < WORLD.GRID; g += 1) out.push(...make(g * WORLD.BLOCK));
-  return out;
+/**
+ * Grass verges either side of every track. Wider than the dirt they flank, so
+ * they sit BELOW it on the layer ladder — see GROUND_LAYER.
+ */
+function verges() {
+  return everyTrackRibbon({
+    halfWidth: WORLD.ROAD_HALF + WORLD.WALK,
+    y: GROUND_LAYER.VERGE,
+  });
 }

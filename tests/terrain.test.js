@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { LOT_HALF, WORLD } from '../src/config/world.js';
 import { LANDMARKS } from '../src/content/resume.js';
 import { MAX_TERRAIN_HEIGHT, heightAt, slopeAt } from '../src/world/terrain.js';
+import { trackOffsetAt } from '../src/world/track.js';
 
 /**
  * The heightfield is renderer-only, but it is generated in the world model so
@@ -30,14 +31,16 @@ describe('terrain', () => {
     }
   });
 
-  it('is exactly flat on the track corridor', () => {
+  it('is exactly flat on the track corridor, wherever the track has wandered', () => {
     const flat = WORLD.ROAD_HALF + WORLD.WALK;
     for (let g = 0; g < WORLD.GRID; g += 1) {
       const line = g * WORLD.BLOCK;
       for (let along = 0; along < WORLD.SIZE; along += 37) {
+        // The centre line snakes; sampling the grid line would sample a hill.
+        const centre = line + trackOffsetAt(along);
         for (const offset of [-flat, -20, 0, 20, flat]) {
-          expect(heightAt(line + offset, along)).toBe(0);
-          expect(heightAt(along, line + offset)).toBe(0);
+          expect(heightAt(centre + offset, along)).toBe(0);
+          expect(heightAt(along, centre + offset)).toBe(0);
         }
       }
     }
@@ -82,7 +85,7 @@ describe('terrain', () => {
   });
 
   it('reports a slope that matches the height it samples', () => {
-    const flatSlope = slopeAt(WORLD.BLOCK, 300);
+    const flatSlope = slopeAt(WORLD.BLOCK + trackOffsetAt(300), 300);
     expect(flatSlope.dx).toBe(0);
     expect(flatSlope.dz).toBe(0);
 

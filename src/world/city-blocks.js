@@ -69,8 +69,8 @@ export function decorateLandmarkPlaza(rng, landmark) {
     const angle = (i / RING_COUNT) * Math.PI * 2;
     props.push({
       type: 'tree',
-      x: landmark.x + Math.cos(angle) * (LOT_HALF - 26),
-      z: landmark.z + Math.sin(angle) * (LOT_HALF - 26),
+      x: landmark.x + Math.cos(angle) * (LOT_HALF - 6),
+      z: landmark.z + Math.sin(angle) * (LOT_HALF - 6),
       height: rangeFrom(rng, 46, 60),
     });
   }

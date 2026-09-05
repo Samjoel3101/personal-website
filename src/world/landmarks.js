@@ -1,5 +1,6 @@
 import { LANDMARKS } from '../content/resume.js';
 import { WORLD } from '../config/world.js';
+import { blockKey } from './grid.js';
 
 /**
  * Turns a landmark's `structure` description into the stack of boxes that
@@ -8,12 +9,10 @@ import { WORLD } from '../config/world.js';
  */
 
 /** Set of "bi,bj" block keys that hold a landmark, for the surface sampler. */
-export const plazaBlockKeys = new Set(
-  LANDMARKS.map((landmark) => {
-    const bi = Math.floor(landmark.x / WORLD.BLOCK);
-    const bj = Math.floor(landmark.z / WORLD.BLOCK);
-    return `${bi},${bj}`;
-  }),
+export const paddockBlockKeys = new Set(
+  LANDMARKS.map((landmark) =>
+    blockKey(Math.floor(landmark.x / WORLD.BLOCK), Math.floor(landmark.z / WORLD.BLOCK)),
+  ),
 );
 
 /**

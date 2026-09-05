@@ -4,7 +4,9 @@ import { SURFACE, WORLD, blockCentre } from '../src/config/world.js';
 import { createEmitter } from '../src/core/emitter.js';
 import { createKart } from '../src/physics/kart.js';
 import { resolveAgainstBox } from '../src/physics/collision.js';
+import { wrap } from '../src/core/torus.js';
 import { createCity } from '../src/world/city.js';
+import { trackOffsetAt } from '../src/world/track.js';
 
 const city = createCity();
 const STEP = 1 / 120;
@@ -12,6 +14,28 @@ const NOTHING = { accelerate: false, brake: false, left: false, right: false, dr
 
 function drive(kart, input, seconds) {
   for (let t = 0; t < seconds; t += STEP) kart.update(STEP, { ...NOTHING, ...input });
+}
+
+/**
+ * Drives down a track line, holding the kart on the centre line as it snakes.
+ *
+ * The track is a sine with a period of one block, so a kart driven in a
+ * straight line for more than a couple of seconds is a kart in a field —
+ * which measures the map rather than the handling. Re-seating x each step
+ * reproduces exactly the run these tests used to get from a straight road,
+ * and it keeps the surface honestly SURFACE.TRACK the whole way.
+ */
+function driveTrack(kart, line, input, seconds) {
+  for (let t = 0; t < seconds; t += STEP) {
+    kart.state.x = wrap(line + trackOffsetAt(kart.state.z));
+    kart.update(STEP, { ...NOTHING, ...input });
+  }
+}
+
+/** Puts the kart on the centre line of the track running down `line`. */
+function placeOnTrack(kart, line, z) {
+  kart.state.z = z;
+  kart.state.x = wrap(line + trackOffsetAt(z));
 }
 
 describe('kart physics', () => {
@@ -28,11 +52,12 @@ describe('kart physics', () => {
   });
 
   it('accelerates and then settles at a top speed', () => {
-    drive(kart, { accelerate: true }, 1);
+    driveTrack(kart, WORLD.BLOCK, { accelerate: true }, 1);
     const early = kart.state.speed;
     expect(early).toBeGreaterThan(50);
 
-    drive(kart, { accelerate: true }, 12);
+    driveTrack(kart, WORLD.BLOCK, { accelerate: true }, 12);
+    expect(kart.state.surface).toBe(SURFACE.TRACK);
     expect(kart.state.speed).toBeGreaterThan(early);
     expect(kart.state.speed).toBeLessThanOrEqual(KART.MAX_SPEED + 1);
   });
@@ -42,7 +67,7 @@ describe('kart physics', () => {
     // block midpoint, 512 apart, and a kart at full speed covers that in two
     // seconds — so any run long enough to accelerate is long enough to cross
     // one, which would push the speed up rather than down.
-    kart.state.z = blockCentre(0) + 120;
+    placeOnTrack(kart, WORLD.BLOCK, blockCentre(0) + 120);
     kart.state.speed = 200;
     drive(kart, {}, 0.4);
     expect(kart.state.speed).toBeLessThan(200);
@@ -69,24 +94,24 @@ describe('kart physics', () => {
   });
 
   it('grants boost on a pad and exceeds the normal top speed', () => {
-    kart.state.x = WORLD.BLOCK;
-    kart.state.z = blockCentre(0) - 60;
-    drive(kart, { accelerate: true }, 6);
+    placeOnTrack(kart, WORLD.BLOCK, blockCentre(0) - 60);
+    driveTrack(kart, WORLD.BLOCK, { accelerate: true }, 6);
     expect(events).toContain('boost');
     expect(kart.state.speed).toBeGreaterThan(KART.MAX_SPEED);
   });
 
-  it('is slower off-road than on it', () => {
-    const onRoad = createKart({ city, emitter: createEmitter() });
-    drive(onRoad, { accelerate: true }, 10);
+  it('is slower in a field than on the track', () => {
+    const onTrack = createKart({ city, emitter: createEmitter() });
+    driveTrack(onTrack, WORLD.BLOCK, { accelerate: true }, 10);
 
-    const offRoad = createKart({ city, emitter: createEmitter() });
-    offRoad.state.x = 768;
-    offRoad.state.z = 1792; // an ordinary block interior
-    drive(offRoad, { accelerate: true }, 10);
+    const offTrack = createKart({ city, emitter: createEmitter() });
+    offTrack.state.x = 768;
+    offTrack.state.z = 1792; // an ordinary block interior
+    drive(offTrack, { accelerate: true }, 10);
 
-    expect(offRoad.state.surface).toBe(SURFACE.GRASS);
-    expect(offRoad.state.speed).toBeLessThan(onRoad.state.speed * 0.7);
+    expect(onTrack.state.surface).toBe(SURFACE.TRACK);
+    expect(offTrack.state.surface).toBe(SURFACE.FIELD);
+    expect(offTrack.state.speed).toBeLessThan(onTrack.state.speed * 0.7);
   });
 
   it('keeps its position inside the world', () => {

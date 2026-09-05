@@ -9,6 +9,7 @@ import { buildGround } from './builders/ground.js';
 import { buildKart } from './builders/kart.js';
 import { buildLamps } from './builders/lamps.js';
 import { buildMarkers } from './builders/markers.js';
+import { buildPuddles } from './builders/puddles.js';
 import { buildTerrain } from './builders/terrain.js';
 import { buildTrees } from './builders/trees.js';
 import { createGroundFollow } from './ground-follow.js';
@@ -45,6 +46,7 @@ export function createGameScene(city) {
   worldGroup.add(
     buildTerrain(),
     buildGround(),
+    buildPuddles(city),
     buildBuildings(city),
     buildTrees(city),
     buildLamps(city),
