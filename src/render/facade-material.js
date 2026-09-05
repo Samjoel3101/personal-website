@@ -2,12 +2,12 @@ import { MeshLambertMaterial } from 'three';
 import { FACADE_CELL, createFacadeTexture } from './textures/facade.js';
 
 /**
- * Facade material for instanced buildings.
+ * Facade material for the instanced landmark structures.
  *
- * The problem it solves: an InstancedMesh shares one geometry, so every
- * building has the same UVs. Scaling a shared box to different sizes therefore
- * stretches its window texture, and a thirty-storey tower ends up with windows
- * four times the size of the shop next door.
+ * The problem it solves: an InstancedMesh shares one geometry, so every box has
+ * the same UVs. Scaling a shared box to different sizes therefore stretches its
+ * window texture, and a lookout tower ends up with windows four times the size
+ * of the ones on the lodge next door.
  *
  * The fix is to derive the UV scale in the vertex shader from the instance
  * matrix itself — the length of each of its basis vectors is that instance's
@@ -16,7 +16,7 @@ import { FACADE_CELL, createFacadeTexture } from './textures/facade.js';
  * with windows in it looks like a mistake.
  *
  * This reaches into three.js's shader chunks, so it is coupled to their names.
- * If a three upgrade turns the buildings flat-coloured, look here first.
+ * If a three upgrade turns the landmarks flat-coloured, look here first.
  */
 export function createFacadeMaterial(baseOptions = {}) {
   // No vertexColors here: these meshes tint per instance, and setting it

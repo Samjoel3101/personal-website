@@ -12,11 +12,14 @@ const REFERENCE_HEIGHT = 50;
 const VARIANTS = 3;
 
 /**
- * Low-poly trees.
+ * Low-poly trees, mostly conifers.
  *
  * Faceted icosahedrons rather than smooth spheres: the flat shading catches
  * the sun differently on each face, which gives a tree volume without a
  * texture, a normal map, or a single byte of downloaded art.
+ *
+ * Two of the three variants are conifers, because a backcountry stage that is
+ * two-thirds round broadleaf trees reads as a park.
  */
 export function buildTrees(city) {
   const group = new Group();
@@ -59,7 +62,7 @@ function treeGeometry(variant) {
   trunk.translate(0, trunkHeight / 2, 0);
   parts.push(paintGeometry(trunk, FOLIAGE.TRUNK));
 
-  const isConifer = variant === 2;
+  const isConifer = variant !== 1;
   const blobs = isConifer ? 4 : 3;
 
   for (let i = 0; i < blobs; i += 1) {

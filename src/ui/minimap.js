@@ -62,7 +62,7 @@ function paintBase(city, scale) {
   ctx.fillRect(0, 0, SIZE, SIZE);
 
   ctx.fillStyle = '#3b4a2c';
-  for (const box of city.buildings) {
+  for (const box of city.scenery) {
     if (box.base > 0) continue;
     ctx.fillRect(
       (box.x - box.halfWidth) * scale,

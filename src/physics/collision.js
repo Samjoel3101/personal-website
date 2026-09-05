@@ -9,7 +9,7 @@ import { wrap, wrapDelta } from '../core/torus.js';
  * early-out on the bounding test rejects almost all of them in two compares.
  *
  * Coordinates wrap, so every difference goes through wrapDelta. Comparing raw
- * coordinates here would make the buildings either side of the seam invisible
+ * coordinates here would make the scenery either side of the seam invisible
  * to the solver.
  */
 

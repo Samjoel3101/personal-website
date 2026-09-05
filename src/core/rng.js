@@ -7,7 +7,7 @@
  * nothing does.
  */
 
-/** mulberry32: small, fast, and good enough for placing buildings. */
+/** mulberry32: small, fast, and good enough for placing boulders. */
 export function createRng(seed) {
   let state = seed >>> 0;
   return function next() {

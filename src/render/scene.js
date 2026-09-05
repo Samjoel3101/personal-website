@@ -3,13 +3,13 @@ import { ATMOSPHERE } from '../config/render.js';
 import { SKY } from '../config/palette.js';
 import { clamp, damp } from '../core/math.js';
 import { slopeAt } from '../world/terrain.js';
-import { buildBuildings } from './builders/buildings.js';
 import { buildCars } from './builders/cars.js';
 import { buildGround } from './builders/ground.js';
 import { buildKart } from './builders/kart.js';
 import { buildLamps } from './builders/lamps.js';
 import { buildMarkers } from './builders/markers.js';
 import { buildPuddles } from './builders/puddles.js';
+import { buildScenery } from './builders/scenery.js';
 import { buildTerrain } from './builders/terrain.js';
 import { buildTrees } from './builders/trees.js';
 import { createGroundFollow } from './ground-follow.js';
@@ -47,7 +47,7 @@ export function createGameScene(city) {
     buildTerrain(),
     buildGround(),
     buildPuddles(city),
-    buildBuildings(city),
+    buildScenery(city),
     buildTrees(city),
     buildLamps(city),
     buildCars(city),

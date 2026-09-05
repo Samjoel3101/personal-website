@@ -10,38 +10,44 @@ import { distanceAcrossTrack, distanceToTrack } from '../src/world/track.js';
 const city = createCity();
 
 /**
- * Invariants that make the city drivable. Each of these, broken, produces a
+ * Invariants that make the stage drivable. Each of these, broken, produces a
  * bug that is invisible until someone drives into that specific corner of the
  * map — which is exactly the class of bug worth spending CI time on.
  */
-describe('city generation', () => {
+describe('stage generation', () => {
   it('is deterministic', () => {
     const again = createCity();
-    expect(JSON.stringify(again.buildings)).toBe(JSON.stringify(city.buildings));
+    expect(JSON.stringify(again.scenery)).toBe(JSON.stringify(city.scenery));
     expect(JSON.stringify(again.cars)).toBe(JSON.stringify(city.cars));
     expect(JSON.stringify(again.puddles)).toBe(JSON.stringify(city.puddles));
   });
 
   it('differs when seeded differently', () => {
     const other = createCity(11);
-    expect(JSON.stringify(other.buildings)).not.toBe(JSON.stringify(city.buildings));
+    expect(JSON.stringify(other.scenery)).not.toBe(JSON.stringify(city.scenery));
   });
 
-  it('keeps every ground collider clear of the track, wherever it has wandered', () => {
-    // Stronger than the old "not on a road": the track snakes, so a footprint
-    // that clears its grid line can still be sitting in the dirt. This walks
-    // the actual centre line past every collider.
-    for (const box of city.colliders) {
-      const reach = Math.hypot(box.halfWidth, box.halfDepth);
-      const gap = distanceToTrack(box.x, box.z) - reach;
-      expect(gap, `${box.kind} at ${box.x},${box.z} is in the track`).toBeGreaterThanOrEqual(
-        box.kind === 'car' ? -reach : WORLD.ROAD_HALF,
+  it('keeps every piece of scenery clear of the track, wherever it has wandered', () => {
+    // Stronger than the old "never puts a building on a road": the track
+    // snakes, so a footprint that clears its grid line can still be sitting in
+    // the dirt. This walks the actual centre line past every box.
+    //
+    // Service vehicles are the deliberate exception — they park ON the dirt,
+    // and the lane test below is their equivalent.
+    for (const box of city.scenery) {
+      const where = `${box.kind} at ${Math.round(box.x)},${Math.round(box.z)}`;
+      expect(distanceAcrossTrack(box.x, box.z) - box.halfWidth, where).toBeGreaterThanOrEqual(
+        WORLD.ROAD_HALF,
       );
+      expect(distanceAcrossTrack(box.z, box.x) - box.halfDepth, where).toBeGreaterThanOrEqual(
+        WORLD.ROAD_HALF,
+      );
+      expect(distanceToTrack(box.x, box.z), where).toBeGreaterThan(WORLD.ROAD_HALF);
     }
   });
 
-  it('keeps every building inside its block', () => {
-    for (const box of city.buildings) {
+  it('keeps every piece of scenery inside its block', () => {
+    for (const box of city.scenery) {
       for (const [coord, half] of [
         [box.x, box.halfWidth],
         [box.z, box.halfDepth],
@@ -86,5 +92,20 @@ describe('city generation', () => {
 
   it('only offers ground-level boxes to the collision solver', () => {
     expect(city.colliders.every((box) => box.base === 0)).toBe(true);
+  });
+
+  it('never makes a tree stand collidable', () => {
+    // Cutting through a copse is fun; bouncing off an invisible box drawn
+    // around one is not.
+    const trees = city.props.filter((prop) => prop.type === 'tree');
+    expect(trees.length).toBeGreaterThan(20);
+    expect(city.colliders.some((box) => box.kind === 'tree')).toBe(false);
+  });
+
+  it('uses every block theme somewhere', () => {
+    const kinds = new Set(city.scenery.map((box) => box.kind));
+    for (const kind of ['rock', 'barn', 'bales', 'stand', 'landmark']) {
+      expect(kinds, `no ${kind} anywhere on the stage`).toContain(kind);
+    }
   });
 });
