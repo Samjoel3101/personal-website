@@ -25,7 +25,7 @@ import { Color, MeshLambertMaterial } from 'three';
  *
  * Setting vertexColors on a mesh whose geometry has no `color` attribute makes
  * the shader read an unbound attribute as (0,0,0) and multiply the result to
- * black — silently, with no warning. An entire city of black buildings is what
+ * black — silently, with no warning. A whole stage of black boulders is what
  * that looks like.
  * ---------------------------------------------------------------------------
  */

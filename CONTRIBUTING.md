@@ -42,7 +42,7 @@ looked right and was not. Do not comment the obvious.
 ## Adding things
 
 **A new landmark.** Edit `src/content/resume.js`. Coordinates must be a block
-centre — the schema test enforces it. The city, minimap, compass and plain
+centre — the schema test enforces it. The stage, minimap, compass and plain
 résumé all follow automatically.
 
 **A new kind of object in the world.** Generate it as data in `src/world/`,
@@ -74,7 +74,7 @@ Two traps that have already produced wrong tests here:
 - Boost pads sit at every block midpoint, 512 apart. A kart at full speed
   covers that in two seconds, so any test that drives in a straight line for
   longer will cross one and gain speed it was expected to lose.
-- `blockCentre(n)` on a road _is_ a boost pad. Offset from it when you want
+- `blockCentre(n)` on a track _is_ a boost pad. Offset from it when you want
   plain asphalt.
 
 ## Commits

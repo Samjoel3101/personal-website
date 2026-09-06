@@ -51,8 +51,11 @@ export function createSky() {
       varying vec3 vWorldPosition;
       void main() {
         float h = clamp(normalize(vWorldPosition).y, 0.0, 1.0);
-        vec3 lower = mix(horizonColor, middleColor, smoothstep(0.0, 0.28, h));
-        vec3 color = mix(lower, topColor, smoothstep(0.22, 0.75, h));
+        // The haze band reaches higher than the city's did. A low sun puts a
+        // lot of dust in the air, and it is what lets distant hills dissolve
+        // into the fog instead of stacking up as silhouettes.
+        vec3 lower = mix(horizonColor, middleColor, smoothstep(0.0, 0.42, h));
+        vec3 color = mix(lower, topColor, smoothstep(0.30, 0.88, h));
         gl_FragColor = vec4(color, 1.0);
       }
     `,
@@ -69,7 +72,7 @@ export function createSky() {
 
 function createClouds() {
   const shell = new Mesh(
-    new SphereGeometry(RADIUS * 0.94, 40, 24),
+    new SphereGeometry(RADIUS * 0.9, 40, 24),
     new ShaderMaterial({
       side: BackSide,
       transparent: true,
@@ -94,8 +97,11 @@ function createClouds() {
           // Fade the deck out toward the horizon, where a cloud drawn on a
           // sphere would smear into an unconvincing band.
           float h = normalize(vWorldPosition).y;
-          float fade = smoothstep(0.02, 0.30, h);
-          gl_FragColor = vec4(cloud.rgb, cloud.a * fade);
+          // A heavier, lower deck than the city had: the fade starts closer to
+          // the horizon so cloud hangs over the hills rather than sitting in a
+          // clear ring above them.
+          float fade = smoothstep(-0.02, 0.18, h);
+          gl_FragColor = vec4(cloud.rgb, cloud.a * fade * 1.15);
         }
       `,
     }),
@@ -109,7 +115,7 @@ function createSun() {
   const direction = new Vector3(SUN.DIRECTION.x, SUN.DIRECTION.y, SUN.DIRECTION.z).normalize();
   const sprite = new Sprite(
     new SpriteMaterial({
-      color: 0xfff6d8,
+      color: 0xffe6b0,
       blending: AdditiveBlending,
       depthWrite: false,
       fog: false,
@@ -118,7 +124,7 @@ function createSun() {
     }),
   );
   sprite.position.copy(direction).multiplyScalar(RADIUS * 0.9);
-  sprite.scale.setScalar(RADIUS * 0.09);
+  sprite.scale.setScalar(RADIUS * 0.11);
   sprite.renderOrder = -1;
   return sprite;
 }

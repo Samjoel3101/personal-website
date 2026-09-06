@@ -8,7 +8,7 @@ import { assetUrl } from './registry.js';
  * Every method resolves to `null` rather than rejecting when an asset is
  * missing. That is the contract the whole renderer is built on: assets are an
  * upgrade, never a dependency, so a blocked CDN or a fresh clone with no
- * `assets:fetch` run still produces a complete, working city out of procedural
+ * `assets:fetch` run still produces a complete, working stage out of procedural
  * geometry. Builders check for null and choose.
  */
 export function createAssetLoader() {

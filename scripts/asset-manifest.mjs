@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { format, resolveConfig } from 'prettier';
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const MANIFEST_PATH = join(ROOT, 'assets', 'manifest.json');
@@ -11,7 +12,20 @@ export async function readManifest() {
 }
 
 export async function writeManifest(manifest) {
-  await writeFile(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  await writeFormatted(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`);
+}
+
+/**
+ * Writes a generated file through Prettier before it hits disk.
+ *
+ * Without this, `npm run assets:fetch -- --record` rewrites the manifest with
+ * JSON.stringify's formatting and the very next `npm run check` fails on
+ * format:check — a generated file fighting the formatter that guards it. Doing
+ * it here means the generator and the check agree by construction.
+ */
+export async function writeFormatted(path, text) {
+  const options = (await resolveConfig(path)) ?? {};
+  await writeFile(path, await format(text, { ...options, filepath: path }), 'utf8');
 }
 
 /** Absolute destination for an asset, refusing anything that escapes ASSET_DIR. */

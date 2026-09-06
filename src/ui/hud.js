@@ -5,8 +5,8 @@ import { wrapDelta } from '../core/torus.js';
  * The always-on overlay: how many stops you have found, which way the next one
  * is, how fast you are going, and how much boost is left.
  *
- * The compass is the single most important element here. Without it the city
- * is a maze; with it the city is a map you happen to be driving through.
+ * The compass is the single most important element here. Without it the stage
+ * is a maze; with it the stage is a map you happen to be driving through.
  */
 export function createHud(elements, discovery) {
   elements.progress.textContent = `Found 0/${discovery.total}`;

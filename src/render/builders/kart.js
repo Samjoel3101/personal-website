@@ -28,7 +28,8 @@ export function buildKart() {
   chassis.castShadow = true;
   group.add(chassis);
 
-  const wheels = buildWheels(group);
+  const procedural = buildWheels(group);
+  let wheels = procedural;
 
   return {
     group,
@@ -55,10 +56,40 @@ export function buildKart() {
       });
       chassis.clear();
       chassis.add(scene);
-      for (const wheel of wheels) wheel.visible = false;
+
+      const named = namedWheels(scene);
+      for (const wheel of procedural) wheel.visible = false;
+      // A model with no wheels named the way we expect keeps the procedural
+      // ones, which is the only way an unknown glTF can still look driven.
+      if (named.length === 0) for (const wheel of procedural) wheel.visible = true;
+      wheels = named.length > 0 ? named : procedural;
       return true;
     },
   };
+}
+
+/** Node names Kenney's racing kit uses, and the convention we look for. */
+const WHEEL_NAMES = [
+  'wheel-front-left',
+  'wheel-front-right',
+  'wheel-back-left',
+  'wheel-back-right',
+];
+
+/**
+ * Finds the wheels of a loaded model by name so `update` can spin them.
+ *
+ * Kept as its own function rather than folded into useModel: the traversal is
+ * about naming conventions in somebody else's art, and useModel is about
+ * fitting a model onto our footprint.
+ */
+function namedWheels(scene) {
+  const wanted = new Set(WHEEL_NAMES);
+  const found = [];
+  scene.traverse((child) => {
+    if (wanted.has(child.name)) found.push(child);
+  });
+  return found;
 }
 
 function buildWheels(parent) {

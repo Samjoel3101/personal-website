@@ -1,64 +1,62 @@
 import { BOOST_PAD, SURFACE, WORLD } from '../config/world.js';
-import { wrapDelta } from '../core/torus.js';
+import { blockIndexAt, blockKey, distanceToBlockCentre } from './grid.js';
+import { buildPuddles, createPuddleSampler } from './puddles.js';
+import { distanceAcrossTrack } from './track.js';
 
 /**
  * What is under the kart at a given point.
  *
- * The previous renderer rasterised the whole city into a 2048x2048 byte map
- * and sampled that. This computes the same answer analytically: a road is
- * defined by its distance to the nearest grid line, so there is no bitmap to
- * build, no four megabytes to hold, and — the reason it matters — the result
- * is a pure function that a unit test can assert on without a canvas.
+ * The first renderer rasterised the whole world into a 2048x2048 byte map and
+ * sampled that. This computes the same answer analytically: the track is
+ * defined by its distance to the nearest snaking centre line, so there is no
+ * bitmap to build, no four megabytes to hold, and — the reason it matters — the
+ * result is a pure function that a unit test can assert on without a canvas.
+ *
+ * The track wanders, so "distance to the nearest line" is now
+ * distanceAcrossTrack rather than a distance to a grid line; everything else
+ * about the classification is unchanged. Measuring across the axis is
+ * deliberate and matches how the renderer lays the ribbon down — see
+ * src/world/track.js.
  */
 
-/** Distance from a coordinate to the nearest road centre line. */
-export function distanceToRoadLine(coord) {
-  const nearest = Math.round(coord / WORLD.BLOCK) * WORLD.BLOCK;
-  return Math.abs(wrapDelta(coord - nearest));
-}
-
-/** Distance from a coordinate to the nearest block centre. */
-export function distanceToBlockCentre(coord) {
-  const half = WORLD.BLOCK / 2;
-  const nearest = Math.round((coord - half) / WORLD.BLOCK) * WORLD.BLOCK + half;
-  return Math.abs(wrapDelta(coord - nearest));
-}
-
-/** Which block a point falls in, as integer indices. */
-export function blockIndexAt(x, z) {
-  const size = WORLD.SIZE;
-  const fold = (v) => ((Math.floor(v / WORLD.BLOCK) % WORLD.GRID) + WORLD.GRID) % WORLD.GRID;
-  return { bi: fold(((x % size) + size) % size), bj: fold(((z % size) + size) % size) };
-}
-
-/** A boost pad sits on each road, at the midpoint of every block segment. */
+/** A boost pad sits on each track, at the midpoint of every block segment. */
 function onBoostPad(x, z) {
-  const acrossX = distanceToRoadLine(x) <= BOOST_PAD.HALF_ACROSS;
+  // trackOffsetAt is zero at every block midpoint, so a pad always lands
+  // square on the track without being told where the track went.
+  const acrossX = distanceAcrossTrack(x, z) <= BOOST_PAD.HALF_ACROSS;
   const alongZ = distanceToBlockCentre(z) <= BOOST_PAD.HALF_ALONG;
   if (acrossX && alongZ) return true;
 
-  const acrossZ = distanceToRoadLine(z) <= BOOST_PAD.HALF_ACROSS;
+  const acrossZ = distanceAcrossTrack(z, x) <= BOOST_PAD.HALF_ACROSS;
   const alongX = distanceToBlockCentre(x) <= BOOST_PAD.HALF_ALONG;
   return acrossZ && alongX;
 }
 
 /**
- * Builds a surface sampler. `plazaBlocks` is a Set of "bi,bj" keys whose block
- * interiors are paved rather than rough ground — the landmark blocks.
+ * Builds a surface sampler.
+ *
+ * @param {Set<string>} paddockBlocks "bi,bj" keys whose block interiors are the
+ *   packed service areas around a landmark rather than open meadow
+ * @param {Array<{x, z, radius}>} puddles the one list, shared with the renderer
  */
-export function createSurfaceSampler(plazaBlocks) {
-  const walkEdge = WORLD.ROAD_HALF + WORLD.WALK;
+export function createSurfaceSampler(paddockBlocks, puddles = buildPuddles()) {
+  const vergeEdge = WORLD.ROAD_HALF + WORLD.WALK;
+  const inPuddle = createPuddleSampler(puddles);
 
   return function surfaceAt(x, z) {
-    const dx = distanceToRoadLine(x);
-    const dz = distanceToRoadLine(z);
+    const dx = distanceAcrossTrack(x, z);
+    const dz = distanceAcrossTrack(z, x);
 
     if (dx <= WORLD.ROAD_HALF || dz <= WORLD.ROAD_HALF) {
-      return onBoostPad(x, z) ? SURFACE.BOOST : SURFACE.ROAD;
+      return onBoostPad(x, z) ? SURFACE.BOOST : SURFACE.TRACK;
     }
-    if (dx <= walkEdge || dz <= walkEdge) return SURFACE.WALK;
+    if (dx <= vergeEdge || dz <= vergeEdge) return SURFACE.VERGE;
+
+    // Puddles are kept clear of the track by construction, so this can only
+    // ever fire out in the open — see src/world/puddles.js.
+    if (inPuddle(x, z)) return SURFACE.MUD;
 
     const { bi, bj } = blockIndexAt(x, z);
-    return plazaBlocks.has(`${bi},${bj}`) ? SURFACE.PLAZA : SURFACE.GRASS;
+    return paddockBlocks.has(blockKey(bi, bj)) ? SURFACE.PADDOCK : SURFACE.FIELD;
   };
 }

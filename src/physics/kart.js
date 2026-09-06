@@ -2,6 +2,7 @@ import { GRIP, KART } from '../config/tuning.js';
 import { SURFACE, WORLD } from '../config/world.js';
 import { clamp, damp, sign } from '../core/math.js';
 import { wrap } from '../core/torus.js';
+import { trackOffsetAt } from '../world/track.js';
 import { resolveAll } from './collision.js';
 
 /**
@@ -14,17 +15,25 @@ import { resolveAll } from './collision.js';
  * Emits `kart:bump` on a wall hit and `kart:boost` when a pad fires, so audio
  * and the camera can react without this module knowing they exist.
  */
-/** Starting pose: on the road, one block in, pointing along +Z. */
+/**
+ * Starting pose: on the track, one block in, pointing along +Z.
+ *
+ * The x offset is not decoration. The track snakes, so the grid line at
+ * x = BLOCK is a ditch at z = 120; trackOffsetAt puts the kart on the dirt.
+ * tests/city.test.js asserts surfaceAt(spawn) === SURFACE.TRACK.
+ */
+const SPAWN_Z = 120;
+
 function initialState() {
   return {
-    x: WORLD.BLOCK,
-    z: 120,
+    x: wrap(WORLD.BLOCK + trackOffsetAt(SPAWN_Z)),
+    z: SPAWN_Z,
     heading: 0, // radians; 0 points along +Z
     speed: 0,
     steer: 0, // smoothed input, -1..1, drives the lean of the model
     slide: 0, // lateral drift velocity
     boost: 0, // seconds of boost remaining
-    surface: SURFACE.ROAD,
+    surface: SURFACE.TRACK,
     distance: 0,
     touchingLandmarkId: null,
   };

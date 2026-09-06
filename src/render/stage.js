@@ -9,7 +9,7 @@ import { createGameScene } from './scene.js';
  *
  * Everything outside src/render talks to this and nothing else: it owns the
  * GPU context, the camera, the scene graph, the post chain and the quality
- * ladder, and exposes four verbs. Swapping the whole renderer means
+ * ladder, and exposes five verbs. Swapping the whole renderer means
  * reimplementing this interface, not touching the game.
  */
 export function createStage(canvas, city) {
@@ -59,6 +59,11 @@ export function createStage(canvas, city) {
     /** Swap the procedural kart for a loaded glTF, if one arrived. */
     useKartModel(model) {
       return world.kart.useModel(model);
+    },
+
+    /** Upgrade a piece of scenery with a loaded glTF, if one arrived. */
+    useSceneryModel(id, model) {
+      return world.useSceneryModel(id, model);
     },
 
     get diagnostics() {

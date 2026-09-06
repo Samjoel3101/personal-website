@@ -1,7 +1,7 @@
 # Drive my résumé
 
 An interactive résumé you drive through: a WebGL kart racer around a
-procedurally generated city, where each of six landmarks opens a card with part
+procedurally generated rally stage, where each of six landmarks opens a card with part
 of my background.
 
 There is also a **Text version** button. A recruiter with four minutes should
@@ -22,9 +22,10 @@ npm run dev
 | Quality              | ESLint, Prettier, size and complexity limits             |
 | Runtime dependencies | one: `three`                                             |
 
-The city, the kart, the trees, the sky, the road markings and every sound are
+The terrain, the track, the scenery, the kart, the sky and every sound are
 generated in code. Third-party assets are optional upgrades declared in
-`assets/manifest.json`; the site is complete without any of them.
+`assets/manifest.json`; the site is complete without any of them — delete
+`public/assets/` and it still looks finished.
 
 ## Making it yours
 
@@ -66,7 +67,7 @@ a repository subpath.
 
 ## Notes
 
-- The city is a torus — drive off one edge and arrive at the other, so there
+- The stage is a torus — drive off one edge and arrive at the other, so there
   are no invisible walls and no way to get lost.
 - The layout is seeded, so it is identical on every visit and in every test.
 - Physics runs at a fixed 120 Hz regardless of display refresh rate.

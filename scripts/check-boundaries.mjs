@@ -31,7 +31,7 @@ function violation(filePath, specifier) {
   return hit ? `imports '${specifier}' → reaches into ${hit}` : null;
 }
 
-let failures = [];
+const failures = [];
 
 for (const guarded of guardedDirs) {
   const dir = path.join(rootDir, guarded);
@@ -49,7 +49,7 @@ if (failures.length > 0) {
   console.error('Layer boundary violation — the world model must stay renderer- and DOM-free:\n');
   for (const failure of failures) console.error(`  ${failure}`);
   console.error(
-    '\nSee CLAUDE.md rule 2. Move the logic that needs three/DOM into src/render, src/ui, src/audio, src/input, src/game or src/assets, and pass the result in as data.'
+    '\nSee CLAUDE.md rule 2. Move the logic that needs three/DOM into src/render, src/ui, src/audio, src/input, src/game or src/assets, and pass the result in as data.',
   );
   process.exit(1);
 }

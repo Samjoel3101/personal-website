@@ -1,19 +1,23 @@
 import { AmbientLight, DirectionalLight, HemisphereLight, Vector3 } from 'three';
 import { SUN } from '../config/render.js';
-import { SKY, GROUND } from '../config/palette.js';
+import { SKY, TERRAIN } from '../config/palette.js';
 
 /**
  * One sun, one sky bounce, one flat ambient.
  *
- * Deliberately bright and low-contrast: a physically weighted key light gives
- * near-black shadow sides, which is exactly what a cartoon racer avoids. The
- * sun tips faces a little brighter or darker than each other and the palette
- * carries the rest.
+ * Still deliberately soft — a physically weighted key light gives near-black
+ * shadow sides, which is exactly what a cartoon racer avoids — but less soft
+ * than the pastel city wanted. Earth and moss can take shadow that a lilac
+ * facade could not, and a heightfield is invisible without it, so the key is
+ * warmer, lower and a touch stronger while the fill has come down.
+ *
+ * The bounce's ground colour is mud, not concrete: everything under this sky
+ * is dirt, and a grey bounce puts a cold rim on the underside of every rock.
  */
 export function createLighting(scene) {
   const direction = new Vector3(SUN.DIRECTION.x, SUN.DIRECTION.y, SUN.DIRECTION.z).normalize();
 
-  const sun = new DirectionalLight(0xfff4dd, SUN.INTENSITY);
+  const sun = new DirectionalLight(0xffeecf, SUN.INTENSITY);
   sun.position.copy(direction).multiplyScalar(600);
   sun.castShadow = true;
   sun.shadow.mapSize.set(SUN.SHADOW_MAP_SIZE, SUN.SHADOW_MAP_SIZE);
@@ -33,10 +37,10 @@ export function createLighting(scene) {
   scene.add(sun);
   scene.add(sun.target);
 
-  const skyBounce = new HemisphereLight(SKY.MIDDLE, GROUND.LOT, SUN.AMBIENT_INTENSITY);
+  const skyBounce = new HemisphereLight(SKY.MIDDLE, TERRAIN.MUD, SUN.AMBIENT_INTENSITY);
   scene.add(skyBounce);
 
-  const fill = new AmbientLight(0xffffff, 0.16);
+  const fill = new AmbientLight(0xfff2e0, 0.13);
   scene.add(fill);
 
   return {

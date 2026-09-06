@@ -23,11 +23,12 @@ export const KART = Object.freeze({
 
 /** Grip and top-speed multiplier per surface, keyed by SURFACE value. */
 export const GRIP = Object.freeze([
-  1.0, // ROAD
-  0.74, // WALK — kerbs nibble at your speed
-  0.92, // PLAZA
-  0.48, // GRASS — dirt really punishes you, which makes the road a choice
+  1.0, // TRACK
+  0.8, // VERGE — the grass shoulder nibbles at your speed
+  0.95, // PADDOCK
+  0.55, // FIELD — open meadow really punishes you, which makes the track a choice
   1.0, // BOOST
+  0.4, // MUD — a puddle. The one place worth steering around.
 ]);
 
 /** Physics runs at a fixed rate so handling is identical on any display. */

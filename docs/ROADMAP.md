@@ -3,73 +3,87 @@
 Remaining work, ordered by value per unit of effort. Each item names the files
 it touches so it can be picked up cold.
 
+## Done
+
+The rally rework (`docs/RALLY-PLAN.md`) answered or replaced four of the items
+that used to be at the top of this list:
+
+- **Fetch the blocked assets.** Replaced. Every blocked host was dropped in
+  favour of `raw.githubusercontent.com`, which is reachable, and all six
+  manifest entries are now fetched and hash-pinned against a specific upstream
+  commit. Nothing in the manifest is marked `hostBlockedHere` any more.
+- **Real ground textures.** Replaced. The ground is a vertex-coloured
+  heightfield plus flat ribbons, which is the intended look rather than a
+  stopgap; a PBR mud pass would fight it. If someone wants one anyway, add
+  ambientCG entries and expect to re-tune the whole lighting rig.
+- **A purpose-built kart model.** Done. Kenney's rally truck is wired in with
+  `role: "kart"`, and `src/render/builders/kart.js` now finds
+  `wheel-front-left` and friends by name and spins those.
+- **Modular building meshes.** Replaced. There are no buildings — the blocks
+  hold rocks, barns, bale stacks and spectator stands, and downloaded forest
+  patches and spectator camps upgrade them through
+  `stage.useSceneryModel(id, model)`.
+
+The one piece of the plan's polish phase that landed is the speed-based field
+of view kick in `src/render/camera.js`. The rest of it is item 1 below.
+
 ## Ready to pick up
 
-### 1. Fetch the blocked assets and pin their hashes
-
-**Files:** `assets/manifest.json` (hashes only)
-**Effort:** minutes, on a machine with network access
-
-Four manifest entries could not be fetched in the environment this was built
-in — kenney.nl, ambientcg.com and polyhaven.com are blocked there by egress
-policy. Run `npm run assets:fetch -- --record` somewhere with access and commit
-the resulting `sha256` values. Everything downstream already works.
-
-### 2. Real ground textures
-
-**Files:** `src/render/builders/ground.js`, `src/render/materials.js`
-**Depends on:** item 1 (`texture.asphalt`, `texture.concrete`)
-
-Apply the fetched asphalt and concrete maps to the road and pavement meshes
-with `RepeatWrapping` and a world-scale UV repeat. Keep the flat colour as the
-fallback when the texture is absent. The painted markings stay geometry — they
-are sharper that way at every distance.
-
-### 3. A purpose-built kart model
-
-**Files:** `assets/manifest.json`, `src/render/builders/kart.js`
-**Effort:** an afternoon, mostly sourcing
-
-Add a CC0 kart glTF with `"role": "kart"` and `useModel` picks it up
-automatically — it already measures and normalises an arbitrary model onto the
-kart's footprint. The current `model.toycar` entry is deliberately roled
-`reference`: it is a car under a dust sheet and reads worse than the procedural
-kart. Wheels will need naming so `update` can spin them.
-
-### 4. Modular building meshes
-
-**Files:** `src/render/builders/buildings.js`, `src/world/city-blocks.js`
-**Depends on:** item 1 (`kit.city`)
-
-Replace the instanced boxes with a kit of modular meshes. Keep the instancing
-and the 3×3 tiling; swap the geometry and choose a variant per building from
-the seeded RNG so the layout stays deterministic. The facade shader becomes
-unnecessary for kitted buildings but must stay for any that remain boxes.
-
-### 5. Drift particles and skid marks
+### 1. Mud spray, ruts and puddle sheen
 
 **Files:** new `src/render/builders/effects.js`, `src/render/scene.js`
 **Effort:** a day
 
-`kart.state.slide` already carries the information. Emit sparks above a slide
-threshold and lay decals on the ground behind the rear wheels. Both want an
-instanced pool with a ring buffer, not per-frame allocation.
+Phase 6 of the rally plan, left undone. `kart.state.slide` and
+`kart.state.surface` already carry everything needed: throw spray above a slide
+threshold and whenever the surface is `MUD` or `VERGE`, and lay rut decals on
+the ground behind the rear wheels. Both want an instanced pool with a ring
+buffer, not per-frame allocation. The decals have to follow the heightfield —
+see how `src/render/builders/puddles.js` lifts its discs.
 
-### 6. Image-based lighting from an HDRI
+### 2. Image-based lighting from an HDRI
 
 **Files:** `src/render/lighting.js`, `src/render/sky.js`
-**Depends on:** item 1 (`env.sky`)
+**Depends on:** the pinned `env.sky` entry, which is fetched but not wired in
 
 Load the HDRI with `RGBELoader`, set it as the scene environment, and keep the
-gradient dome as the fallback. Expect to re-tune `SUN.AMBIENT_INTENSITY` down:
-an environment map already supplies the ambient the hemisphere light is
-currently faking.
+gradient dome as the fallback. It is 1.4 MB — most of a page budget — so it must
+be lazy and must never block the first frame. Expect to re-tune
+`SUN.AMBIENT_INTENSITY` down: an environment map already supplies the ambient
+the hemisphere light is currently faking.
+
+### 3. More scenery models from the rally kit
+
+**Files:** `assets/manifest.json`, `src/render/builders/scenery.js`
+**Effort:** an hour per model
+
+The Starter Kit Racing repository has more than the four files pinned here.
+Adding one is a manifest entry with `role: "scenery"` plus a branch in
+`buildScenery`'s `useModel`. Keep the rule that every one of them no-ops when
+the model is absent, and keep instancing rather than cloning — see
+`src/render/model-instances.js`.
+
+### 4. A second track family
+
+**Files:** `src/config/world.js`, `src/world/track.js`
+
+The wobble is one sine with a period of one block. A second harmonic, or a
+different amplitude per line, would make the stages less uniform. The
+constraint is not negotiable: whatever the shape, it must be zero at every
+multiple of `BLOCK / 2` and have a period that divides `WORLD.SIZE`, or
+junctions, boost pads and the seam all break at once. `tests/track.test.js`
+pins exactly that.
 
 ## Known limitations
 
 - **Draw distance is capped at half the world size** (1024 units) because the
-  city is tiled 3×3. Seeing further means tiling 5×5, which quadruples instance
-  counts. Probably not worth it — fog closes the picture well before then.
+  stage is tiled 3×3. Seeing further means tiling 5×5, which quadruples
+  instance counts. Probably not worth it — fog closes the picture well before
+  then.
+- **Terrain height is cosmetic.** The kart is lifted and tilted onto the
+  heightfield but the physics is two-dimensional, so a hill neither slows you
+  down nor speeds you up. Changing that means a gravity model and a
+  three-dimensional collision pass, which is a different game.
 - **Shadows only cover ±420 units around the kart.** Beyond that the shadow
   frustum ends. Distant shadows are lost in fog anyway; raising
   `SUN.SHADOW_RADIUS` costs shadow-map resolution everywhere.

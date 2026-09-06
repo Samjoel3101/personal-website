@@ -23,12 +23,15 @@ export function createCloudTexture(seed = 4242) {
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
 
   for (let deck = 0; deck < DECKS; deck += 1) {
-    const scale = 1 - deck * 0.24;
-    const alpha = 0.95 - deck * 0.22;
-    const bandTop = HEIGHT * (0.04 + deck * 0.14);
-    const bandHeight = HEIGHT * 0.26;
+    const scale = 1.15 - deck * 0.24;
+    const alpha = 0.97 - deck * 0.18;
+    // Lower and deeper than a midday city sky: the deck sits over the hills
+    // rather than in a clear ring above them, and the shader fades it out
+    // right at the horizon so it never smears into a band.
+    const bandTop = HEIGHT * (0.1 + deck * 0.16);
+    const bandHeight = HEIGHT * 0.34;
 
-    for (let i = 0; i < 26 - deck * 5; i += 1) {
+    for (let i = 0; i < 32 - deck * 5; i += 1) {
       const cx = rng() * WIDTH;
       const cy = bandTop + rng() * bandHeight;
       const style = { scale, alpha };
@@ -54,8 +57,8 @@ function paintCloud(ctx, rng, centre, { scale, alpha }) {
   // Shaded underside first, bright body over it: the two-pass order is what
   // stops a cloud reading as a flat white smudge.
   for (const [dy, tint] of [
-    [10, `rgba(188,216,238,${alpha * 0.9})`],
-    [0, `rgba(255,255,255,${alpha})`],
+    [11, `rgba(163,183,197,${alpha * 0.95})`],
+    [0, `rgba(250,247,240,${alpha})`],
   ]) {
     for (let p = 0; p < puffs; p += 1) {
       const radius = (26 + rng() * 46) * scale;
