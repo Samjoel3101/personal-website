@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { BOOST_PAD, SURFACE, WORLD, blockCentre } from '../src/config/world.js';
+import { BOOST_PAD, PADDOCK_HALF, SURFACE, WORLD, blockCentre } from '../src/config/world.js';
 import { createSurfaceSampler } from '../src/world/surfaces.js';
 import { paddockBlockKeys } from '../src/world/landmarks.js';
 import { buildPuddles } from '../src/world/puddles.js';
+import { LANDMARKS } from '../src/content/resume.js';
 import { distanceAcrossTrack, trackOffsetAt } from '../src/world/track.js';
 
 const puddles = buildPuddles();
@@ -61,6 +62,31 @@ describe('surface sampling', () => {
   it('packs landmark blocks and leaves ordinary blocks rough', () => {
     expect(surfaceAt(256, 256)).toBe(SURFACE.PADDOCK); // the lookout tower's block
     expect(surfaceAt(768, 1792)).toBe(SURFACE.FIELD); // an ordinary block
+  });
+
+  it('ends the paddock where the painted one ends, not at the block edge', () => {
+    // The paddock is the square the renderer paints and the terrain flattens.
+    // Past its edge a landmark block is open hillside and has to grip like it:
+    // reporting PADDOCK out here gave a third of every landmark block the grip
+    // of packed dirt while looking, and being driven over, as a grass bank.
+    const [landmark] = LANDMARKS;
+    expect(surfaceAt(landmark.x + PADDOCK_HALF - 1, landmark.z)).toBe(SURFACE.PADDOCK);
+    expect(surfaceAt(landmark.x, landmark.z - PADDOCK_HALF + 1)).toBe(SURFACE.PADDOCK);
+
+    // Sweep the whole block. Beyond the square the ground is track, verge or
+    // open field depending on where the track has wandered — but never packed.
+    let fieldBeyond = 0;
+    for (let dx = -250; dx <= 250; dx += 5) {
+      for (let dz = -250; dz <= 250; dz += 5) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) <= PADDOCK_HALF) continue;
+        const surface = surfaceAt(landmark.x + dx, landmark.z + dz);
+        expect(surface, `at ${dx},${dz} from the landmark`).not.toBe(SURFACE.PADDOCK);
+        if (surface === SURFACE.FIELD) fieldBeyond += 1;
+      }
+    }
+    // And that ground is real: where the track has swung away from the block
+    // there is open hillside between the paddock and the verge.
+    expect(fieldBeyond).toBeGreaterThan(0);
   });
 
   it('reports mud in a puddle and only in a puddle', () => {

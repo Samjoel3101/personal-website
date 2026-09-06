@@ -31,7 +31,12 @@ export const CAMERA = Object.freeze({
  * repeat begins, and the camera's far plane sits just behind it.
  */
 export const ATMOSPHERE = Object.freeze({
-  FOG_NEAR: 300,
+  /* Deliberately far out. Fog starting at 300 put haze on the next corner:
+     the middle distance lost its colour before it lost its detail, which is
+     what made the stage read as chalk rather than as weather. Everything
+     between here and FOG_FAR still fades, it just fades over the far half of
+     the view instead of most of it. */
+  FOG_NEAR: 520,
   FOG_FAR: 980,
   /** Hard ceiling: WORLD.SIZE / 2. Do not raise past this without also
    *  increasing the tiling in src/render/builders/. */

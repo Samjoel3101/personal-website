@@ -10,8 +10,11 @@
 export const SKY = Object.freeze({
   TOP: '#2e6ea8',
   MIDDLE: '#79b6dd',
-  /** Must match the scene fog exactly, or the far hills end at a visible line. */
-  HORIZON: '#dfe6d8',
+  /** Must match the scene fog exactly, or the far hills end at a visible line.
+   *  Hazy sage rather than the near-white it was: fog this pale bleaches
+   *  whatever it touches, and a rally stage should go soft in the distance,
+   *  not go blank. */
+  HORIZON: '#cad3bd',
 });
 
 /** The ground you drive on and the ground you look at. */

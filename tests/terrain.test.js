@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { LOT_HALF, WORLD } from '../src/config/world.js';
+import { PADDOCK_HALF, WORLD } from '../src/config/world.js';
 import { LANDMARKS } from '../src/content/resume.js';
-import { MAX_TERRAIN_HEIGHT, heightAt, slopeAt } from '../src/world/terrain.js';
+import { MAX_TERRAIN_HEIGHT, heightAt, latticeHeightAt, slopeAt } from '../src/world/terrain.js';
+import { FACET, surfaceHeightAt } from '../src/render/terrain-surface.js';
 import { trackOffsetAt } from '../src/world/track.js';
 
 /**
@@ -48,8 +49,8 @@ describe('terrain', () => {
 
   it('is exactly flat inside every landmark paddock', () => {
     for (const landmark of LANDMARKS) {
-      for (const dx of [-LOT_HALF, -60, 0, 60, LOT_HALF]) {
-        for (const dz of [-LOT_HALF, -60, 0, 60, LOT_HALF]) {
+      for (const dx of [-PADDOCK_HALF, -60, 0, 60, PADDOCK_HALF]) {
+        for (const dz of [-PADDOCK_HALF, -60, 0, 60, PADDOCK_HALF]) {
           expect(heightAt(landmark.x + dx, landmark.z + dz)).toBe(0);
         }
       }
@@ -105,5 +106,70 @@ describe('terrain', () => {
       }
     }
     expect(hillsides).toBeGreaterThan(100);
+  });
+});
+
+/**
+ * The surface the renderer actually draws.
+ *
+ * heightAt is a smooth field; the mesh samples it on a lattice and joins the
+ * samples with flat triangles, so between lattice lines the two are different
+ * surfaces. Everything the player sees is seated on the second one — see
+ * src/render/terrain-surface.js — and these pin the two properties that makes
+ * it safe to: it agrees with the field where they touch, and it never rises
+ * into the flat ribbons laid at y = 0.
+ */
+describe('the drawn surface', () => {
+  it('meets the analytic field at every lattice corner', () => {
+    for (let x = 0; x < WORLD.SIZE; x += FACET * 7) {
+      for (let z = 0; z < WORLD.SIZE; z += FACET * 11) {
+        expect(latticeHeightAt(x, z, FACET), `at ${x},${z}`).toBeCloseTo(heightAt(x, z), 9);
+      }
+    }
+  });
+
+  it('interpolates between corners rather than snapping to one', () => {
+    // A cell out on open hillside — one in the flat corridor would pass this
+    // by having no relief at all.
+    const [x, z] = [368, 848];
+    const corners = [
+      heightAt(x, z),
+      heightAt(x + FACET, z),
+      heightAt(x, z + FACET),
+      heightAt(x + FACET, z + FACET),
+    ];
+    expect(Math.max(...corners) - Math.min(...corners)).toBeGreaterThan(1);
+
+    const middle = latticeHeightAt(x + FACET / 2, z + FACET / 2, FACET);
+    expect(middle).toBeGreaterThan(Math.min(...corners));
+    expect(middle).toBeLessThan(Math.max(...corners));
+  });
+
+  it('never rises into the track corridor, between lattice lines included', () => {
+    // The bug this catches: the corridor boundary does not follow the lattice,
+    // so a facet with one corner out on the hillside tilts up through the
+    // ribbons. Sampling on the lattice alone would miss it entirely — these
+    // offsets are deliberately not multiples of FACET.
+    const flat = WORLD.ROAD_HALF + WORLD.WALK;
+    for (let g = 0; g < WORLD.GRID; g += 1) {
+      const line = g * WORLD.BLOCK;
+      for (let along = 0; along < WORLD.SIZE; along += 6.5) {
+        const centre = line + trackOffsetAt(along);
+        for (const offset of [-flat, -flat + 3.5, -13.5, 0, 13.5, flat - 3.5, flat]) {
+          expect(surfaceHeightAt(centre + offset, along), `across ${offset} at ${along}`).toBe(0);
+          expect(surfaceHeightAt(along, centre + offset), `along ${offset} at ${along}`).toBe(0);
+        }
+      }
+    }
+  });
+
+  it('never rises into a landmark paddock', () => {
+    for (const landmark of LANDMARKS) {
+      for (let dx = -PADDOCK_HALF; dx <= PADDOCK_HALF; dx += 9.5) {
+        for (let dz = -PADDOCK_HALF; dz <= PADDOCK_HALF; dz += 9.5) {
+          expect(surfaceHeightAt(landmark.x + dx, landmark.z + dz)).toBe(0);
+        }
+      }
+    }
   });
 });
