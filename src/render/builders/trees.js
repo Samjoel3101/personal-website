@@ -20,6 +20,10 @@ const VARIANTS = 3;
  */
 const TREE_MODELS = ['kit.nature.tree.broadleaf', 'kit.nature.tree.pine', 'kit.nature.tree.spire'];
 
+/** The variant whose model also fills the copses — a stand of woodland reads as
+ *  conifers, and the pine is the one that arrives for it. */
+const COPSE_VARIANT = 1;
+
 /**
  * Low-poly trees, mostly conifers.
  *
@@ -41,49 +45,57 @@ export function buildTrees(city) {
   group.name = 'trees';
 
   const trees = city.props.filter((prop) => prop.type === 'tree');
-  const copses = city.props.filter((prop) => prop.type === 'copse');
-
   const lone = trees.filter((tree) => !tree.copse);
+  const copseTrees = trees.filter((tree) => tree.copse);
 
   const standing = new Group();
   standing.name = 'copse-trees';
-  addVariants(
-    standing,
-    trees.filter((tree) => tree.copse),
-  );
+  addVariants(standing, copseTrees);
   const holders = addVariants(group, lone);
   group.add(standing);
 
   return {
     group,
 
-    /** Swap the procedural copses for a downloaded forest patch, or one
-     *  variant of the lone trees for a downloaded tree. */
+    /** Swap one variant of the lone trees for a downloaded model. The pine
+     *  variant also stands the copse trees up as the same model. */
     useModel(id, model) {
       const variant = TREE_MODELS.indexOf(id);
-      if (variant !== -1) {
-        return useTreeModel(group, holders[variant], variantOf(lone, variant), model, variant);
+      if (variant === -1) return false;
+
+      let used = useTreeModel(group, holders[variant], variantOf(lone, variant), model, variant);
+      if (variant === COPSE_VARIANT) {
+        used = useCopses(group, standing, copseTrees, model) || used;
       }
-      if (id !== 'kit.rally.forest' || copses.length === 0) return false;
-
-      const rng = createRng(51);
-      const meshes = instancedModel(
-        model,
-        copses.map((copse) => ({
-          x: copse.x,
-          y: seatOnGround(copse.x, copse.z),
-          z: copse.z,
-          size: copse.radius * 2,
-          rotationY: rng() * Math.PI * 2,
-        })),
-      );
-      if (meshes.length === 0) return false;
-
-      standing.visible = false;
-      for (const mesh of meshes) group.add(mesh);
-      return true;
+      return used;
     },
   };
+}
+
+/**
+ * Stands every copse tree up as the downloaded model, at the positions the
+ * world model already scattered them — same layout the procedural copse used,
+ * so a stand stays a stand and does not become an impenetrable wall.
+ */
+function useCopses(group, standing, copseTrees, model) {
+  if (copseTrees.length === 0) return false;
+
+  const rng = createRng(51);
+  const meshes = instancedModel(
+    model,
+    copseTrees.map((tree) => ({
+      x: tree.x,
+      y: seatOnGround(tree.x, tree.z),
+      z: tree.z,
+      height: tree.height,
+      rotationY: rng() * Math.PI * 2,
+    })),
+  );
+  if (meshes.length === 0) return false;
+
+  standing.visible = false;
+  for (const mesh of meshes) group.add(mesh);
+  return true;
 }
 
 /** Every Nth tree, so a variant's model replaces exactly its own share. */

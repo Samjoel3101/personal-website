@@ -11,9 +11,8 @@ no third-party licence.
 
 | Asset                                    | Licence | Author                | Source                                                          |
 | ---------------------------------------- | ------- | --------------------- | --------------------------------------------------------------- |
-| Starter Kit Racing — truck               | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing)          |
+| Car Kit — race car                       | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/car-kit)                        |
 | Starter Kit Racing — colour atlas        | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing)          |
-| Starter Kit Racing — forest patch        | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing)          |
 | Starter Kit Racing — spectator camp      | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing)          |
 | Starter Kit Racing — start/finish gantry | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing)          |
 | Venice Sunset                            | CC0-1.0 | Greg Zaal, Poly Haven | [link](https://polyhaven.com/a/venice_sunset)                   |
@@ -26,6 +25,8 @@ no third-party licence.
 | LowPoly Buildings - House                | CC0-1.0 | Quaternius            | [link](https://opengameart.org/content/lowpoly-buildings-pack)  |
 | LowPoly Buildings - House 3              | CC0-1.0 | Quaternius            | [link](https://opengameart.org/content/lowpoly-buildings-pack)  |
 | LowPoly Buildings - Shop                 | CC0-1.0 | Quaternius            | [link](https://opengameart.org/content/lowpoly-buildings-pack)  |
+| Car Kit — van                            | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/car-kit)                        |
+| Car Kit — hatchback                      | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/car-kit)                        |
 | texture.grass.color                      | CC0-1.0 | ambientCG             | [link](https://ambientcg.com/view?id=Grass001)                  |
 | texture.grass.normal                     | CC0-1.0 | ambientCG             | [link](https://ambientcg.com/view?id=Grass001)                  |
 

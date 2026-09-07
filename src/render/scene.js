@@ -93,7 +93,7 @@ export function createGameScene(city) {
      * look finished with no assets fetched at all.
      */
     useSceneryModel(id, model) {
-      return scenery.useModel(id, model) || trees.useModel(id, model);
+      return scenery.useModel(id, model) || trees.useModel(id, model) || cars.useModel(id, model);
     },
 
     useGroundTexture(maps) {

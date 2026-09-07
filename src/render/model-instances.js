@@ -127,6 +127,28 @@ function flatten(material) {
 }
 
 /**
+ * Copies an attribute into a plain, non-normalised Float32 array.
+ *
+ * `KHR_mesh_quantization` — which the Meshopt-compressed kits all use — hands
+ * `GLTFLoader` a POSITION attribute of normalised int16s with the real scale in
+ * the node matrix. `BufferGeometry.applyMatrix4` writes transformed values
+ * straight back through that normalisation, so any coordinate the node matrix
+ * pushes past the model's own extent wraps the int16 and the mesh detonates
+ * into spikes. Baking to float first is the fix, and it is a no-op on the
+ * unquantised kits.
+ */
+function toFloatAttribute(attribute) {
+  if (attribute.array instanceof Float32Array && !attribute.normalized) return attribute;
+  const out = new Float32Array(attribute.count * attribute.itemSize);
+  for (let i = 0; i < attribute.count; i += 1) {
+    for (let k = 0; k < attribute.itemSize; k += 1) {
+      out[i * attribute.itemSize + k] = attribute.getComponent(i, k);
+    }
+  }
+  return new Float32BufferAttribute(out, attribute.itemSize);
+}
+
+/**
  * @param {import('three').Object3D|null} model
  * @returns {{parts: {geometry, material}[], aspect: number}} normalised parts
  *   and how tall the model stands once its footprint is one unit wide
@@ -139,6 +161,11 @@ export function normalisedParts(model) {
   model.traverse((child) => {
     if (!child.isMesh || !child.geometry) return;
     const geometry = child.geometry.clone();
+    for (const name of ['position', 'normal']) {
+      if (geometry.getAttribute(name)) {
+        geometry.setAttribute(name, toFloatAttribute(geometry.getAttribute(name)));
+      }
+    }
     geometry.applyMatrix4(child.matrixWorld);
     const material = flatten(child.material);
     parts.push({ geometry, material, projected: KIT_SURFACES[child.material?.name] !== undefined });
