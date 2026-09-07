@@ -89,7 +89,13 @@ export function baleStackGeometry() {
     return cylinder;
   };
 
-  // Two on the ground, two on top, each row filling the box's depth.
+  // Two on the ground, two on top, each row filling the box's depth. A pyramid
+  // of three was tried instead, on the theory that notching the outline would
+  // read as bales from the side: it does not. The top bale bridges the valley
+  // between the lower two, and from a driver's eye height you see straight
+  // under it — the stack looks sparse and the odd bale looks like it is
+  // floating. The builder turns every other stack a quarter instead, which
+  // puts the round ends where they can be seen.
   for (const z of [-RADIUS, RADIUS]) {
     for (const y of [RADIUS, RADIUS * 3]) {
       const one = bale(0, y);

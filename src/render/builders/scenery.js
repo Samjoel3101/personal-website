@@ -62,7 +62,7 @@ export function buildScenery(city) {
   const barns = byKind.get('barn') ?? [];
   const rockSlices = addRocks(group, rocks);
   const barnSlices = addBarns(group, barns);
-  addSimple(group, byKind.get('bales') ?? [], baleStackGeometry());
+  addBales(group, byKind.get('bales') ?? []);
   const procedural = addStands(group, stands);
   addLandmarks(group, byKind.get('landmark') ?? []);
 
@@ -194,6 +194,27 @@ function useSlice(group, procedural, items, model, seed) {
 }
 
 /** @returns {Group[]} one holder per variant, so each can be hidden alone. */
+/**
+ * Bale stacks, half of them turned a quarter so their round ends face the
+ * track. A bale lying on its side is a rectangle seen from the side and a
+ * circle seen from the end; leave every stack facing the same way and half the
+ * stage sees crates. The footprint is square, so the quarter-turn leaves the
+ * axis-aligned collision box exactly where it was.
+ */
+function addBales(group, bales) {
+  if (bales.length === 0) return;
+  group.add(
+    tiledInstances(
+      baleStackGeometry(),
+      instancedTinted(),
+      bales.map((bale, index) => ({
+        ...toInstance(bale),
+        rotationY: index % 2 === 0 ? 0 : Math.PI / 2,
+      })),
+    ),
+  );
+}
+
 function addRocks(group, rocks) {
   const holders = [];
   for (let variant = 0; variant < ROCK_VARIANTS; variant += 1) {
