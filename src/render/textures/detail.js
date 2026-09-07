@@ -51,6 +51,22 @@ export function toDetailTexture(texture, strength = 0.75) {
   return detail;
 }
 
+/**
+ * Recentres a canvas's channels on their own means, in place.
+ *
+ * Shared with the drawn textures in ./foliage.js, which need it for exactly
+ * the same reason and got it wrong first: a texture drawn on a mid-grey base
+ * multiplies everything under it by about a half, so the leaves it was meant
+ * to add came out as a canopy in shadow.
+ */
+export function recentreOnWhite(canvas, strength = 1) {
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+  rebalance(pixels.data, strength);
+  context.putImageData(pixels, 0, 0);
+  return canvas;
+}
+
 /** Recentres every channel on its own mean, in place. */
 function rebalance(data, strength) {
   const totals = [0, 0, 0];

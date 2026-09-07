@@ -1,5 +1,6 @@
 import { CanvasTexture, RepeatWrapping, SRGBColorSpace } from 'three';
 import { createRng } from '../../core/rng.js';
+import { recentreOnWhite } from './detail.js';
 
 /**
  * Leaf and bark detail, drawn rather than downloaded.
@@ -11,10 +12,11 @@ import { createRng } from '../../core/rng.js';
  * canopy reads as a photograph of leaves, whereas clustered strokes at the
  * right scale read as foliage.
  *
- * Both are recentred on mid grey and used as a colour map over a tinted
- * material, so they modulate the palette instead of replacing it — the same
- * bargain ./detail.js strikes with the ground. Seeded, so two runs draw the
- * same tree.
+ * Both are recentred on WHITE before use — through the same helper the ground
+ * texture goes through — so they modulate the palette instead of darkening it.
+ * Drawing them on a mid-grey base and stopping there is the obvious thing to
+ * do and it is wrong: a colour map multiplies, so a mid-grey average halves
+ * every canopy on the stage. Seeded, so two runs draw the same tree.
  */
 
 const SIZE = 256;
@@ -79,7 +81,7 @@ function surface(fill) {
 }
 
 function wrap(canvas) {
-  const texture = new CanvasTexture(canvas);
+  const texture = new CanvasTexture(recentreOnWhite(canvas));
   texture.wrapS = RepeatWrapping;
   texture.wrapT = RepeatWrapping;
   texture.colorSpace = SRGBColorSpace;
