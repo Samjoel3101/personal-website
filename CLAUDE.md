@@ -82,6 +82,14 @@ src/
 - **Instanced colours.** Setting `vertexColors: true` on a mesh whose geometry
   has no `color` attribute silently renders it black. Read the note at the top
   of `src/render/materials.js` before adding an instanced mesh.
+- **Quantised model geometry.** Every kit in the `Samjoel3101/3d-assets` mirror
+  is Meshopt-compressed, which means `KHR_mesh_quantization`: `GLTFLoader` hands
+  back a POSITION attribute of normalised int16s with the real scale in the node
+  matrix. `BufferGeometry.applyMatrix4` writes transformed values straight back
+  through that normalisation and wraps the int16 — the mesh explodes into
+  black shards. `src/render/model-instances.js` bakes position and normal to
+  float before it transforms them; anything new that bakes a loaded model's
+  world transform into its geometry has to do the same.
 - **Merging geometries.** `mergeGeometries` refuses a mix of indexed and
   non-indexed inputs and signals it by returning `null`, which fails much later
   as a null dereference. Use `mergeParts` from
@@ -126,10 +134,20 @@ poly.pizza and jsDelivr are all blocked by egress policy in the environment
 this is built in, and a branch URL would fail its own recorded hash the next
 time upstream pushed.
 
-Two things about the rally kit are easy to get wrong. Exactly one entry may
-carry `role: "kart"`. And `kit.rally.atlas` is never requested by id — it only
-has to land in a `Textures/` directory beside the models, which reference it by
-relative URI; put it anywhere else and they load **white**, not broken.
+Most models come from **`github.com/Samjoel3101/3d-assets`**, a mirror that
+repacks CC0 kits (Quaternius nature and buildings, Kenney cars and road tiles)
+into web-optimised `.glb` — 512px WebP textures, Meshopt geometry. Each `.glb`
+is self-contained: no sibling atlas file. The mirror's `scripts/` hold the
+repack recipe. See the quantised-geometry trap above before baking one of these
+into a merged mesh.
+
+Three things are easy to get wrong. Exactly one entry may carry `role: "kart"`.
+`kit.rally.atlas` (still used by the tents and gantry) is never requested by id
+— it only has to land in a `Textures/` directory beside those models, which
+reference it by relative URI; put it anywhere else and they load **white**, not
+broken. And a Meshopt `.glb` needs the decoder registered in
+`src/assets/loader.js`, or `GLTFLoader` rejects it (the loader catches that and
+falls back to procedural, so the failure is silent).
 
 `assets:fetch` writes the manifest and `CREDITS.md` through Prettier, so a
 `--record` run leaves `npm run check` green.

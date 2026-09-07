@@ -1,10 +1,16 @@
 import { BoxGeometry, Group } from 'three';
 import { seatOnGround } from '../ground-follow.js';
 import { instancedTinted, lambert } from '../materials.js';
+import { normalisedParts } from '../model-instances.js';
 import { tiledInstances, updateInstances } from '../geometry/tiling.js';
 
 /** Glasshouse tint, dark enough to read as glass against every body colour. */
 const GLASS = '#38445c';
+
+/** Which downloaded model dresses which pool. Parked ones read as service
+ *  vehicles pulled over; the moving ones are lighter road cars. */
+const PARKED_MODEL = 'kit.car.parked';
+const TRAFFIC_MODEL = 'kit.car.traffic';
 
 /**
  * Service vehicles: the ones parked in the lay-bys and the ones driving.
@@ -16,9 +22,11 @@ const GLASS = '#38445c';
  * Parked and moving are separate meshes rather than one, because the parked
  * ones are the overwhelming majority and their matrices never change. Rewriting
  * all of them every frame to move a dozen would be paying for the whole stage
- * to animate a corner of it.
+ * to animate a corner of it. A downloaded model swaps in per pool through
+ * `useModel`, and the procedural boxes for that pool are hidden, not removed —
+ * so a half-fetched assets directory still gives a full stage.
  *
- * @returns {{group: Group, update: () => void}}
+ * @returns {{group: Group, update: () => void, useModel: (id: string, model: object|null) => boolean}}
  */
 export function buildCars(city) {
   const group = new Group();
@@ -27,17 +35,27 @@ export function buildCars(city) {
   const parked = city.cars.filter((car) => !car.moving);
   const moving = city.cars.filter((car) => car.moving);
 
+  const proceduralParked = new Group();
+  const proceduralMoving = new Group();
+  group.add(proceduralParked, proceduralMoving);
+
   if (parked.length > 0) {
-    group.add(tiledInstances(baseBox(), instancedTinted(), parked.map(bodyItem)));
-    group.add(tiledInstances(baseBox(), lambert(GLASS), parked.map(cabinItem)));
+    proceduralParked.add(tiledInstances(baseBox(), instancedTinted(), parked.map(bodyItem)));
+    proceduralParked.add(tiledInstances(baseBox(), lambert(GLASS), parked.map(cabinItem)));
   }
-  if (moving.length === 0) return { group, update() {} };
 
   const bodies = moving.map(bodyItem);
   const cabins = moving.map(cabinItem);
-  const bodyMesh = tiledInstances(baseBox(), instancedTinted(), bodies);
-  const cabinMesh = tiledInstances(baseBox(), lambert(GLASS), cabins);
-  group.add(bodyMesh, cabinMesh);
+  let bodyMesh = null;
+  let cabinMesh = null;
+  if (moving.length > 0) {
+    bodyMesh = tiledInstances(baseBox(), instancedTinted(), bodies);
+    cabinMesh = tiledInstances(baseBox(), lambert(GLASS), cabins);
+    proceduralMoving.add(bodyMesh, cabinMesh);
+  }
+
+  // Set by useModel(TRAFFIC_MODEL): { meshes, items, aspect } for the loaded car.
+  let modelMoving = null;
 
   return {
     group,
@@ -51,6 +69,12 @@ export function buildCars(city) {
      * nothing.
      */
     update() {
+      if (modelMoving) {
+        for (let i = 0; i < moving.length; i += 1) seatModelCar(modelMoving.items[i], moving[i]);
+        for (const mesh of modelMoving.meshes) updateInstances(mesh, modelMoving.items);
+        return;
+      }
+      if (!bodyMesh) return;
       for (let i = 0; i < moving.length; i += 1) {
         const car = moving[i];
         const height = seatOnGround(car.x, car.z);
@@ -60,14 +84,86 @@ export function buildCars(city) {
       updateInstances(bodyMesh, bodies);
       updateInstances(cabinMesh, cabins);
     },
+
+    /** Swap one vehicle pool for a downloaded model. */
+    useModel(id, model) {
+      if (id === PARKED_MODEL) return usePool(model, parked, proceduralParked, false);
+      if (id === TRAFFIC_MODEL) return usePool(model, moving, proceduralMoving, true);
+      return false;
+    },
   };
+
+  /**
+   * One instanced copy of `model` per vehicle in a pool, at the pool's sites.
+   *
+   * The model is sized to the length of the box it replaces and seated on the
+   * heightfield. For the moving pool the scaled item objects are kept so
+   * `update` can rewrite them in place; the parked pool never moves.
+   */
+  function usePool(model, cars, procedural, isMoving) {
+    if (!model || cars.length === 0) return false;
+    const { parts } = normalisedParts(model);
+    if (parts.length === 0) return false;
+
+    const items = cars.map((car) => (isMoving ? seatModelCar({}, car) : parkedModelItem(car)));
+    const meshes = parts.map((part) => {
+      const mesh = tiledInstances(part.geometry, part.material, items);
+      mesh.receiveShadow = false;
+      return mesh;
+    });
+    for (const mesh of meshes) group.add(mesh);
+
+    procedural.visible = false;
+    if (isMoving) modelMoving = { meshes, items };
+    return true;
+  }
+}
+
+/** Length the model is scaled to: the longer half-extent of its collision box,
+ *  doubled. Sizing by length keeps a car the right size down the road; it comes
+ *  out a little wider than the skinny box, which reads better, not worse. */
+const carLength = (car) => Math.max(halfAcrossX(car), halfAlongZ(car)) * 2;
+
+/** A parked model, seated once. Parked boxes are axis-aligned, so the model
+ *  takes the same quarter-turn: a lay-by on an X line runs across Z. */
+function parkedModelItem(car) {
+  const alongZ = halfAlongZ(car) >= halfAcrossX(car);
+  const size = carLength(car);
+  return {
+    x: car.x,
+    y: seatOnGround(car.x, car.z),
+    z: car.z,
+    sx: size,
+    sy: size,
+    sz: size,
+    rotationY: alongZ ? 0 : Math.PI / 2,
+  };
+}
+
+/**
+ * Writes a moving car's model instance in place from its simulation state.
+ *
+ * `heading` is the way the car travels; the models are authored nose toward
+ * +Z, so heading is the rotation. The box path uses `yaw` and swapped extents
+ * instead — a model cannot swap its extents, so it actually turns.
+ */
+function seatModelCar(item, car) {
+  const size = carLength(car);
+  item.x = car.x;
+  item.y = seatOnGround(car.x, car.z);
+  item.z = car.z;
+  item.rotationY = car.heading ?? 0;
+  item.sx = size;
+  item.sy = size;
+  item.sz = size;
+  return item;
 }
 
 function reseat(item, car, y) {
   item.x = car.x;
   item.y = y;
   item.z = car.z;
-  item.rotationY = car.yaw;
+  item.rotationY = car.yaw ?? 0;
 }
 
 /**

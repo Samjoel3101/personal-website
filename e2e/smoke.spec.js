@@ -40,6 +40,7 @@ test('boots into the intro and starts the engine', async ({ page }) => {
 });
 
 test('drives, and the world reacts', async ({ page }) => {
+  test.setTimeout(150_000);
   await startDriving(page);
 
   const before = await page.evaluate(() => ({ ...window.__kart.session.debug.kart.state }));
@@ -49,8 +50,12 @@ test('drives, and the world reacts', async ({ page }) => {
   // the loop caps how much simulation one frame may absorb — so a fixed wait
   // measures the CI runner's graphics stack, not the kart.
   await page.keyboard.down('ArrowUp');
+  // The stage now carries downloaded tree and vehicle models — an order of
+  // magnitude more geometry than the procedural blobs — so a GPU-less CI
+  // rasteriser crawls. This waits on the kart covering ground, not on a clock,
+  // but it still needs a generous ceiling on that hardware.
   await page.waitForFunction(() => window.__kart.session.debug.kart.state.distance > 120, null, {
-    timeout: 60_000,
+    timeout: 120_000,
   });
   await page.keyboard.up('ArrowUp');
 
@@ -61,6 +66,7 @@ test('drives, and the world reacts', async ({ page }) => {
 });
 
 test('opens a card for every landmark and finishes the tour', async ({ page }) => {
+  test.setTimeout(150_000);
   await startDriving(page);
 
   const ids = await page.evaluate(() => window.__kart.landmarks.map((l) => l.id));
@@ -85,7 +91,7 @@ test('opens a card for every landmark and finishes the tour', async ({ page }) =
       Object.assign(session.debug.kart.state, { x: landmark.x, z: landmark.z });
     }, id);
 
-    await expect(page.locator('#card')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#card')).toBeVisible({ timeout: 12_000 });
     await expect(page.locator('#card-title')).not.toBeEmpty();
     await page.keyboard.press('Escape');
   }

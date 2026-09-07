@@ -146,14 +146,23 @@ const THEME_BUILDERS = {
     }
   },
 
-  /** A barn, its bale stacks, and a spectator stand watching the stage. */
+  /** A farmhouse, an outbuilding, bale stacks, and a spectator stand. */
   farm(block) {
-    const barnAt = spot(block, 0.5);
     block.scenery.push(
-      box(block, 'barn', barnAt, {
+      box(block, 'barn', spot(block, 0.5), {
         halfWidth: rangeFrom(block.rng, 26, 38),
         halfDepth: rangeFrom(block.rng, 18, 26),
         height: rangeFrom(block.rng, 34, 52),
+        color: pickFrom(block.rng, STRUCTURES),
+      }),
+    );
+    // A second, smaller building — an outbuilding across the yard — so a farm
+    // reads as a smallholding rather than one shed in a field.
+    block.scenery.push(
+      box(block, 'barn', spot(block, 0.8), {
+        halfWidth: rangeFrom(block.rng, 16, 24),
+        halfDepth: rangeFrom(block.rng, 14, 20),
+        height: rangeFrom(block.rng, 24, 36),
         color: pickFrom(block.rng, STRUCTURES),
       }),
     );
