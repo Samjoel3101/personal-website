@@ -59,19 +59,45 @@ export function barnRoofGeometry() {
   return mergeParts([eave, ridge], 'barn-roof');
 }
 
-/** A stack of round bales, lying on their sides across the long axis. */
+/**
+ * A stack of round bales, lying on their sides across the long axis.
+ *
+ * Authored to fill the unit box directly, and deliberately NOT passed through
+ * fitToUnitBox. That is what was wrong with these before: three cylinders in a
+ * pyramid have a bounding box far wider than it is tall, so normalising it
+ * stretched every bale vertically into an ellipse, and the instance scale then
+ * stretched it again on a different axis. What arrived on screen was a yellow
+ * blob with no bales in it. Filling the box by construction means the only
+ * distortion left is the instance's own, and the world authors bale stacks
+ * close to square (see course-blocks.js) to keep even that small.
+ *
+ * Sixteen sides rather than ten, too: a bale is a cylinder seen end-on, and at
+ * ten you can count the corners.
+ */
 export function baleStackGeometry() {
   const parts = [];
-  const bale = (x, y, radius) => {
-    const cylinder = new CylinderGeometry(radius, radius, 0.86, 10);
+  const RADIUS = 0.25;
+  const SIDES = 16;
+
+  const bale = (x, y) => {
+    // Length 1: the bales lie across the full width of the box, ends flush
+    // with its faces, which is what makes the stack read as stacked.
+    const cylinder = new CylinderGeometry(RADIUS, RADIUS, 1, SIDES);
     cylinder.rotateZ(Math.PI / 2);
     cylinder.translate(x, y, 0);
     return cylinder;
   };
 
-  for (const x of [-0.26, 0.26]) parts.push(bale(x, 0.26, 0.26));
-  parts.push(bale(0, 0.72, 0.24));
-  return fitToUnitBox(mergeParts(parts, 'bale-stack'));
+  // Two on the ground, two on top, each row filling the box's depth.
+  for (const z of [-RADIUS, RADIUS]) {
+    for (const y of [RADIUS, RADIUS * 3]) {
+      const one = bale(0, y);
+      one.translate(0, 0, z);
+      parts.push(one);
+    }
+  }
+
+  return mergeParts(parts, 'bale-stack');
 }
 
 /**

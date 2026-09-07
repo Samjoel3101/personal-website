@@ -13,6 +13,14 @@ const REFERENCE_HEIGHT = 50;
 const VARIANTS = 3;
 
 /**
+ * Which downloaded tree stands in for which procedural variant.
+ *
+ * Index is load-bearing: model N replaces variant N and hides that variant
+ * alone, so one tree arriving does not take the other two down with it.
+ */
+const TREE_MODELS = ['kit.nature.tree.oak', 'kit.nature.tree.pine', 'kit.nature.tree.spire'];
+
+/**
  * Low-poly trees, mostly conifers.
  *
  * Faceted icosahedrons rather than smooth spheres: the flat shading catches
@@ -35,23 +43,27 @@ export function buildTrees(city) {
   const trees = city.props.filter((prop) => prop.type === 'tree');
   const copses = city.props.filter((prop) => prop.type === 'copse');
 
+  const lone = trees.filter((tree) => !tree.copse);
+
   const standing = new Group();
   standing.name = 'copse-trees';
   addVariants(
     standing,
     trees.filter((tree) => tree.copse),
   );
-  addVariants(
-    group,
-    trees.filter((tree) => !tree.copse),
-  );
+  const holders = addVariants(group, lone);
   group.add(standing);
 
   return {
     group,
 
-    /** Swap the procedural copses for a downloaded forest patch. */
+    /** Swap the procedural copses for a downloaded forest patch, or one
+     *  variant of the lone trees for a downloaded tree. */
     useModel(id, model) {
+      const variant = TREE_MODELS.indexOf(id);
+      if (variant !== -1) {
+        return useTreeModel(group, holders[variant], variantOf(lone, variant), model, variant);
+      }
       if (id !== 'kit.rally.forest' || copses.length === 0) return false;
 
       const rng = createRng(51);
@@ -74,31 +86,74 @@ export function buildTrees(city) {
   };
 }
 
-/** Splits a list of trees across the variants so a stand is not a row of
- *  identical lollipops, and adds one instanced mesh per variant. */
+/** Every Nth tree, so a variant's model replaces exactly its own share. */
+function variantOf(trees, variant) {
+  return trees.filter((_, index) => index % VARIANTS === variant);
+}
+
+/**
+ * A downloaded tree, at the sites of one procedural variant.
+ *
+ * Sized by the tree's own height rather than a footprint: a tree is a thing
+ * you judge by how tall it is, and the models are authored at wildly different
+ * width-to-height ratios — a spire is a third the width of an oak the same
+ * height.
+ */
+function useTreeModel(group, procedural, trees, model, seed) {
+  if (!procedural || trees.length === 0) return false;
+
+  const rng = createRng(700 + seed);
+  const meshes = instancedModel(
+    model,
+    trees.map((tree) => ({
+      x: tree.x,
+      y: seatOnGround(tree.x, tree.z),
+      z: tree.z,
+      size: tree.height,
+      rotationY: rng() * Math.PI * 2,
+    })),
+  );
+  if (meshes.length === 0) return false;
+
+  procedural.visible = false;
+  for (const mesh of meshes) group.add(mesh);
+  return true;
+}
+
+/**
+ * Splits a list of trees across the variants so a stand is not a row of
+ * identical lollipops, and adds one instanced mesh per variant.
+ *
+ * @returns {Group[]} one holder per variant, so a model can hide its own
+ */
 function addVariants(target, trees) {
-  if (trees.length === 0) return;
+  const holders = [];
 
   for (let variant = 0; variant < VARIANTS; variant += 1) {
-    const items = trees
-      .filter((_, index) => index % VARIANTS === variant)
-      .map((tree) => {
-        const scale = tree.height / REFERENCE_HEIGHT;
-        return {
-          x: tree.x,
-          y: seatOnGround(tree.x, tree.z),
-          z: tree.z,
-          sx: scale,
-          sy: scale,
-          sz: scale,
-        };
-      });
+    const holder = new Group();
+    holder.name = `trees-${variant}`;
+    target.add(holder);
+    holders.push(holder);
+
+    const items = variantOf(trees, variant).map((tree) => {
+      const scale = tree.height / REFERENCE_HEIGHT;
+      return {
+        x: tree.x,
+        y: seatOnGround(tree.x, tree.z),
+        z: tree.z,
+        sx: scale,
+        sy: scale,
+        sz: scale,
+      };
+    });
     if (items.length === 0) continue;
 
     const mesh = tiledInstances(treeGeometry(variant), vertexColoured(), items);
     mesh.receiveShadow = false; // foliage self-shadowing reads as dirt, not depth
-    target.add(mesh);
+    holder.add(mesh);
   }
+
+  return holders;
 }
 
 function treeGeometry(variant) {

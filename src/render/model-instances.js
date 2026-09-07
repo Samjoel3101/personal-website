@@ -1,4 +1,5 @@
-import { Box3, MeshLambertMaterial, Vector3 } from 'three';
+import { Box3, Color, MeshLambertMaterial, Vector3 } from 'three';
+import { KIT_TINTS } from '../config/palette.js';
 import { tiledInstances } from './geometry/tiling.js';
 
 /**
@@ -28,6 +29,10 @@ import { tiledInstances } from './geometry/tiling.js';
  * render as silhouettes and look for all the world like the vertexColors trap
  * two doors down in ./materials.js.
  *
+ * A recognised material name is also repainted from this stage's own palette
+ * — see KIT_TINTS. The untextured kits do not ship the colours they are drawn
+ * with: their greens arrive teal and their browns salmon.
+ *
  * Keyed by the source material so a kit sharing one atlas across forty models
  * still ends up sharing one material.
  */
@@ -37,8 +42,9 @@ function flatten(material) {
   if (!material || material.isMeshLambertMaterial) return material;
   if (flattened.has(material)) return flattened.get(material);
 
+  const tint = KIT_TINTS[material.name];
   const lambert = new MeshLambertMaterial({
-    color: material.color?.clone() ?? 0xffffff,
+    color: tint ? new Color(tint) : (material.color?.clone() ?? 0xffffff),
     map: material.map ?? null,
     transparent: material.transparent,
     opacity: material.opacity,
