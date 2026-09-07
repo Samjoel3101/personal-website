@@ -1,4 +1,4 @@
-import { Box3, Vector3 } from 'three';
+import { Box3, MeshLambertMaterial, Vector3 } from 'three';
 import { tiledInstances } from './geometry/tiling.js';
 
 /**
@@ -17,6 +17,40 @@ import { tiledInstances } from './geometry/tiling.js';
  */
 
 /**
+ * Downloaded materials, flattened onto the scene's own lighting model.
+ *
+ * Two reasons, and the second one is not cosmetic. A glTF arrives as
+ * MeshStandardMaterial, which is roughly twice the fragment cost of the
+ * Lambert everything else here uses and shades visibly differently beside it.
+ * And Kenney's untextured kits — every bush, tree and boulder in the Nature
+ * Kit — are authored `metallicFactor: 1`. A fully metallic surface with no
+ * environment map to reflect has nothing to return but black, so those models
+ * render as silhouettes and look for all the world like the vertexColors trap
+ * two doors down in ./materials.js.
+ *
+ * Keyed by the source material so a kit sharing one atlas across forty models
+ * still ends up sharing one material.
+ */
+const flattened = new Map();
+
+function flatten(material) {
+  if (!material || material.isMeshLambertMaterial) return material;
+  if (flattened.has(material)) return flattened.get(material);
+
+  const lambert = new MeshLambertMaterial({
+    color: material.color?.clone() ?? 0xffffff,
+    map: material.map ?? null,
+    transparent: material.transparent,
+    opacity: material.opacity,
+    alphaTest: material.alphaTest,
+    side: material.side,
+  });
+  lambert.name = material.name;
+  flattened.set(material, lambert);
+  return lambert;
+}
+
+/**
  * @param {import('three').Object3D|null} model
  * @returns {{geometry, material}[]} normalised parts, or [] if there is nothing
  */
@@ -29,7 +63,7 @@ export function normalisedParts(model) {
     if (!child.isMesh || !child.geometry) return;
     const geometry = child.geometry.clone();
     geometry.applyMatrix4(child.matrixWorld);
-    parts.push({ geometry, material: child.material });
+    parts.push({ geometry, material: flatten(child.material) });
   });
   if (parts.length === 0) return [];
 

@@ -148,9 +148,12 @@ the intended image and pays for the draw distance. The rig is warmer and lower
 than the pastel city's was — mud and rock carry shadow that a lilac facade
 could not, and a heightfield lit from overhead is invisible.
 
-Downloaded models keep whatever material they shipped with, which for the
-rally kit is `MeshStandardMaterial`. Half a dozen instanced meshes of it is a
-rounding error next to the ground.
+Downloaded models do not keep the material they shipped with.
+`render/model-instances.js` flattens every one onto a Lambert carrying the same
+texture, for two reasons: a `MeshStandardMaterial` shades visibly differently
+beside everything else in the scene, and Kenney's untextured kits are authored
+`metallicFactor: 1` — fully metallic, with no environment map to reflect, which
+renders them black.
 
 ### Quality ladder
 
