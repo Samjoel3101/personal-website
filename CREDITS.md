@@ -9,28 +9,25 @@ no third-party licence.
 
 ## Third-party assets
 
-| Asset                                    | Licence | Author                | Source                                                 |
-| ---------------------------------------- | ------- | --------------------- | ------------------------------------------------------ |
-| Starter Kit Racing — truck               | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing) |
-| Starter Kit Racing — colour atlas        | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing) |
-| Starter Kit Racing — forest patch        | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing) |
-| Starter Kit Racing — spectator camp      | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing) |
-| Starter Kit Racing — start/finish gantry | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing) |
-| Venice Sunset                            | CC0-1.0 | Greg Zaal, Poly Haven | [link](https://polyhaven.com/a/venice_sunset)          |
-| Nature Kit - Oak tree                    | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/nature-kit)            |
-| Nature Kit - Pine tree                   | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/nature-kit)            |
-| Nature Kit - Tall pine                   | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/nature-kit)            |
-| Nature Kit - Large bush                  | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/nature-kit)            |
-| Nature Kit - Detailed bush               | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/nature-kit)            |
-| Nature Kit - Small bush                  | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/nature-kit)            |
-| Nature Kit - Large boulder               | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/nature-kit)            |
-| Nature Kit - Small boulder               | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/nature-kit)            |
-| Nature Kit - Tall outcrop                | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/nature-kit)            |
-| Suburban Kit - House type A              | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/city-kit-suburban)     |
-| Suburban Kit - House type J              | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/city-kit-suburban)     |
-| Suburban Kit - colour atlas              | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/city-kit-suburban)     |
-| texture.grass.color                      | CC0-1.0 | ambientCG             | [link](https://ambientcg.com/view?id=Grass001)         |
-| texture.grass.normal                     | CC0-1.0 | ambientCG             | [link](https://ambientcg.com/view?id=Grass001)         |
+| Asset                                    | Licence | Author                | Source                                                          |
+| ---------------------------------------- | ------- | --------------------- | --------------------------------------------------------------- |
+| Starter Kit Racing — truck               | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing)          |
+| Starter Kit Racing — colour atlas        | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing)          |
+| Starter Kit Racing — forest patch        | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing)          |
+| Starter Kit Racing — spectator camp      | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing)          |
+| Starter Kit Racing — start/finish gantry | CC0-1.0 | Kenney                | [link](https://github.com/KenneyNL/Starter-Kit-Racing)          |
+| Venice Sunset                            | CC0-1.0 | Greg Zaal, Poly Haven | [link](https://polyhaven.com/a/venice_sunset)                   |
+| Stylized Nature MegaKit - Common tree    | CC0-1.0 | Quaternius            | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit - Pine           | CC0-1.0 | Quaternius            | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit - Pine (narrow)  | CC0-1.0 | Quaternius            | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit - Rock 1         | CC0-1.0 | Quaternius            | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit - Rock 2         | CC0-1.0 | Quaternius            | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit - Rock 3         | CC0-1.0 | Quaternius            | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| LowPoly Buildings - House                | CC0-1.0 | Quaternius            | [link](https://opengameart.org/content/lowpoly-buildings-pack)  |
+| LowPoly Buildings - House 3              | CC0-1.0 | Quaternius            | [link](https://opengameart.org/content/lowpoly-buildings-pack)  |
+| LowPoly Buildings - Shop                 | CC0-1.0 | Quaternius            | [link](https://opengameart.org/content/lowpoly-buildings-pack)  |
+| texture.grass.color                      | CC0-1.0 | ambientCG             | [link](https://ambientcg.com/view?id=Grass001)                  |
+| texture.grass.normal                     | CC0-1.0 | ambientCG             | [link](https://ambientcg.com/view?id=Grass001)                  |
 
 ## Fonts
 

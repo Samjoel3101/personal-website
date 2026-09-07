@@ -52,15 +52,20 @@ be lazy and must never block the first frame. Expect to re-tune
 `SUN.AMBIENT_INTENSITY` down: an environment map already supplies the ambient
 the hemisphere light is currently faking.
 
-### 3. More scenery models from the rally kit
+### 3. Move the stage onto Quaternius art
 
-**Files:** `assets/manifest.json`, `src/render/builders/scenery.js`
-**Effort:** an hour per model
+**Files:** `assets/manifest.json`, `src/assets/loader.js`,
+`src/render/builders/{trees,scenery}.js`
+**Effort:** ~2 days across nature + buildings
+**Full plan:** `docs/QUATERNIUS-KIT-PLAN.md`
 
-The Starter Kit Racing repository has more than the four files pinned here.
-Adding one is a manifest entry with `role: "scenery"` plus a branch in
-`buildScenery`'s `useModel`. Keep the rule that every one of them no-ops when
-the model is absent, and keep instancing rather than cloning — see
+Replace the procedural / Kenney scenery with two CC0 Quaternius kits — the
+Stylized Nature MegaKit (trees, rocks, ferns) and LowPoly Buildings (houses, a
+shop, a bank). Web-optimised `.glb` builds are mirrored at
+`github.com/Samjoel3101/3d-assets`, pinned to a commit the same way the Kenney
+entries are. The one non-obvious cost: those `.glb` use `EXT_meshopt_compression`,
+so `loader.js` has to register `MeshoptDecoder` (~10 KB gz). Keep the rule that
+every model no-ops when absent, and keep instancing not cloning — see
 `src/render/model-instances.js`.
 
 ### 4. A second track family

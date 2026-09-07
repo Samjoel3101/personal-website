@@ -44,8 +44,8 @@ const ROCK_VARIANTS = 3;
  * — each slice falls back independently, so a half-fetched assets directory
  * gives a mixed stage rather than a hole in it.
  */
-const ROCK_MODELS = ['kit.nature.rock.large', 'kit.nature.rock.small', 'kit.nature.rock.tall'];
-const HOUSE_MODELS = ['kit.farm.house.a', 'kit.farm.house.b'];
+const ROCK_MODELS = ['kit.nature.rock.a', 'kit.nature.rock.b', 'kit.nature.rock.c'];
+const HOUSE_MODELS = ['kit.building.house', 'kit.building.cottage'];
 
 export function buildScenery(city) {
   const group = new Group();

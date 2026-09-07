@@ -18,7 +18,7 @@ const VARIANTS = 3;
  * Index is load-bearing: model N replaces variant N and hides that variant
  * alone, so one tree arriving does not take the other two down with it.
  */
-const TREE_MODELS = ['kit.nature.tree.oak', 'kit.nature.tree.pine', 'kit.nature.tree.spire'];
+const TREE_MODELS = ['kit.nature.tree.broadleaf', 'kit.nature.tree.pine', 'kit.nature.tree.spire'];
 
 /**
  * Low-poly trees, mostly conifers.

@@ -1,4 +1,5 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { TextureLoader } from 'three';
 import { assetUrl } from './registry.js';
 
@@ -13,6 +14,10 @@ import { assetUrl } from './registry.js';
  */
 export function createAssetLoader() {
   const gltf = new GLTFLoader();
+  // The mirrored kits are Meshopt-compressed to keep their transfer size down;
+  // GLTFLoader rejects such a file unless a decoder is registered. Plain glTF
+  // is unaffected — the decoder is only consulted for the extension.
+  gltf.setMeshoptDecoder(MeshoptDecoder);
   const textures = new TextureLoader();
   const cache = new Map();
   const failures = [];
