@@ -21,6 +21,7 @@ const position = new Vector3();
 const quaternion = new Quaternion();
 const scale = new Vector3();
 const colour = new Color();
+const UP = new Vector3(0, 1, 0);
 
 /**
  * @param {import('three').BufferGeometry} geometry
@@ -43,7 +44,7 @@ export function tiledInstances(geometry, material, items) {
     for (const offsetZ of TILE_OFFSETS) {
       for (const item of items) {
         position.set(item.x + offsetX, item.y ?? 0, item.z + offsetZ);
-        quaternion.setFromAxisAngle(new Vector3(0, 1, 0), item.rotationY ?? 0);
+        quaternion.setFromAxisAngle(UP, item.rotationY ?? 0);
         scale.set(item.sx ?? 1, item.sy ?? 1, item.sz ?? 1);
         mesh.setMatrixAt(index, matrix.compose(position, quaternion, scale));
         if (item.color) mesh.setColorAt(index, colour.set(item.color));
@@ -55,6 +56,32 @@ export function tiledInstances(geometry, material, items) {
   mesh.instanceMatrix.needsUpdate = true;
   if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   return mesh;
+}
+
+/**
+ * Rewrites the matrices of a mesh built by `tiledInstances` from the same item
+ * shape, for the handful of things that move after build time.
+ *
+ * The item order and count must match the build exactly — this walks the same
+ * nine tiles in the same order rather than searching for anything. It reuses
+ * the module's scratch objects for the same reason the build does: this runs
+ * every frame, and a Matrix4 and three Vector3s per instance per frame is a
+ * garbage collector pause with a scenic view.
+ */
+export function updateInstances(mesh, items) {
+  let index = 0;
+  for (const offsetX of TILE_OFFSETS) {
+    for (const offsetZ of TILE_OFFSETS) {
+      for (const item of items) {
+        position.set(item.x + offsetX, item.y ?? 0, item.z + offsetZ);
+        quaternion.setFromAxisAngle(UP, item.rotationY ?? 0);
+        scale.set(item.sx ?? 1, item.sy ?? 1, item.sz ?? 1);
+        mesh.setMatrixAt(index, matrix.compose(position, quaternion, scale));
+        index += 1;
+      }
+    }
+  }
+  mesh.instanceMatrix.needsUpdate = true;
 }
 
 /** The 3x3 tiling of a single pre-positioned geometry, e.g. the ground slab. */

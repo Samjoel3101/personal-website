@@ -59,7 +59,10 @@ describe('stage generation', () => {
     }
   });
 
-  it('leaves the racing line clear of parked vehicles', () => {
+  it('leaves the racing line clear of every vehicle, parked or moving', () => {
+    // Both kinds live in city.cars and both stand ON the dirt, so both have to
+    // leave a lane. tests/traffic.test.js asserts the moving ones keep doing
+    // it after they have driven somewhere.
     for (const car of city.cars) {
       const acrossX = distanceAcrossTrack(car.x, car.z);
       const acrossZ = distanceAcrossTrack(car.z, car.x);
@@ -70,6 +73,14 @@ describe('stage generation', () => {
       // Outer edge must stay on the dirt.
       expect(across + half).toBeLessThanOrEqual(WORLD.ROAD_HALF);
     }
+  });
+
+  it('offers the moving vehicles to the collision solver by reference', () => {
+    const moving = city.cars.filter((car) => car.moving);
+    expect(moving.length).toBeGreaterThan(5);
+    // Identity, not equality: moving a vehicle has to move what the physics
+    // collides with, with nothing rebuilt.
+    for (const car of moving) expect(city.colliders).toContain(car);
   });
 
   it('gives every landmark a paddock to stand on', () => {

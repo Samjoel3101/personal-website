@@ -41,6 +41,7 @@ export function createGameScene(city) {
   scene.add(createSky());
   const lighting = createLighting(scene);
 
+  const cars = buildCars(city);
   const scenery = buildScenery(city);
   const trees = buildTrees(city);
   const terrain = buildTerrain();
@@ -54,7 +55,7 @@ export function createGameScene(city) {
     scenery.group,
     trees.group,
     buildLamps(city),
-    buildCars(city),
+    cars.group,
     buildMarkers(),
   );
   scene.add(worldGroup);
@@ -81,6 +82,9 @@ export function createGameScene(city) {
       kart.group.position.y = ground.update(kartState.x, kartState.z, dt);
       tiltToGround(kart.group, kartState, dt);
       kart.update(kartState, dt);
+      // The world model has already moved the traffic this step; this puts the
+      // instances where it put the vehicles.
+      cars.update();
     },
 
     /**

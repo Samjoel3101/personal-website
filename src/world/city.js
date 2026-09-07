@@ -8,8 +8,9 @@ import {
 } from './course-blocks.js';
 import { landmarkBoxes, paddockBlockKeys } from './landmarks.js';
 import { buildPuddles } from './puddles.js';
-import { buildBoostPads, buildLamps, buildParkedCars } from './street-furniture.js';
+import { buildBoostPads, buildLamps, buildVehicles } from './street-furniture.js';
 import { createSurfaceSampler } from './surfaces.js';
+import { createTraffic } from './traffic.js';
 
 /** Fixed seed: the stage must be byte-identical on every visit and every CI run. */
 export const CITY_SEED = 20260903;
@@ -28,7 +29,7 @@ export const CITY_SEED = 20260903;
  *
  * @returns {{
  *   scenery: object[], cars: object[], props: object[], boostPads: object[],
- *   puddles: object[], colliders: object[],
+ *   puddles: object[], colliders: object[], traffic: {update: (dt: number) => void},
  *   surfaceAt: (x: number, z: number) => number
  * }}
  */
@@ -56,13 +57,18 @@ export function createCity(seed = CITY_SEED) {
     props.push(...built.props);
   }
 
-  const cars = buildParkedCars(rng);
+  const bays = buildVehicles(rng);
+  const traffic = createTraffic(bays.traffic);
+  const cars = [...bays.parked, ...traffic.cars];
   const puddles = buildPuddles();
   props.push(...buildLamps());
 
   return {
     scenery,
     cars,
+    /* The moving vehicles, by reference: advancing them rewrites the very
+       objects the collider list and the renderer already hold. */
+    traffic,
     props,
     boostPads: buildBoostPads(),
     /* Everything the kart can hit, in one list: only boxes that stand on the

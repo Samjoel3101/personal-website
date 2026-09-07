@@ -1,8 +1,10 @@
+import { TRAFFIC } from '../config/tuning.js';
 import { WORLD, blockCentre } from '../config/world.js';
 import { VEHICLES } from '../config/palette.js';
 import { chanceFrom, pickFrom } from '../core/rng.js';
 import { wrap } from '../core/torus.js';
 import { trackOffsetAt } from './track.js';
+import { trafficCar } from './traffic.js';
 
 /**
  * Everything that lines the track: marker posts, abandoned service vehicles and
@@ -82,31 +84,50 @@ function parkedCar(x, z, axis, color) {
   };
 }
 
-/** Fills the four bays (both sides, both track orientations) at one position. */
-function fillBays(rng, cars, line, along) {
+/**
+ * Fills the four bays (both sides, both track orientations) at one position.
+ *
+ * An occupied bay is either a vehicle parked in it or one pulling out of it,
+ * which is why both lists are filled here rather than generated twice: the
+ * choice has to come off the same seeded draw or two bays could claim the same
+ * strip of dirt.
+ */
+function fillBays(rng, bays, line, along) {
   const centre = line + trackOffsetAt(along);
   for (const side of [-1, 1]) {
     const lane = side * PARKING_LANE;
-    if (chanceFrom(rng, BAY_OCCUPANCY)) {
-      cars.push(parkedCar(wrap(centre + lane), wrap(along), 'z', pickFrom(rng, VEHICLES)));
-    }
-    if (chanceFrom(rng, BAY_OCCUPANCY)) {
-      cars.push(parkedCar(wrap(along), wrap(centre + lane), 'x', pickFrom(rng, VEHICLES)));
+    for (const axis of ['z', 'x']) {
+      if (!chanceFrom(rng, BAY_OCCUPANCY)) continue;
+      if (chanceFrom(rng, TRAFFIC.SHARE)) {
+        bays.traffic.push(trafficCar(rng, line, along, axis, side));
+        continue;
+      }
+      const colour = pickFrom(rng, VEHICLES);
+      bays.parked.push(
+        axis === 'z'
+          ? parkedCar(wrap(centre + lane), wrap(along), 'z', colour)
+          : parkedCar(wrap(along), wrap(centre + lane), 'x', colour),
+      );
     }
   }
 }
 
-export function buildParkedCars(rng) {
-  const cars = [];
+/**
+ * Every lay-by on the stage, filled or not.
+ *
+ * @returns {{parked: object[], traffic: object[]}}
+ */
+export function buildVehicles(rng) {
+  const bays = { parked: [], traffic: [] };
   for (let g = 0; g < WORLD.GRID; g += 1) {
     const line = g * WORLD.BLOCK;
     for (let segment = 0; segment < WORLD.GRID; segment += 1) {
       for (const offset of PARKING_OFFSETS) {
-        fillBays(rng, cars, line, segment * WORLD.BLOCK + offset);
+        fillBays(rng, bays, line, segment * WORLD.BLOCK + offset);
       }
     }
   }
-  return cars;
+  return bays;
 }
 
 /**

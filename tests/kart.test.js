@@ -32,6 +32,42 @@ function driveTrack(kart, line, input, seconds) {
   }
 }
 
+/**
+ * Holds the kart on one patch of track and lets it pull against it.
+ *
+ * driveTrack measures handling over real ground, which is what most of these
+ * cases want. The throttle curve is the exception: a buggy accelerating down a
+ * track line crosses a boost pad every 512 units, so anything measuring the
+ * top end would be measuring the pads. Re-seating z as well as x keeps the
+ * surface honestly SURFACE.TRACK and the pads out of it.
+ */
+function holdOnTrack(kart, line, z, input, seconds) {
+  for (let t = 0; t < seconds; t += STEP) {
+    placeOnTrack(kart, line, z);
+    kart.update(STEP, { ...NOTHING, ...input });
+  }
+}
+
+/** A stretch of track with no boost pad within a second's driving of it. */
+const STRAIGHT_Z = 300;
+
+/**
+ * Heading change over one second at full lock and a held speed.
+ *
+ * The speed is written back every step rather than driven up to, because the
+ * point of the case is the taper — comparing two speeds means holding them.
+ */
+function turnRateAt(speed) {
+  const runner = createKart({ city, emitter: createEmitter() });
+  const before = runner.state.heading;
+  for (let t = 0; t < 1; t += STEP) {
+    runner.state.speed = speed;
+    placeOnTrack(runner, WORLD.BLOCK, STRAIGHT_Z);
+    runner.update(STEP, { ...NOTHING, right: true });
+  }
+  return runner.state.heading - before;
+}
+
 /** Puts the kart on the centre line of the track running down `line`. */
 function placeOnTrack(kart, line, z) {
   kart.state.z = z;
@@ -142,5 +178,65 @@ describe('kart physics', () => {
     kart.state.heading = 0;
     drive(kart, { accelerate: true }, 8);
     expect(events).toContain('bump');
+  });
+
+  it('launches hard and then has to hunt for its last few units of speed', () => {
+    holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { accelerate: true }, 1);
+    const first = kart.state.speed;
+    holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { accelerate: true }, 1);
+    const second = kart.state.speed - first;
+
+    expect(first).toBeGreaterThan(second * 2);
+  });
+
+  it('reaches its top speed, and takes longer over the last stretch than the first', () => {
+    let half = null;
+    let nearly = null;
+    for (let t = 0; t < 10; t += STEP) {
+      holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { accelerate: true }, STEP);
+      if (half === null && kart.state.speed > KART.MAX_SPEED * 0.5) half = t;
+      if (nearly === null && kart.state.speed > KART.MAX_SPEED * 0.97) nearly = t;
+    }
+
+    expect(kart.state.speed).toBeGreaterThan(KART.MAX_SPEED * 0.97);
+    expect(nearly - half).toBeGreaterThan(half);
+  });
+
+  it('brakes without backing into whatever it just avoided', () => {
+    kart.state.speed = 40;
+    holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { brake: true }, KART.REVERSE_DELAY);
+    expect(kart.state.speed).toBe(0);
+
+    holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { accelerate: true }, 3);
+    holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { brake: true }, KART.REVERSE_DELAY);
+    expect(kart.state.speed).toBeGreaterThan(0);
+  });
+
+  it('engages reverse only once the brake has been held at a standstill', () => {
+    holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { brake: true }, KART.REVERSE_DELAY * 0.8);
+    expect(kart.state.speed).toBe(0);
+
+    holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { brake: true }, 1);
+    expect(kart.state.speed).toBeLessThan(0);
+    expect(kart.state.speed).toBeGreaterThanOrEqual(-KART.REVERSE_MAX);
+  });
+
+  it('steers less sharply at top speed than at the speed authority arrives', () => {
+    expect(turnRateAt(KART.MAX_SPEED)).toBeLessThan(turnRateAt(KART.TURN_AUTHORITY_SPEED));
+  });
+
+  it('hangs the tail out on the handbrake, and gathers it up again', () => {
+    const corner = (drift) => {
+      const runner = createKart({ city, emitter: createEmitter() });
+      holdOnTrack(runner, WORLD.BLOCK, STRAIGHT_Z, { accelerate: true }, 2);
+      holdOnTrack(runner, WORLD.BLOCK, STRAIGHT_Z, { accelerate: true, right: true, drift }, 1);
+      return runner;
+    };
+
+    const drifting = corner(true);
+    expect(Math.abs(drifting.state.slide)).toBeGreaterThan(Math.abs(corner(false).state.slide));
+
+    holdOnTrack(drifting, WORLD.BLOCK, STRAIGHT_Z, { accelerate: true }, 1);
+    expect(Math.abs(drifting.state.slide)).toBeLessThan(2);
   });
 });
