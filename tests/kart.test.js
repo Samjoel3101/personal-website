@@ -180,16 +180,24 @@ describe('kart physics', () => {
     expect(events).toContain('bump');
   });
 
-  it('launches hard and then has to hunt for its last few units of speed', () => {
-    holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { accelerate: true }, 1);
-    const first = kart.state.speed;
-    holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { accelerate: true }, 1);
-    const second = kart.state.speed - first;
+  it('gives less thrust the faster it is already going', () => {
+    const gainInOneStep = (speed) => {
+      const runner = createKart({ city, emitter: createEmitter() });
+      placeOnTrack(runner, WORLD.BLOCK, STRAIGHT_Z);
+      runner.state.speed = speed;
+      runner.update(STEP, { ...NOTHING, accelerate: true });
+      return runner.state.speed - speed;
+    };
 
-    expect(first).toBeGreaterThan(second * 2);
+    // Thrust falls off linearly toward the top speed, so half the speed range
+    // in, half the push is left. A constant-thrust kart sits near 1 here, and
+    // that is the whole difference between a top end and a clamp.
+    const ratio = gainInOneStep(0) / gainInOneStep(KART.MAX_SPEED / 2);
+    expect(ratio).toBeGreaterThan(1.8);
+    expect(ratio).toBeLessThan(2.3);
   });
 
-  it('reaches its top speed, and takes longer over the last stretch than the first', () => {
+  it('reaches its top speed, and takes far longer over the last stretch', () => {
     let half = null;
     let nearly = null;
     for (let t = 0; t < 10; t += STEP) {
@@ -198,8 +206,10 @@ describe('kart physics', () => {
       if (nearly === null && kart.state.speed > KART.MAX_SPEED * 0.97) nearly = t;
     }
 
-    expect(kart.state.speed).toBeGreaterThan(KART.MAX_SPEED * 0.97);
-    expect(nearly - half).toBeGreaterThan(half);
+    expect(kart.state.speed).toBeGreaterThan(KART.MAX_SPEED * 0.98);
+    // The second half of the speed range costs several times what the first
+    // one did. A kart pinned to a clamp by constant thrust takes barely more.
+    expect(nearly - half).toBeGreaterThan(half * 3.5);
   });
 
   it('brakes without backing into whatever it just avoided', () => {
@@ -210,6 +220,19 @@ describe('kart physics', () => {
     holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { accelerate: true }, 3);
     holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { brake: true }, KART.REVERSE_DELAY);
     expect(kart.state.speed).toBeGreaterThan(0);
+  });
+
+  it('does not treat idling as time spent on the brake', () => {
+    // Standing still and standing on the brake are different things. A buggy
+    // parked at a viewpoint used to have the reverse delay already behind it,
+    // so the next dab of the brake shot it backwards.
+    holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, {}, 2);
+    holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { brake: true }, KART.REVERSE_DELAY * 0.5);
+    expect(kart.state.speed).toBe(0);
+
+    holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, {}, 1);
+    holdOnTrack(kart, WORLD.BLOCK, STRAIGHT_Z, { brake: true }, KART.REVERSE_DELAY * 0.5);
+    expect(kart.state.speed).toBe(0);
   });
 
   it('engages reverse only once the brake has been held at a standstill', () => {
@@ -234,7 +257,11 @@ describe('kart physics', () => {
     };
 
     const drifting = corner(true);
-    expect(Math.abs(drifting.state.slide)).toBeGreaterThan(Math.abs(corner(false).state.slide));
+    const gripping = corner(false);
+    expect(Math.abs(drifting.state.slide)).toBeGreaterThan(Math.abs(gripping.state.slide) * 1.5);
+    // The handbrake is grip, not decoration: the same corner has to be taken
+    // WIDER on it. Scaling the slide alone would leave these two identical.
+    expect(Math.abs(drifting.state.heading)).toBeLessThan(Math.abs(gripping.state.heading) * 0.95);
 
     holdOnTrack(drifting, WORLD.BLOCK, STRAIGHT_Z, { accelerate: true }, 1);
     expect(Math.abs(drifting.state.slide)).toBeLessThan(2);

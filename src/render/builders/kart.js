@@ -7,7 +7,10 @@ import { lambert, vertexColoured } from '../materials.js';
 /** Target length of the buggy in world units, whatever geometry supplies it. */
 const KART_LENGTH = 30;
 /** Radians of body roll at full steering lock. A buggy on tall springs leans
- *  more than a go-kart did, but not far enough for the pan to reach a tyre. */
+ *  more than a go-kart did. It rolls about BUGGY.ROLL_CENTRE rather than about
+ *  the ground, which is what keeps the leaning body clear of its own tyres:
+ *  swept over every combination of lean and lock, the tightest gap between
+ *  chassis and tyre is about a third of a unit, and nothing touches. */
 const MAX_LEAN = 0.2;
 
 /**
@@ -27,7 +30,13 @@ export function buildKart() {
   group.name = 'kart';
 
   const chassis = new Group();
-  chassis.add(new Mesh(buggyBodyGeometry(), vertexColoured()));
+  const body = new Mesh(buggyBodyGeometry(), vertexColoured());
+  // The group sits at the roll axis and the body hangs back down from it, so
+  // rotating the group rolls the buggy about its floor rather than about the
+  // ground twenty units below.
+  body.position.y = -BUGGY.ROLL_CENTRE;
+  chassis.position.y = BUGGY.ROLL_CENTRE;
+  chassis.add(body);
   chassis.castShadow = true;
   group.add(chassis);
 

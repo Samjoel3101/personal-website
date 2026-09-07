@@ -1,7 +1,7 @@
 import { TRAFFIC } from '../config/tuning.js';
 import { WORLD, blockCentre } from '../config/world.js';
 import { VEHICLES } from '../config/palette.js';
-import { chanceFrom, pickFrom } from '../core/rng.js';
+import { chanceFrom, pickFrom, rangeFrom } from '../core/rng.js';
 import { wrap } from '../core/torus.js';
 import { trackOffsetAt } from './track.js';
 import { trafficCar } from './traffic.js';
@@ -84,31 +84,37 @@ function parkedCar(x, z, axis, color) {
   };
 }
 
+/** Every station down one strip: the lay-bys of all four segments. */
+const STATIONS = Array.from({ length: WORLD.GRID }, (_, segment) =>
+  PARKING_OFFSETS.map((offset) => segment * WORLD.BLOCK + offset),
+).flat();
+
 /**
- * Fills the four bays (both sides, both track orientations) at one position.
+ * Fills one strip — one lane of one track — with vehicles.
  *
- * An occupied bay is either a vehicle parked in it or one pulling out of it,
- * which is why both lists are filled here rather than generated twice: the
- * choice has to come off the same seeded draw or two bays could claim the same
- * strip of dirt.
+ * A strip is either driven or parked in, never both. The two share a lane, and
+ * traffic neither swerves nor brakes, so a parked vehicle in a lane somebody is
+ * driving down is a collision waiting for the seed to line it up. Everything on
+ * a driven strip travels at that strip's one speed, which is what keeps the
+ * vehicles on it exactly as far apart as the stations put them.
  */
-function fillBays(rng, bays, line, along) {
-  const centre = line + trackOffsetAt(along);
-  for (const side of [-1, 1]) {
-    const lane = side * PARKING_LANE;
-    for (const axis of ['z', 'x']) {
-      if (!chanceFrom(rng, BAY_OCCUPANCY)) continue;
-      if (chanceFrom(rng, TRAFFIC.SHARE)) {
-        bays.traffic.push(trafficCar(rng, line, along, axis, side));
-        continue;
-      }
-      const colour = pickFrom(rng, VEHICLES);
-      bays.parked.push(
-        axis === 'z'
-          ? parkedCar(wrap(centre + lane), wrap(along), 'z', colour)
-          : parkedCar(wrap(along), wrap(centre + lane), 'x', colour),
-      );
+function fillStrip(rng, bays, line, axis, side) {
+  const driven = chanceFrom(rng, TRAFFIC.SHARE);
+  const strip = { line, axis, side, speed: rangeFrom(rng, TRAFFIC.SPEED_MIN, TRAFFIC.SPEED_MAX) };
+
+  for (const along of STATIONS) {
+    if (!chanceFrom(rng, BAY_OCCUPANCY)) continue;
+    if (driven) {
+      bays.traffic.push(trafficCar(rng, strip, along));
+      continue;
     }
+    const centre = line + trackOffsetAt(along) + side * PARKING_LANE;
+    const colour = pickFrom(rng, VEHICLES);
+    bays.parked.push(
+      axis === 'z'
+        ? parkedCar(wrap(centre), wrap(along), 'z', colour)
+        : parkedCar(wrap(along), wrap(centre), 'x', colour),
+    );
   }
 }
 
@@ -120,11 +126,8 @@ function fillBays(rng, bays, line, along) {
 export function buildVehicles(rng) {
   const bays = { parked: [], traffic: [] };
   for (let g = 0; g < WORLD.GRID; g += 1) {
-    const line = g * WORLD.BLOCK;
-    for (let segment = 0; segment < WORLD.GRID; segment += 1) {
-      for (const offset of PARKING_OFFSETS) {
-        fillBays(rng, bays, line, segment * WORLD.BLOCK + offset);
-      }
+    for (const axis of ['z', 'x']) {
+      for (const side of [-1, 1]) fillStrip(rng, bays, g * WORLD.BLOCK, axis, side);
     }
   }
   return bays;

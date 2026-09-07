@@ -58,8 +58,11 @@ export function createKart({ city, emitter }) {
    * dab of the brake mid-corner cannot back it into the scenery.
    */
   function applyThrottle(dt, input, grip, topSpeed) {
-    const moving = Math.abs(state.speed) >= KART.STOP_SPEED;
-    state.stoppedFor = moving ? 0 : state.stoppedFor + dt;
+    // The delay counts time stood on the BRAKE, not time stood still: a buggy
+    // parked at a viewpoint has been stationary for a minute, and the next dab
+    // of the brake must not be the one that selects reverse.
+    const stopped = Math.abs(state.speed) < KART.STOP_SPEED;
+    state.stoppedFor = stopped && input.brake ? state.stoppedFor + dt : 0;
 
     if (input.accelerate) {
       const headroom = clamp(1 - state.speed / topSpeed, 0, 1);

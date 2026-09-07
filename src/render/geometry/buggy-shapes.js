@@ -20,10 +20,19 @@ import { paintGeometry } from './paint.js';
 /** Wheel sizes and stations. Staggered on purpose: the rear pair is the single
  *  strongest cue that this is a buggy and not a kart. */
 export const BUGGY = Object.freeze({
-  FRONT: { RADIUS: 4.8, WIDTH: 3.4, X: 8.8, Z: 9.5 },
-  REAR: { RADIUS: 6.0, WIDTH: 5.0, X: 9.6, Z: -9.0 },
+  FRONT: { RADIUS: 4.8, WIDTH: 3.4, X: 9.8, Z: 9.5 },
+  REAR: { RADIUS: 6.0, WIDTH: 5.0, X: 10.4, Z: -9.0 },
   /** Radians the front wheels turn at full lock. */
   MAX_STEER_ANGLE: 0.42,
+  /**
+   * Height the chassis rolls about.
+   *
+   * Rolling about the ground plane swings anything tall a long way sideways —
+   * at 0.2 rad a point ten units up moves two units out, straight into a tyre.
+   * A roll axis at floorpan height keeps the body between its own wheels at
+   * full lock and full lean, which the clearance is otherwise too tight for.
+   */
+  ROLL_CENTRE: 8,
 });
 
 const TUBE = 1.4;
@@ -68,30 +77,32 @@ export function buggyBodyGeometry() {
  * hang below it rather than the body resting on its tyres.
  */
 function addFloorpan(add) {
-  add(new BoxGeometry(14, 1.6, 22), KART_COLOURS.FLOORPAN, [0, 6.6, -1]);
-  add(new BoxGeometry(11, 2.2, 7), KART_COLOURS.FLOORPAN, [0, 7.2, 11]);
+  add(new BoxGeometry(12, 1.6, 20), KART_COLOURS.FLOORPAN, [0, 6.6, -2]);
+  add(new BoxGeometry(10, 2.2, 7), KART_COLOURS.FLOORPAN, [0, 7.2, 11]);
+  // The sills stop short of the front wheels on purpose: a wheel at full lock
+  // sweeps inboard of its own hub by a third of its diameter.
   for (const side of [-1, 1]) {
-    add(new BoxGeometry(1.6, 3, 20), KART_COLOURS.BODY, [side * 7.2, 8.2, -1]);
+    add(new BoxGeometry(1.6, 3, 18), KART_COLOURS.BODY, [side * 5.4, 8.2, -3]);
   }
   // Nose hoop: a bumper the shape of the cage, so the front reads as tube too.
   for (const side of [-1, 1]) {
-    add(new BoxGeometry(TUBE, 6, TUBE), KART_COLOURS.CAGE, [side * 5.4, 9.5, 13.6]);
+    add(new BoxGeometry(TUBE, 6, TUBE), KART_COLOURS.CAGE, [side * 5, 9.5, 13.6]);
   }
-  add(new BoxGeometry(12.2, TUBE, TUBE), KART_COLOURS.CAGE, [0, 12.5, 13.6]);
+  add(new BoxGeometry(11.4, TUBE, TUBE), KART_COLOURS.CAGE, [0, 12.5, 13.6]);
 }
 
 /** The roll cage: two hoops, sloping roof rails, braces and the light pod. */
 function addCage(add) {
   for (const side of [-1, 1]) {
-    add(new BoxGeometry(TUBE, 13, TUBE), KART_COLOURS.CAGE, [side * 6.5, 13.5, -6]);
-    add(new BoxGeometry(TUBE, 10, TUBE), KART_COLOURS.CAGE, [side * 6.2, 12, 6.5]);
-    add(roofRail(), KART_COLOURS.CAGE, [side * 6.35, 18.5, 0.25]);
-    add(rearBrace(), KART_COLOURS.CAGE, [side * 6.5, 13.5, -9]);
+    add(new BoxGeometry(TUBE, 13, TUBE), KART_COLOURS.CAGE, [side * 6, 13.5, -6]);
+    add(new BoxGeometry(TUBE, 10, TUBE), KART_COLOURS.CAGE, [side * 5.8, 12, 6.5]);
+    add(roofRail(), KART_COLOURS.CAGE, [side * 5.9, 18.5, 0.25]);
+    add(rearBrace(), KART_COLOURS.CAGE, [side * 6, 13.5, -9]);
   }
-  add(new BoxGeometry(14.4, TUBE, TUBE), KART_COLOURS.CAGE, [0, 20, -6]);
-  add(new BoxGeometry(13.8, TUBE, TUBE), KART_COLOURS.CAGE, [0, 17, 6.5]);
+  add(new BoxGeometry(13.4, TUBE, TUBE), KART_COLOURS.CAGE, [0, 20, -6]);
+  add(new BoxGeometry(13, TUBE, TUBE), KART_COLOURS.CAGE, [0, 17, 6.5]);
   // Harness bar, across the driver's shoulders.
-  add(new BoxGeometry(13, 1.2, 1.2), KART_COLOURS.CAGE, [0, 13.2, -5.4]);
+  add(new BoxGeometry(12, 1.2, 1.2), KART_COLOURS.CAGE, [0, 13.2, -5.4]);
 
   add(new BoxGeometry(15, 2.2, 2.4), KART_COLOURS.LIGHT_BAR, [0, 18.3, 6.6]);
   for (const x of [-5.2, -1.8, 1.8, 5.2]) {

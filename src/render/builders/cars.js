@@ -70,14 +70,19 @@ function reseat(item, car, y) {
   item.rotationY = car.yaw;
 }
 
+/**
+ * The body as drawn, which is the vehicle's own box — never `halfWidth` and
+ * `halfDepth`, because a moving vehicle's collision box is the bounding box of
+ * this one yawed, and drawing THAT would swell the truck as it turned.
+ */
 function bodyItem(car) {
   return {
     x: car.x,
     y: seatOnGround(car.x, car.z),
     z: car.z,
-    sx: car.halfWidth * 2,
+    sx: halfAcrossX(car) * 2,
     sy: car.height,
-    sz: car.halfDepth * 2,
+    sz: halfAlongZ(car) * 2,
     rotationY: car.yaw ?? 0,
     color: car.color,
   };
@@ -88,17 +93,22 @@ function bodyItem(car) {
  * way round depends on which way the vehicle is pointing.
  */
 function cabinItem(car) {
-  const alongZ = car.halfDepth > car.halfWidth;
+  const alongZ = halfAlongZ(car) > halfAcrossX(car);
   return {
     x: car.x,
     y: car.height + seatOnGround(car.x, car.z),
     z: car.z,
-    sx: car.halfWidth * 2 * (alongZ ? 0.86 : 0.55),
+    sx: halfAcrossX(car) * 2 * (alongZ ? 0.86 : 0.55),
     sy: car.cabinHeight,
-    sz: car.halfDepth * 2 * (alongZ ? 0.55 : 0.86),
+    sz: halfAlongZ(car) * 2 * (alongZ ? 0.55 : 0.86),
     rotationY: car.yaw ?? 0,
   };
 }
+
+/** A parked vehicle is drawn at its collision box; a moving one carries its
+ *  own, because the two are no longer the same thing. */
+const halfAcrossX = (car) => car.bodyHalfWidth ?? car.halfWidth;
+const halfAlongZ = (car) => car.bodyHalfDepth ?? car.halfDepth;
 
 /** Unit box with its base on the ground plane. */
 function baseBox() {

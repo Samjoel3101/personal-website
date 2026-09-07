@@ -81,11 +81,18 @@ export const MAX_FRAME_SECONDS = 0.1;
  * outcome — a service truck the kart cannot get past is a wall, not a car.
  */
 export const TRAFFIC = Object.freeze({
-  /** Fraction of the occupied lay-bys that pull out and drive instead. */
+  /** Fraction of the lay-by strips given over to traffic. A strip is driven or
+   *  parked in, never both: traffic holds one lane and does not dodge. */
   SHARE: 0.5,
-  /** Signed offset from the track centre line, matching the lay-by lane so a
-   *  moving vehicle leaves the same racing line a parked one does. */
-  LANE: 35,
+  /** Signed offset from the track centre line. Nearer the centre than the
+   *  lay-bys are, because a moving vehicle yaws with the track and its drawn
+   *  corners have to stay inside ROAD_HALF at the steepest part of the wobble. */
+  LANE: 33,
+  /** Half-extents of the body: across the vehicle, and along it. Smaller than a
+   *  parked service truck for the same reason — a long box yawed 35 degrees
+   *  sweeps a much wider strip than it occupies standing still. */
+  HALF_ACROSS: 5.5,
+  HALF_ALONG: 12,
   SPEED_MIN: 60,
   SPEED_MAX: 110,
 });

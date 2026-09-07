@@ -1,6 +1,6 @@
 import { TRAFFIC } from '../config/tuning.js';
 import { VEHICLES } from '../config/palette.js';
-import { pickFrom, rangeFrom } from '../core/rng.js';
+import { pickFrom } from '../core/rng.js';
 import { trackOffsetAt, trackSlopeAt } from './track.js';
 import { wrap } from '../core/torus.js';
 
@@ -25,13 +25,15 @@ import { wrap } from '../core/torus.js';
 const directionFor = (axis, side) => (axis === 'z' ? side : -side);
 
 /**
- * One vehicle pulling out of the lay-by at (`line`, `along`) on `side`.
+ * One vehicle on `strip` — a lane of one track, as `{line, axis, side, speed}`
+ * — starting at `along`.
  *
- * Same shape as a parked one — the physics reads an axis-aligned box either
- * way — but carrying the progress, lane and speed that `createTraffic`
- * advances.
+ * The speed belongs to the strip rather than to the vehicle: everything
+ * sharing a lane travels at one speed and so keeps the spacing it started
+ * with, for as long as it drives.
  */
-export function trafficCar(rng, line, along, axis, side) {
+export function trafficCar(rng, strip, along) {
+  const { line, axis, side } = strip;
   const alongZ = axis === 'z';
   const car = {
     kind: 'car',
@@ -41,13 +43,18 @@ export function trafficCar(rng, line, along, axis, side) {
     along: wrap(along),
     lane: side * TRAFFIC.LANE,
     direction: directionFor(axis, side),
-    speed: rangeFrom(rng, TRAFFIC.SPEED_MIN, TRAFFIC.SPEED_MAX),
+    speed: strip.speed,
     x: 0,
     z: 0,
     heading: 0,
     yaw: 0,
-    halfWidth: alongZ ? 8 : 20,
-    halfDepth: alongZ ? 20 : 8,
+    /* The body as drawn: axis-aligned half-extents, which is what the renderer
+       scales its box to before yawing it. halfWidth and halfDepth below are
+       the collision box, and they are not the same numbers. */
+    bodyHalfWidth: alongZ ? TRAFFIC.HALF_ACROSS : TRAFFIC.HALF_ALONG,
+    bodyHalfDepth: alongZ ? TRAFFIC.HALF_ALONG : TRAFFIC.HALF_ACROSS,
+    halfWidth: 0,
+    halfDepth: 0,
     base: 0,
     height: 11,
     cabinHeight: 7,
@@ -81,15 +88,22 @@ export function createTraffic(cars) {
 }
 
 /**
- * Writes the world position, travel heading and drawn yaw a vehicle's progress
- * implies.
+ * Writes the position, the two angles and the collision box a vehicle's
+ * progress implies.
  *
  * Two angles, because they are two different things. `heading` is the way the
  * vehicle is travelling. `yaw` is how far its box is turned off the axis it
- * was authored along, which is the track's own gradient and never more than
- * about 35 degrees — the collision box stays axis-aligned through it, exactly
- * as a parked vehicle's does. Drawing the box at `heading` instead would lay
- * every vehicle on an X line broadside across the road.
+ * was authored along, which is the track's own gradient — up to 35 degrees at
+ * the steepest part of the wobble. Drawing the box at `heading` instead would
+ * lay every vehicle on an X line broadside across the road.
+ *
+ * The collision box is the bounding box of that yawed body, recomputed here
+ * rather than fixed at build time. The physics only knows axis-aligned boxes,
+ * and of the two ways to be wrong — a box narrower than the picture, so the
+ * kart drives through ten units of visibly solid truck, or one wider, so it
+ * clips an empty corner — only the second is survivable. The lane and the body
+ * size are chosen so even the widest of these still leaves the racing line
+ * clear; tests/traffic.test.js pins that across time.
  */
 function seat(car) {
   const across = wrap(car.line + trackOffsetAt(car.along) + car.lane);
@@ -102,4 +116,11 @@ function seat(car) {
   const vz = alongZ ? 1 : slope;
   car.heading = Math.atan2(car.direction * vx, car.direction * vz);
   car.yaw = alongZ ? Math.atan(slope) : -Math.atan(slope);
+
+  const sin = Math.abs(Math.sin(car.yaw));
+  const cos = Math.abs(Math.cos(car.yaw));
+  const swept = TRAFFIC.HALF_ACROSS * cos + TRAFFIC.HALF_ALONG * sin;
+  const long = TRAFFIC.HALF_ACROSS * sin + TRAFFIC.HALF_ALONG * cos;
+  car.halfWidth = alongZ ? swept : long;
+  car.halfDepth = alongZ ? long : swept;
 }

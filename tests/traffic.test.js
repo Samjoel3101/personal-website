@@ -6,7 +6,7 @@ import { createKart } from '../src/physics/kart.js';
 import { resolveAll } from '../src/physics/collision.js';
 import { createCity } from '../src/world/city.js';
 import { distanceAcrossTrack } from '../src/world/track.js';
-import { wrapDistance } from '../src/core/torus.js';
+import { wrapDelta, wrapDistance } from '../src/core/torus.js';
 
 const STEP = 1 / 120;
 
@@ -25,6 +25,26 @@ function laneDistance(car) {
 
 /** Its half-extent across that same track. */
 const halfAcross = (car) => (car.axis === 'z' ? car.halfWidth : car.halfDepth);
+
+/** Do two axis-aligned boxes on the torus overlap? */
+const overlaps = (a, b) =>
+  Math.abs(wrapDelta(a.x - b.x)) < a.halfWidth + b.halfWidth &&
+  Math.abs(wrapDelta(a.z - b.z)) < a.halfDepth + b.halfDepth;
+
+/** The four corners of a vehicle's body as drawn: its own box, yawed. */
+function drawnCorners(car) {
+  const sin = Math.sin(car.yaw);
+  const cos = Math.cos(car.yaw);
+  const corners = [];
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      const x = sx * car.bodyHalfWidth;
+      const z = sz * car.bodyHalfDepth;
+      corners.push({ x: x * cos + z * sin, z: -x * sin + z * cos });
+    }
+  }
+  return corners;
+}
 
 function step(city, seconds) {
   for (let t = 0; t < seconds; t += STEP) city.traffic.update(STEP);
@@ -99,5 +119,65 @@ describe('moving traffic', () => {
         KART.RADIUS * 2,
       );
     }
+  });
+
+  it('is collided against a box that covers the vehicle it draws', () => {
+    // The physics only knows axis-aligned boxes, so a yawed vehicle's box is
+    // the bounding box of its body. Of the two ways to be wrong, a box
+    // narrower than the picture is the one the player feels: it drives through
+    // ten units of visibly solid truck.
+    const { city, moving } = stage();
+    const escaped = [];
+    for (let sample = 0; sample < 40; sample += 1) {
+      step(city, 0.25);
+      for (const car of moving) {
+        for (const corner of drawnCorners(car)) {
+          const out =
+            Math.abs(corner.x) > car.halfWidth + 1e-9 || Math.abs(corner.z) > car.halfDepth + 1e-9;
+          if (out) escaped.push(Math.round((car.yaw * 180) / Math.PI));
+        }
+      }
+    }
+    expect(escaped).toEqual([]);
+  });
+
+  it('never drives through a parked vehicle', () => {
+    // A driven strip carries no parked vehicles at all: they share a lane, and
+    // traffic neither swerves nor brakes.
+    const { city, moving } = stage();
+    const parked = city.cars.filter((car) => !car.moving);
+    expect(parked.length).toBeGreaterThan(5);
+
+    const hits = [];
+    for (let sample = 0; sample < 40; sample += 1) {
+      step(city, 0.25);
+      for (const car of moving) {
+        for (const still of parked) {
+          if (overlaps(car, still)) hits.push(`${Math.round(car.x)},${Math.round(car.z)}`);
+        }
+      }
+    }
+    expect(hits).toEqual([]);
+  });
+
+  it('never drives through traffic sharing its lane', () => {
+    // Everything on one strip runs at that strip's speed, so the gap the
+    // stations gave them is the gap they keep. Vehicles on crossing tracks do
+    // meet at junctions: traffic that dodges is out of scope.
+    const { city, moving } = stage();
+    const hits = [];
+    for (let sample = 0; sample < 40; sample += 1) {
+      step(city, 0.25);
+      for (let i = 0; i < moving.length; i += 1) {
+        for (let j = i + 1; j < moving.length; j += 1) {
+          const a = moving[i];
+          const b = moving[j];
+          if (a.axis === b.axis && a.line === b.line && a.lane === b.lane && overlaps(a, b)) {
+            hits.push(`${a.axis} line ${a.line}`);
+          }
+        }
+      }
+    }
+    expect(hits).toEqual([]);
   });
 });
