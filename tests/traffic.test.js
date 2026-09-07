@@ -50,6 +50,21 @@ function step(city, seconds) {
   for (let t = 0; t < seconds; t += STEP) city.traffic.update(STEP);
 }
 
+/**
+ * Runs `check` after every physics step rather than every so often.
+ *
+ * A vehicle at SPEED_MAX covers 27 units between quarter-second samples and a
+ * parked one is 24 long, so a sampled check can step clean over the very
+ * overlap it exists to catch. These properties are meant to hold at every
+ * instant, so they are asserted at every instant.
+ */
+function eachTick(city, seconds, check) {
+  for (let t = 0; t < seconds; t += STEP) {
+    city.traffic.update(STEP);
+    check();
+  }
+}
+
 describe('moving traffic', () => {
   it('puts some vehicles on the move and leaves the rest parked', () => {
     const { city, moving } = stage();
@@ -128,8 +143,7 @@ describe('moving traffic', () => {
     // ten units of visibly solid truck.
     const { city, moving } = stage();
     const escaped = [];
-    for (let sample = 0; sample < 40; sample += 1) {
-      step(city, 0.25);
+    eachTick(city, 10, () => {
       for (const car of moving) {
         for (const corner of drawnCorners(car)) {
           const out =
@@ -137,7 +151,7 @@ describe('moving traffic', () => {
           if (out) escaped.push(Math.round((car.yaw * 180) / Math.PI));
         }
       }
-    }
+    });
     expect(escaped).toEqual([]);
   });
 
@@ -149,14 +163,13 @@ describe('moving traffic', () => {
     expect(parked.length).toBeGreaterThan(5);
 
     const hits = [];
-    for (let sample = 0; sample < 40; sample += 1) {
-      step(city, 0.25);
+    eachTick(city, 10, () => {
       for (const car of moving) {
         for (const still of parked) {
           if (overlaps(car, still)) hits.push(`${Math.round(car.x)},${Math.round(car.z)}`);
         }
       }
-    }
+    });
     expect(hits).toEqual([]);
   });
 
@@ -166,8 +179,7 @@ describe('moving traffic', () => {
     // meet at junctions: traffic that dodges is out of scope.
     const { city, moving } = stage();
     const hits = [];
-    for (let sample = 0; sample < 40; sample += 1) {
-      step(city, 0.25);
+    eachTick(city, 10, () => {
       for (let i = 0; i < moving.length; i += 1) {
         for (let j = i + 1; j < moving.length; j += 1) {
           const a = moving[i];
@@ -177,7 +189,7 @@ describe('moving traffic', () => {
           }
         }
       }
-    }
+    });
     expect(hits).toEqual([]);
   });
 });

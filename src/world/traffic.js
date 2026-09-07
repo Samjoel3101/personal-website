@@ -117,10 +117,15 @@ function seat(car) {
   car.heading = Math.atan2(car.direction * vx, car.direction * vz);
   car.yaw = alongZ ? Math.atan(slope) : -Math.atan(slope);
 
+  // Read the vehicle's own drawn size rather than the constants it was built
+  // from: a second body size added later would otherwise keep the collision
+  // box sized for the first one.
+  const halfAcross = alongZ ? car.bodyHalfWidth : car.bodyHalfDepth;
+  const halfAlong = alongZ ? car.bodyHalfDepth : car.bodyHalfWidth;
   const sin = Math.abs(Math.sin(car.yaw));
   const cos = Math.abs(Math.cos(car.yaw));
-  const swept = TRAFFIC.HALF_ACROSS * cos + TRAFFIC.HALF_ALONG * sin;
-  const long = TRAFFIC.HALF_ACROSS * sin + TRAFFIC.HALF_ALONG * cos;
+  const swept = halfAcross * cos + halfAlong * sin;
+  const long = halfAcross * sin + halfAlong * cos;
   car.halfWidth = alongZ ? swept : long;
   car.halfDepth = alongZ ? long : swept;
 }

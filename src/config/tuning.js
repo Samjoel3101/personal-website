@@ -9,9 +9,20 @@
 export const KART = Object.freeze({
   MAX_SPEED: 250,
   BOOST_SPEED: 380,
-  /** Thrust at a standstill. It falls off linearly toward the top speed, so
-   *  this number is the launch, not the cruise: raising it shortens the first
-   *  second and barely moves the last twenty units per hour. */
+  /**
+   * Thrust at a standstill. It falls off linearly toward the top speed, so
+   * this number is the launch, not the cruise: raising it shortens the first
+   * second and barely moves the last twenty units per hour.
+   *
+   * Deliberately favours the launch over the plan's 4-6s target for 0-to-top,
+   * which this misses: 95% of MAX_SPEED arrives at 2.5s, 99% at 5.6s. With a
+   * linear falloff the two cannot both be had — the time constant is
+   * ACCELERATION / MAX_SPEED + DRAG, so any launch harder than the 210 this
+   * replaced puts 95% inside 3.9s, and reaching the band needs about 160,
+   * softer off the line than the go-kart it is meant to beat. A steeper
+   * falloff curve would satisfy both, at the cost of putting MAX_SPEED out of
+   * reach entirely.
+   */
   ACCELERATION: 320,
   BRAKING: 400,
   /** Reverse is its own gear, and a slow one. */
