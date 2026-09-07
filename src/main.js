@@ -61,6 +61,18 @@ async function loadOptionalAssets(session) {
       }),
   );
 
+  // The ground material. Both maps are optional and independent: colour
+  // without a normal map is flat but right, and neither leaves the flat-shaded
+  // ground exactly as it was.
+  const ground = assetIds.filter((id) => assetInfo(id)?.role === 'ground');
+  if (ground.length > 0) {
+    const [map, normalMap] = await Promise.all([
+      assets.texture(ground.find((id) => id.endsWith('.color'))),
+      assets.texture(ground.find((id) => id.endsWith('.normal'))),
+    ]);
+    session.stage.useGroundTexture({ map, normalMap });
+  }
+
   if (assets.failures.length > 0) {
     console.warn('Optional assets unavailable, using procedural fallbacks:', assets.failures);
   }

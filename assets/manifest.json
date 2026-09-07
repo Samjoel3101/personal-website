@@ -37,7 +37,7 @@
       "url": "https://raw.githubusercontent.com/KenneyNL/Starter-Kit-Racing/ca4d2e18e148474fc9ac5639e1c68d2a73c1225a/models/vehicle-truck-red.glb",
       "sha256": "eca99bd9ab0a2b02125f915e65d1ec8f1c5a93be7c6d4840efdac6633f47772c",
       "license": "CC0-1.0",
-      "title": "Starter Kit Racing \u2014 truck",
+      "title": "Starter Kit Racing — truck",
       "author": "Kenney",
       "source": "https://github.com/KenneyNL/Starter-Kit-Racing",
       "required": false,
@@ -51,11 +51,11 @@
       "url": "https://raw.githubusercontent.com/KenneyNL/Starter-Kit-Racing/ca4d2e18e148474fc9ac5639e1c68d2a73c1225a/models/Textures/colormap.png",
       "sha256": "02bb3fb87365927d16e265d27caae405aeef5819b6bde5a989ff5e435318de4d",
       "license": "CC0-1.0",
-      "title": "Starter Kit Racing \u2014 colour atlas",
+      "title": "Starter Kit Racing — colour atlas",
       "author": "Kenney",
       "source": "https://github.com/KenneyNL/Starter-Kit-Racing",
       "required": false,
-      "notes": "Shared by every rally-kit model, which reference it relatively. Never requested by id at runtime \u2014 it only has to be on disk beside the models \u2014 so it carries a role nothing asks for.",
+      "notes": "Shared by every rally-kit model, which reference it relatively. Never requested by id at runtime — it only has to be on disk beside the models — so it carries a role nothing asks for.",
       "role": "texture-atlas"
     },
     {
@@ -65,7 +65,7 @@
       "url": "https://raw.githubusercontent.com/KenneyNL/Starter-Kit-Racing/ca4d2e18e148474fc9ac5639e1c68d2a73c1225a/models/decoration-forest.glb",
       "sha256": "664a53f0f709fef9096af3bbfb1aa76536527a616b05170c0cf4e27e33358a00",
       "license": "CC0-1.0",
-      "title": "Starter Kit Racing \u2014 forest patch",
+      "title": "Starter Kit Racing — forest patch",
       "author": "Kenney",
       "source": "https://github.com/KenneyNL/Starter-Kit-Racing",
       "required": false,
@@ -79,7 +79,7 @@
       "url": "https://raw.githubusercontent.com/KenneyNL/Starter-Kit-Racing/ca4d2e18e148474fc9ac5639e1c68d2a73c1225a/models/decoration-tents.glb",
       "sha256": "19dbf2a778ad75f95c7d61f12866ef7174ab69cad169d3749c5400f5e14db8a3",
       "license": "CC0-1.0",
-      "title": "Starter Kit Racing \u2014 spectator camp",
+      "title": "Starter Kit Racing — spectator camp",
       "author": "Kenney",
       "source": "https://github.com/KenneyNL/Starter-Kit-Racing",
       "required": false,
@@ -93,7 +93,7 @@
       "url": "https://raw.githubusercontent.com/KenneyNL/Starter-Kit-Racing/ca4d2e18e148474fc9ac5639e1c68d2a73c1225a/models/track-finish.glb",
       "sha256": "2fec3b681658d6e77e20c4342d1e3ceeaab3e8d2fbf340942cde25cc2b21975b",
       "license": "CC0-1.0",
-      "title": "Starter Kit Racing \u2014 start/finish gantry",
+      "title": "Starter Kit Racing — start/finish gantry",
       "author": "Kenney",
       "source": "https://github.com/KenneyNL/Starter-Kit-Racing",
       "required": false,
@@ -274,6 +274,32 @@
       "required": false,
       "role": "texture-atlas",
       "notes": "Never requested by id. The house models reference it by the relative URI \"Textures/colormap.png\", so it only has to land in a Textures/ directory beside them; put it anywhere else and they load white, not broken."
+    },
+    {
+      "id": "texture.grass.color",
+      "file": "textures/grass/color.jpg",
+      "url": "https://raw.githubusercontent.com/pmndrs/market-assets/3921a42ca9b8813dda48c1ff540be6cc4476e72c/files/materials/grass/Grass001_1K_Color.jpg",
+      "sha256": "b423da9b6a20730cdb29dd52fb31162465475d316b6e49acf80cbc0106e1d135",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "ambientCG",
+      "source": "https://ambientcg.com/view?id=Grass001",
+      "required": false,
+      "role": "ground",
+      "notes": "ambientCG Grass001, 1K. ambientcg.com is blocked by this workspace's egress policy; this is the pmndrs/market-assets mirror on raw.githubusercontent.com, pinned to the commit that added it. The terrain samples it in world space, so it tiles across the torus seam."
+    },
+    {
+      "id": "texture.grass.normal",
+      "file": "textures/grass/normal.jpg",
+      "url": "https://raw.githubusercontent.com/pmndrs/market-assets/3921a42ca9b8813dda48c1ff540be6cc4476e72c/files/materials/grass/Grass001_1K_Normal.jpg",
+      "sha256": "0a59d895f88a68c895c6daa6e1d3b89476606c8492d8ee75aa1d5dd0804d1066",
+      "kind": "texture",
+      "license": "CC0-1.0",
+      "author": "ambientCG",
+      "source": "https://ambientcg.com/view?id=Grass001",
+      "required": false,
+      "role": "ground",
+      "notes": "Normal map for the same set. MeshLambertMaterial supports normalMap, which is what gives the flat ground its blade-level relief."
     }
   ]
 }
