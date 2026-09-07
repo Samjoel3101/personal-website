@@ -94,10 +94,11 @@ function variantOf(trees, variant) {
 /**
  * A downloaded tree, at the sites of one procedural variant.
  *
- * Sized by the tree's own height rather than a footprint: a tree is a thing
- * you judge by how tall it is, and the models are authored at wildly different
- * width-to-height ratios — a spire is a third the width of an oak the same
- * height.
+ * Sized by the tree's own height rather than by a footprint: a tree is a thing
+ * you judge by how tall it is, and these models are authored at wildly
+ * different proportions — an oak is 0.6 wide by 1.2 tall, a spire 0.4 by 1.5.
+ * Passing the height as a footprint made every tree as tall as it was wide
+ * again, which put 120-unit oaks over a 46-unit stage.
  */
 function useTreeModel(group, procedural, trees, model, seed) {
   if (!procedural || trees.length === 0) return false;
@@ -109,7 +110,7 @@ function useTreeModel(group, procedural, trees, model, seed) {
       x: tree.x,
       y: seatOnGround(tree.x, tree.z),
       z: tree.z,
-      size: tree.height,
+      height: tree.height,
       rotationY: rng() * Math.PI * 2,
     })),
   );

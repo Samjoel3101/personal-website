@@ -58,10 +58,11 @@ function flatten(material) {
 
 /**
  * @param {import('three').Object3D|null} model
- * @returns {{geometry, material}[]} normalised parts, or [] if there is nothing
+ * @returns {{parts: {geometry, material}[], aspect: number}} normalised parts
+ *   and how tall the model stands once its footprint is one unit wide
  */
 export function normalisedParts(model) {
-  if (!model) return [];
+  if (!model) return { parts: [], aspect: 1 };
   model.updateMatrixWorld(true);
 
   const parts = [];
@@ -71,7 +72,7 @@ export function normalisedParts(model) {
     geometry.applyMatrix4(child.matrixWorld);
     parts.push({ geometry, material: flatten(child.material) });
   });
-  if (parts.length === 0) return [];
+  if (parts.length === 0) return { parts: [], aspect: 1 };
 
   const bounds = new Box3();
   for (const part of parts) {
@@ -86,31 +87,40 @@ export function normalisedParts(model) {
     part.geometry.translate(-centre.x, -bounds.min.y, -centre.z);
     part.geometry.scale(1 / footprint, 1 / footprint, 1 / footprint);
   }
-  return parts;
+  return { parts, aspect: size.y / footprint };
 }
 
 /**
  * One instanced mesh per part of the model, placed at `items`.
  *
- * `items` carry a plain `size` in world units — the width the model's footprint
- * should end up — rather than three separate scales, because a decoration
- * squashed on one axis stops reading as the thing it is.
+ * An item is scaled uniformly — a decoration squashed on one axis stops
+ * reading as the thing it is — and says which dimension it is scaled BY:
+ *
+ *   `size`   the width its footprint should end up. Right for anything with a
+ *            collision box, since the box is a footprint.
+ *   `height` how tall it should stand. Right for anything you judge by height
+ *            rather than width, which is every tree: the models are authored
+ *            at wildly different proportions, and an oak sized by its footprint
+ *            comes out twice as tall as the same number in a spire.
  *
  * @returns {import('three').InstancedMesh[]} empty when the model is absent
  */
 export function instancedModel(model, items) {
-  const parts = normalisedParts(model);
+  const { parts, aspect } = normalisedParts(model);
   if (parts.length === 0 || items.length === 0) return [];
 
-  const scaled = items.map((item) => ({
-    x: item.x,
-    y: item.y ?? 0,
-    z: item.z,
-    rotationY: item.rotationY ?? 0,
-    sx: item.size,
-    sy: item.size,
-    sz: item.size,
-  }));
+  const scaled = items.map((item) => {
+    const scale = item.height === undefined ? item.size : item.height / aspect;
+    return {
+      x: item.x,
+      y: item.y ?? 0,
+      z: item.z,
+      rotationY: item.rotationY ?? 0,
+      sx: scale,
+      sy: scale,
+      sz: scale,
+    };
+  });
 
   return parts.map((part) => {
     const mesh = tiledInstances(part.geometry, part.material, scaled);

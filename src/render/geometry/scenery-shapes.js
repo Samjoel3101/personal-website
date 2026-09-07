@@ -68,8 +68,9 @@ export function barnRoofGeometry() {
  * stretched every bale vertically into an ellipse, and the instance scale then
  * stretched it again on a different axis. What arrived on screen was a yellow
  * blob with no bales in it. Filling the box by construction means the only
- * distortion left is the instance's own, and the world authors bale stacks
- * close to square (see course-blocks.js) to keep even that small.
+ * distortion left is the instance's own — and the world authors bale stacks
+ * as tall as they are deep (see course-blocks.js), which for a stack two wide
+ * and two high means no distortion at all.
  *
  * Sixteen sides rather than ten, too: a bale is a cylinder seen end-on, and at
  * ten you can count the corners.

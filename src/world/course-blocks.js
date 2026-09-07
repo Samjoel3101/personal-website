@@ -246,11 +246,16 @@ export function eachBlock() {
  * stack is wider than it is tall.
  */
 function baleStack(block, at, color) {
-  const half = rangeFrom(block.rng, 11, 16);
+  const half = rangeFrom(block.rng, 8, 11);
   return box(block, 'bales', at, {
     halfWidth: half,
     halfDepth: half,
-    height: half * rangeFrom(block.rng, 1.05, 1.25),
+    // Height equals the depth, and that is not a free choice: the renderer
+    // draws these as two bales side by side and two high, so the stack is
+    // exactly as tall as it is deep. Any other ratio squashes each bale's
+    // circular section into an ellipse — which is how they came to look like
+    // yellow slabs with no bales in them.
+    height: half * 2,
     color,
   });
 }
