@@ -5,6 +5,7 @@ import { MAX_TERRAIN_HEIGHT } from '../../world/terrain.js';
 import { buildHeightfield } from '../geometry/heightfield.js';
 import { tiledSlab } from '../geometry/tiling.js';
 import { vertexColoured } from '../materials.js';
+import { toDetailTexture } from '../textures/detail.js';
 import { TERRAIN_CELLS, meshHeightAt, surfaceSlopeAt } from '../terrain-surface.js';
 
 /**
@@ -36,6 +37,16 @@ const DRY_FROM = 0.3;
  * the whole field.
  */
 const UV_TILE = 64;
+
+/**
+ * How much of the grass photograph's own contrast reaches the ground.
+ *
+ * The map multiplies the vertex colours, so the photo is recentred on white
+ * first and this is how far it is allowed to swing either side of it. High
+ * enough to read as blades under the wheels, low enough that the landscape
+ * keeps the colours the palette gives it.
+ */
+const DETAIL_STRENGTH = 0.8;
 
 const FIELD_DARK = new Color(TERRAIN.FIELD_DARK);
 const FIELD = new Color(TERRAIN.FIELD);
@@ -93,7 +104,9 @@ export function buildTerrain() {
       }
       if (map) {
         map.colorSpace = SRGBColorSpace;
-        material.map = map;
+        // Recentred on white before it is used, or it multiplies the vertex
+        // colours into mud — see ../textures/detail.js.
+        material.map = toDetailTexture(map, DETAIL_STRENGTH);
       }
       if (normalMap) material.normalMap = normalMap;
       material.needsUpdate = true;
