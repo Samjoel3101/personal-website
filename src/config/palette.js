@@ -124,4 +124,14 @@ export const KART_COLOURS = Object.freeze({
   SUIT: '#3a5f8c',
   HELMET: '#ffd23c',
   BOOST_FLAME: '#ffb03c',
+  /** Roll cage tubing. Dark, because the cage's job is to break the sky
+   *  behind the driver and the sky is never darker than this. */
+  CAGE: '#39404b',
+  /** The open floorpan the cage stands on. */
+  FLOORPAN: '#b83c26',
+  /** Stub axles and suspension links, outboard of the frame. */
+  AXLE: '#8d949e',
+  /** Roof light pod housing, and the lenses in it. */
+  LIGHT_BAR: '#2b2f36',
+  LIGHT_LENS: '#fff2c4',
 });

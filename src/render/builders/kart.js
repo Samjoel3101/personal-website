@@ -1,35 +1,47 @@
-import { Box3, BoxGeometry, CylinderGeometry, Group, Mesh, SphereGeometry, Vector3 } from 'three';
-import { mergeParts } from '../geometry/merge.js';
+import { Box3, Group, Mesh, Vector3 } from 'three';
+import { BUGGY, axleGeometry, buggyBodyGeometry, wheelGeometry } from '../geometry/buggy-shapes.js';
 import { KART_COLOURS } from '../../config/palette.js';
 import { clamp } from '../../core/math.js';
-import { paintGeometry } from '../geometry/paint.js';
 import { lambert, vertexColoured } from '../materials.js';
 
-/** Target length of the kart in world units, whatever geometry supplies it. */
+/** Target length of the buggy in world units, whatever geometry supplies it. */
 const KART_LENGTH = 30;
-const WHEEL_RADIUS = 4.4;
-const WHEEL_WIDTH = 3.6;
-const MAX_LEAN = 0.16; // radians of body roll at full steering lock
+/** Radians of body roll at full steering lock. A buggy on tall springs leans
+ *  more than a go-kart did. It rolls about BUGGY.ROLL_CENTRE rather than about
+ *  the ground, which is what keeps the leaning body clear of its own tyres:
+ *  swept over every combination of lean and lock, the tightest gap between
+ *  chassis and tyre is about a third of a unit, and nothing touches. */
+const MAX_LEAN = 0.2;
 
 /**
- * The player's kart.
+ * The player's buggy.
  *
  * Built procedurally so the game is complete with no assets fetched, but
  * `useModel` will swap in a downloaded glTF and normalise it to the same
  * footprint — that is the upgrade path, and the reason the rest of the
  * renderer only ever talks to this module's interface rather than to a mesh.
+ *
+ * The chassis leans and the wheels spin, but only the chassis is in the
+ * leaning group: axles and hubs stay level, because a stub axle that rolls
+ * with the body visibly parts company with the wheel on its end.
  */
 export function buildKart() {
   const group = new Group();
   group.name = 'kart';
 
   const chassis = new Group();
-  chassis.add(new Mesh(bodyGeometry(), vertexColoured()));
+  const body = new Mesh(buggyBodyGeometry(), vertexColoured());
+  // The group sits at the roll axis and the body hangs back down from it, so
+  // rotating the group rolls the buggy about its floor rather than about the
+  // ground twenty units below.
+  body.position.y = -BUGGY.ROLL_CENTRE;
+  chassis.position.y = BUGGY.ROLL_CENTRE;
+  chassis.add(body);
   chassis.castShadow = true;
   group.add(chassis);
 
-  const procedural = buildWheels(group);
-  let wheels = procedural;
+  const procedural = buildRunningGear(group);
+  let wheels = procedural.wheels;
 
   return {
     group,
@@ -39,12 +51,15 @@ export function buildKart() {
      * @param {number} dt seconds
      */
     update(kart, dt) {
-      chassis.rotation.z = -clamp(kart.steer, -1, 1) * MAX_LEAN;
-      const spin = (kart.speed / WHEEL_RADIUS) * dt;
-      for (const wheel of wheels) wheel.rotation.x += spin;
+      const steer = clamp(kart.steer, -1, 1);
+      chassis.rotation.z = -steer * MAX_LEAN;
+      for (const pivot of procedural.steering) {
+        pivot.rotation.y = steer * BUGGY.MAX_STEER_ANGLE;
+      }
+      for (const wheel of wheels) wheel.mesh.rotation.x += (kart.speed / wheel.radius) * dt;
     },
 
-    /** Replace the procedural kart with a loaded model, scaled to fit. */
+    /** Replace the procedural buggy with a loaded model, scaled to fit. */
     useModel(scene) {
       if (!scene) return false;
       normaliseToLength(scene, KART_LENGTH);
@@ -58,11 +73,11 @@ export function buildKart() {
       chassis.add(scene);
 
       const named = namedWheels(scene);
-      for (const wheel of procedural) wheel.visible = false;
+      for (const part of procedural.parts) part.visible = false;
       // A model with no wheels named the way we expect keeps the procedural
       // ones, which is the only way an unknown glTF can still look driven.
-      if (named.length === 0) for (const wheel of procedural) wheel.visible = true;
-      wheels = named.length > 0 ? named : procedural;
+      if (named.length === 0) for (const part of procedural.parts) part.visible = true;
+      wheels = named.length > 0 ? named : procedural.wheels;
       return true;
     },
   };
@@ -81,57 +96,57 @@ const WHEEL_NAMES = [
  *
  * Kept as its own function rather than folded into useModel: the traversal is
  * about naming conventions in somebody else's art, and useModel is about
- * fitting a model onto our footprint.
+ * fitting a model onto our footprint. A named wheel is spun but never steered
+ * — we know its name, not which way it is pointing.
  */
 function namedWheels(scene) {
   const wanted = new Set(WHEEL_NAMES);
   const found = [];
   scene.traverse((child) => {
-    if (wanted.has(child.name)) found.push(child);
+    if (wanted.has(child.name)) found.push({ mesh: child, radius: BUGGY.FRONT.RADIUS });
   });
   return found;
 }
 
-function buildWheels(parent) {
-  const geometry = new CylinderGeometry(WHEEL_RADIUS, WHEEL_RADIUS, WHEEL_WIDTH, 14);
-  // A cylinder stands up the Y axis; a wheel spins about X.
-  geometry.rotateZ(Math.PI / 2);
-  const material = lambert(KART_COLOURS.TYRE);
-
+/**
+ * Wheels, hubs and stub axles.
+ *
+ * Each front wheel hangs inside a steering pivot group so it can be turned
+ * about Y and still spin about its own X. Spinning the wheel directly and then
+ * steering it would roll it about a world axis, which looks like a wheel
+ * falling off.
+ */
+function buildRunningGear(parent) {
+  const tyre = lambert(KART_COLOURS.TYRE);
+  const axleMaterial = lambert(KART_COLOURS.AXLE);
   const wheels = [];
-  for (const front of [-1, 1]) {
+  const steering = [];
+  const parts = [];
+
+  for (const station of [BUGGY.FRONT, BUGGY.REAR]) {
+    const geometry = wheelGeometry(station.RADIUS, station.WIDTH);
+    const steered = station === BUGGY.FRONT;
+
     for (const side of [-1, 1]) {
-      const wheel = new Mesh(geometry, material);
-      wheel.position.set(side * 9, WHEEL_RADIUS, front * 9.5);
+      const wheel = new Mesh(geometry, tyre);
       wheel.castShadow = true;
-      parent.add(wheel);
-      wheels.push(wheel);
+      wheels.push({ mesh: wheel, radius: station.RADIUS });
+
+      const mount = steered ? new Group() : wheel;
+      if (steered) mount.add(wheel);
+      mount.position.set(side * station.X, station.RADIUS, station.Z);
+      parent.add(mount);
+      parts.push(mount);
+      if (steered) steering.push(mount);
+
+      const axle = new Mesh(axleGeometry(station.X - 6), axleMaterial);
+      axle.position.set((side * (station.X + 6)) / 2, station.RADIUS, station.Z);
+      parent.add(axle);
+      parts.push(axle);
     }
   }
-  return wheels;
-}
 
-/** Chassis, sidepods, wing and driver, merged into one vertex-coloured mesh. */
-function bodyGeometry() {
-  const parts = [];
-  const add = (geometry, colour, position) => {
-    geometry.translate(...position);
-    parts.push(paintGeometry(geometry, colour));
-  };
-
-  add(new BoxGeometry(15, 5, 26), KART_COLOURS.BODY, [0, 6.5, 0]);
-  add(new BoxGeometry(19, 3.4, 13), KART_COLOURS.BODY_LIGHT, [0, 7.5, -1]);
-  add(new BoxGeometry(11, 2.6, 6), KART_COLOURS.BODY_DARK, [0, 9.6, 8]);
-  // rear wing and its stays
-  add(new BoxGeometry(17, 1.6, 4.5), KART_COLOURS.BODY_DARK, [0, 14, 11.5]);
-  add(new BoxGeometry(1.8, 5, 1.8), KART_COLOURS.BODY_DARK, [-5.5, 11.5, 11.5]);
-  add(new BoxGeometry(1.8, 5, 1.8), KART_COLOURS.BODY_DARK, [5.5, 11.5, 11.5]);
-  // seat back, driver, helmet
-  add(new BoxGeometry(9, 7, 1.8), KART_COLOURS.BODY_DARK, [0, 12, 5.5]);
-  add(new BoxGeometry(8, 8, 5.5), KART_COLOURS.SUIT, [0, 12.5, 2.5]);
-  add(new SphereGeometry(4.4, 12, 10), KART_COLOURS.HELMET, [0, 18.5, 2]);
-
-  return mergeParts(parts, 'kart-body');
+  return { wheels, steering, parts };
 }
 
 /**

@@ -35,6 +35,9 @@ export function createSession(elements, city) {
 
   const loop = createLoop({
     step: (dt) => {
+      // Traffic first: the kart has to collide against where the vehicles are
+      // this step, not where they were last one.
+      city.traffic.update(dt);
       kart.update(dt, input.state);
       discovery.check(kart.state);
     },
