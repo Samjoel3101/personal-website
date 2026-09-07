@@ -20,9 +20,11 @@ const VARIANTS = 3;
  */
 const TREE_MODELS = ['kit.nature.tree.broadleaf', 'kit.nature.tree.pine', 'kit.nature.tree.spire'];
 
-/** The variant whose model also fills the copses — a stand of woodland reads as
- *  conifers, and the pine is the one that arrives for it. */
-const COPSE_VARIANT = 1;
+/** The variant whose model also fills the copses. The spire (variant 2) rather
+ *  than the full pine: a copse is ~6 trees at every forest block, so the
+ *  lightest conifer in the kit is the one to multiply — a stand of narrow
+ *  spires still reads as woodland at distance. */
+const COPSE_VARIANT = 2;
 
 /**
  * Low-poly trees, mostly conifers.
