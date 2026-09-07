@@ -1,4 +1,4 @@
-import { Color, Group, Vector3 } from 'three';
+import { Color, Group, RepeatWrapping, SRGBColorSpace, Vector3 } from 'three';
 import { TERRAIN } from '../../config/palette.js';
 import { WORLD } from '../../config/world.js';
 import { MAX_TERRAIN_HEIGHT } from '../../world/terrain.js';
@@ -27,6 +27,16 @@ const STEEP_SLOPE = 0.38;
 /** Where the meadow gives way to the dry, sun-bleached tops. */
 const DRY_FROM = 0.3;
 
+/**
+ * World units one repeat of the ground texture covers.
+ *
+ * WORLD.SIZE must divide by it exactly or the texture jumps at the seam and at
+ * every tile edge. 64 units is a little over two kart lengths: close enough to
+ * read as blades under the wheels, far enough that the repeat does not pattern
+ * the whole field.
+ */
+const UV_TILE = 64;
+
 const FIELD_DARK = new Color(TERRAIN.FIELD_DARK);
 const FIELD = new Color(TERRAIN.FIELD);
 const SAND = new Color(TERRAIN.SAND);
@@ -46,9 +56,14 @@ export function buildTerrain() {
     sample: meshHeightAt,
     normal: normalAt,
     tint: tintAt,
+    uvTile: UV_TILE,
   });
 
-  const mesh = tiledSlab(geometry, vertexColoured());
+  // Its own material, NOT the shared vertexColoured() instance: a ground
+  // texture assigned to that one would land on the trees too, since the cache
+  // hands the same object to every caller asking for the same options.
+  const material = vertexColoured({ name: 'terrain' });
+  const mesh = tiledSlab(geometry, material);
   mesh.receiveShadow = true;
   // Deliberately not a shadow caster. 33k triangles through the shadow pass
   // buys hill-on-hill shading that the fog eats anyway, and self-shadowing a
@@ -56,7 +71,35 @@ export function buildTerrain() {
   mesh.castShadow = false;
   group.add(mesh);
 
-  return group;
+  return {
+    group,
+
+    /**
+     * Dress the ground in a real material once one arrives.
+     *
+     * The vertex colours stay: a texture multiplied by them keeps the meadow
+     * green, the tops dry and the steep faces stony, so the ground still reads
+     * as the same landscape rather than as one photograph repeated over it.
+     * Absent textures leave the flat-shaded ground exactly as it was.
+     */
+    useTexture({ map, normalMap }) {
+      if (!map && !normalMap) return false;
+
+      for (const texture of [map, normalMap]) {
+        if (!texture) continue;
+        texture.wrapS = RepeatWrapping;
+        texture.wrapT = RepeatWrapping;
+        texture.anisotropy = 4;
+      }
+      if (map) {
+        map.colorSpace = SRGBColorSpace;
+        material.map = map;
+      }
+      if (normalMap) material.normalMap = normalMap;
+      material.needsUpdate = true;
+      return true;
+    },
+  };
 }
 
 /**

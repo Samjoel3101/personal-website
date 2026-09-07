@@ -1,7 +1,8 @@
 import { BufferGeometry, Color, Float32BufferAttribute, Uint32BufferAttribute } from 'three';
 
 /**
- * A displaced, vertex-coloured grid over one world tile.
+ * A displaced, vertex-coloured grid over one world tile, with world-space UVs
+ * for a ground texture to tile through.
  *
  * Indexed, with normals and colour taken from the field itself rather than
  * from each triangle. The earlier version was non-indexed with per-face
@@ -19,7 +20,7 @@ import { BufferGeometry, Color, Float32BufferAttribute, Uint32BufferAttribute } 
  * heightfield is a single geometry and a single draw call however many
  * triangles it carries — see src/render/geometry/tiling.js.
  */
-export function buildHeightfield({ size, cells, sample, normal, tint }) {
+export function buildHeightfield({ size, cells, sample, normal, tint, uvTile }) {
   const step = size / cells;
   const across = cells + 1;
   const count = across * across;
@@ -27,6 +28,7 @@ export function buildHeightfield({ size, cells, sample, normal, tint }) {
   const positions = new Float32Array(count * 3);
   const normals = new Float32Array(count * 3);
   const colours = new Float32Array(count * 3);
+  const uvs = new Float32Array(count * 2);
   const colour = new Color();
 
   for (let j = 0; j < across; j += 1) {
@@ -49,6 +51,13 @@ export function buildHeightfield({ size, cells, sample, normal, tint }) {
       colours[cursor] = colour.r;
       colours[cursor + 1] = colour.g;
       colours[cursor + 2] = colour.b;
+
+      // World-space UVs. `size` divided by uvTile is a whole number, so the
+      // texture meets itself across the torus seam and across every one of the
+      // nine tiles rather than jumping at their edges.
+      const uvCursor = (j * across + i) * 2;
+      uvs[uvCursor] = x / uvTile;
+      uvs[uvCursor + 1] = z / uvTile;
     }
   }
 
@@ -56,6 +65,7 @@ export function buildHeightfield({ size, cells, sample, normal, tint }) {
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
   geometry.setAttribute('normal', new Float32BufferAttribute(normals, 3));
   geometry.setAttribute('color', new Float32BufferAttribute(colours, 3));
+  geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
   geometry.setIndex(buildIndex(cells, across));
   return geometry;
 }

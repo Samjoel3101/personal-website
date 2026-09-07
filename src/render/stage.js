@@ -66,6 +66,11 @@ export function createStage(canvas, city) {
       return world.useSceneryModel(id, model);
     },
 
+    /** Dress the ground in a real material, if its textures arrived. */
+    useGroundTexture(maps) {
+      return world.useGroundTexture(maps);
+    },
+
     get diagnostics() {
       return { quality: quality.tier.name, draws: output.drawInfo.calls };
     },

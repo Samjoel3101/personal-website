@@ -43,11 +43,12 @@ export function createGameScene(city) {
 
   const scenery = buildScenery(city);
   const trees = buildTrees(city);
+  const terrain = buildTerrain();
 
   const worldGroup = new Group();
   worldGroup.name = 'world';
   worldGroup.add(
-    buildTerrain(),
+    terrain.group,
     buildGround(),
     buildPuddles(city),
     scenery.group,
@@ -89,6 +90,10 @@ export function createGameScene(city) {
      */
     useSceneryModel(id, model) {
       return scenery.useModel(id, model) || trees.useModel(id, model);
+    },
+
+    useGroundTexture(maps) {
+      return terrain.useTexture(maps);
     },
 
     setQuality(tier) {

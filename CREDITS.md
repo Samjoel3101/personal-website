@@ -29,6 +29,8 @@ no third-party licence.
 | Suburban Kit - House type A              | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/city-kit-suburban)     |
 | Suburban Kit - House type J              | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/city-kit-suburban)     |
 | Suburban Kit - colour atlas              | CC0-1.0 | Kenney                | [link](https://kenney.nl/assets/city-kit-suburban)     |
+| texture.grass.color                      | CC0-1.0 | ambientCG             | [link](https://ambientcg.com/view?id=Grass001)         |
+| texture.grass.normal                     | CC0-1.0 | ambientCG             | [link](https://ambientcg.com/view?id=Grass001)         |
 
 ## Fonts
 
