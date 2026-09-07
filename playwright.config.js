@@ -33,10 +33,6 @@ export default defineConfig({
     command: 'npm run build && npm run preview',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
-    // The build-then-preview cold start has overrun 180 s on the CI runner for
-    // several commits (the browser-tests job has been red on main since before
-    // this work). Give it room rather than let an infra-slow build read as a
-    // test failure.
-    timeout: 420_000,
+    timeout: 180_000,
   },
 });
