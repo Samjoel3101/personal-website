@@ -1,5 +1,6 @@
-import { Box3, Color, MeshLambertMaterial, Vector3 } from 'three';
+import { Box3, Color, Float32BufferAttribute, MeshLambertMaterial, Vector3 } from 'three';
 import { KIT_TINTS } from '../config/palette.js';
+import { createBarkTexture, createFoliageTexture } from './textures/foliage.js';
 import { tiledInstances } from './geometry/tiling.js';
 
 /**
@@ -38,14 +39,83 @@ import { tiledInstances } from './geometry/tiling.js';
  */
 const flattened = new Map();
 
+/**
+ * Which downloaded materials get drawn detail on top of their flat colour.
+ *
+ * Keyed by glTF material name, the same names KIT_TINTS repaints. The kits
+ * ship no texture at all for these surfaces — a canopy is one flat green — so
+ * this is where a tree stops being a silhouette and starts having leaves.
+ */
+const KIT_SURFACES = Object.freeze({
+  grass: 'foliage',
+  leafsGreen: 'foliage',
+  leafsDark: 'foliage',
+  woodBark: 'bark',
+  woodBarkDark: 'bark',
+  wood: 'bark',
+  woodDark: 'bark',
+});
+
+/** Built on first use: these draw to a canvas, so they need a document. */
+const drawn = new Map();
+
+function detailFor(kind) {
+  if (!drawn.has(kind)) {
+    drawn.set(kind, kind === 'bark' ? createBarkTexture() : createFoliageTexture());
+  }
+  return drawn.get(kind);
+}
+
+/** Repeats of the detail texture across one unit of the normalised model. */
+const DETAIL_REPEATS = 2.5;
+
+/**
+ * Replaces a model's own UVs with a box projection.
+ *
+ * The kits' UVs address a swatch in a colour atlas — every vertex of a canopy
+ * points at the same few pixels of flat green. Tiling a detail texture through
+ * them samples that one spot and changes nothing, so the coordinates have to
+ * be generated. Projecting along whichever axis a face points down means no
+ * face gets stretched to a smear, which one flat projection would do to every
+ * vertical surface on the model.
+ */
+function projectUvs(geometry) {
+  const position = geometry.getAttribute('position');
+  const normal = geometry.getAttribute('normal');
+  if (!position) return;
+
+  const uvs = new Float32Array(position.count * 2);
+
+  for (let i = 0; i < position.count; i += 1) {
+    const x = position.getX(i);
+    const y = position.getY(i);
+    const z = position.getZ(i);
+
+    const nx = normal ? Math.abs(normal.getX(i)) : 0;
+    const ny = normal ? Math.abs(normal.getY(i)) : 1;
+    const nz = normal ? Math.abs(normal.getZ(i)) : 0;
+
+    let u = x;
+    let v = y;
+    if (ny >= nx && ny >= nz) v = z;
+    else if (nx >= nz) u = z;
+
+    uvs[i * 2] = u * DETAIL_REPEATS;
+    uvs[i * 2 + 1] = v * DETAIL_REPEATS;
+  }
+
+  geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+}
+
 function flatten(material) {
   if (!material || material.isMeshLambertMaterial) return material;
   if (flattened.has(material)) return flattened.get(material);
 
   const tint = KIT_TINTS[material.name];
+  const surface = KIT_SURFACES[material.name];
   const lambert = new MeshLambertMaterial({
     color: tint ? new Color(tint) : (material.color?.clone() ?? 0xffffff),
-    map: material.map ?? null,
+    map: material.map ?? (surface ? detailFor(surface) : null),
     transparent: material.transparent,
     opacity: material.opacity,
     alphaTest: material.alphaTest,
@@ -70,7 +140,8 @@ export function normalisedParts(model) {
     if (!child.isMesh || !child.geometry) return;
     const geometry = child.geometry.clone();
     geometry.applyMatrix4(child.matrixWorld);
-    parts.push({ geometry, material: flatten(child.material) });
+    const material = flatten(child.material);
+    parts.push({ geometry, material, projected: KIT_SURFACES[child.material?.name] !== undefined });
   });
   if (parts.length === 0) return { parts: [], aspect: 1 };
 
@@ -86,6 +157,9 @@ export function normalisedParts(model) {
   for (const part of parts) {
     part.geometry.translate(-centre.x, -bounds.min.y, -centre.z);
     part.geometry.scale(1 / footprint, 1 / footprint, 1 / footprint);
+    // After normalising, so the detail is the same size on every model
+    // whatever scale it was authored at.
+    if (part.projected) projectUvs(part.geometry);
   }
   return { parts, aspect: size.y / footprint };
 }
