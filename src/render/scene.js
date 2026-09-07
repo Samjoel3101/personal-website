@@ -2,7 +2,7 @@ import { Color, Fog, Group, Scene } from 'three';
 import { ATMOSPHERE } from '../config/render.js';
 import { SKY } from '../config/palette.js';
 import { clamp, damp } from '../core/math.js';
-import { slopeAt } from '../world/terrain.js';
+import { surfaceSlopeAt } from './terrain-surface.js';
 import { buildCars } from './builders/cars.js';
 import { buildGround } from './builders/ground.js';
 import { buildKart } from './builders/kart.js';
@@ -99,7 +99,7 @@ export function createGameScene(city) {
 
 /** Leans the kart into the hill it is standing on. */
 function tiltToGround(group, kartState, dt) {
-  const gradient = slopeAt(kartState.x, kartState.z);
+  const gradient = surfaceSlopeAt(kartState.x, kartState.z);
   const sin = Math.sin(kartState.heading);
   const cos = Math.cos(kartState.heading);
 

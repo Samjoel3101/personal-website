@@ -42,6 +42,18 @@ export const TRACK = Object.freeze({
  */
 export const LOT_HALF = WORLD.BLOCK / 2 - WORLD.ROAD_HALF - WORLD.WALK - TRACK.WOBBLE;
 
+/**
+ * Half-width of a landmark's packed service area, centre to verge.
+ *
+ * Deliberately NOT LOT_HALF. Scenery has to clear a track that swings toward
+ * it, which is why LOT_HALF subtracts the wobble — but the paddock is ground,
+ * and ground has nothing to dodge: it runs all the way out to where the verge
+ * begins. Using LOT_HALF here is what left a third of every landmark block
+ * classified as packed dirt while being drawn, and driven, as open hillside.
+ * The sampler, the painted quad and the terrain's flat mask all read this one.
+ */
+export const PADDOCK_HALF = WORLD.BLOCK / 2 - WORLD.ROAD_HALF - WORLD.WALK;
+
 /** Centre coordinate of block `index` along one axis. */
 export const blockCentre = (index) => index * WORLD.BLOCK + WORLD.BLOCK / 2;
 

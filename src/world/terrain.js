@@ -1,4 +1,4 @@
-import { LOT_HALF, WORLD } from '../config/world.js';
+import { PADDOCK_HALF, WORLD } from '../config/world.js';
 import { LANDMARKS } from '../content/resume.js';
 import { wrapDelta } from '../core/torus.js';
 import { distanceToTrack } from './track.js';
@@ -97,8 +97,8 @@ function ramp(distance, flatTo) {
  * How much of the noise survives here. Zero anywhere the kart is meant to be
  * able to drive without the ground moving under it.
  */
-function corridorMask(x, z) {
-  let mask = ramp(distanceToTrack(x, z), FLAT_HALF_WIDTH);
+function corridorMask(x, z, flatMargin) {
+  let mask = ramp(distanceToTrack(x, z), FLAT_HALF_WIDTH + flatMargin);
   if (mask === 0) return 0;
 
   for (const landmark of LANDMARKS) {
@@ -107,15 +107,24 @@ function corridorMask(x, z) {
       Math.abs(wrapDelta(x - landmark.x)),
       Math.abs(wrapDelta(z - landmark.z)),
     );
-    mask = Math.min(mask, ramp(inset, LOT_HALF));
+    mask = Math.min(mask, ramp(inset, PADDOCK_HALF + flatMargin));
     if (mask === 0) return 0;
   }
   return mask;
 }
 
-/** Ground height in world units, 0 .. MAX_TERRAIN_HEIGHT. */
-export function heightAt(x, z) {
-  const mask = corridorMask(x, z);
+/**
+ * Ground height in world units, 0 .. MAX_TERRAIN_HEIGHT.
+ *
+ * `flatMargin` widens the dead-flat corridor. A renderer drawing this field as
+ * facets needs it: a facet with one corner out on the hillside interpolates
+ * above zero all the way to its other corner, which puts ground up through a
+ * flat ribbon laid at y = 0. Holding the field flat for a facet's reach beyond
+ * the corridor means every facet that touches the corridor is level, so
+ * nothing can poke through.
+ */
+export function heightAt(x, z, flatMargin = 0) {
+  const mask = corridorMask(x, z, flatMargin);
   if (mask === 0) return 0;
 
   let height = 0;
@@ -125,10 +134,45 @@ export function heightAt(x, z) {
   return height * mask;
 }
 
+/**
+ * The field as a mesh of `facet`-sized cells actually draws it.
+ *
+ * heightAt is smooth; a mesh sampling it on a lattice is piecewise linear, and
+ * between lattice lines the two disagree by as much as several units. That gap
+ * is not academic: anything seated with heightAt — a puddle, a barn, the kart
+ * — sinks into or floats over the ground the player can see. This reproduces
+ * the mesh's own interpolation, including which way its cells are split, so
+ * anything placed with it lands exactly on the drawn surface.
+ *
+ * Must stay in step with src/render/geometry/heightfield.js, whose cells are
+ * split along the (x0, z0) → (x1, z1) diagonal.
+ */
+export function latticeHeightAt(x, z, facet, flatMargin = 0) {
+  const ix = Math.floor(x / facet);
+  const iz = Math.floor(z / facet);
+  const u = x / facet - ix;
+  const v = z / facet - iz;
+  const x0 = ix * facet;
+  const z0 = iz * facet;
+  const x1 = x0 + facet;
+  const z1 = z0 + facet;
+
+  const h00 = heightAt(x0, z0, flatMargin);
+  const h11 = heightAt(x1, z1, flatMargin);
+
+  if (v >= u) {
+    const h01 = heightAt(x0, z1, flatMargin);
+    return (1 - v) * h00 + (v - u) * h01 + u * h11;
+  }
+  const h10 = heightAt(x1, z0, flatMargin);
+  return (1 - u) * h00 + v * h11 + (u - v) * h10;
+}
+
 /** Central-difference gradient: how steeply the ground rises along each axis. */
-export function slopeAt(x, z, epsilon = 6) {
+export function slopeAt(x, z, epsilon = 6, flatMargin = 0) {
+  const ahead = (dx, dz) => heightAt(x + dx, z + dz, flatMargin);
   return {
-    dx: (heightAt(x + epsilon, z) - heightAt(x - epsilon, z)) / (2 * epsilon),
-    dz: (heightAt(x, z + epsilon) - heightAt(x, z - epsilon)) / (2 * epsilon),
+    dx: (ahead(epsilon, 0) - ahead(-epsilon, 0)) / (2 * epsilon),
+    dz: (ahead(0, epsilon) - ahead(0, -epsilon)) / (2 * epsilon),
   };
 }

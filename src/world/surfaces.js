@@ -1,4 +1,4 @@
-import { BOOST_PAD, SURFACE, WORLD } from '../config/world.js';
+import { BOOST_PAD, PADDOCK_HALF, SURFACE, WORLD } from '../config/world.js';
 import { blockIndexAt, blockKey, distanceToBlockCentre } from './grid.js';
 import { buildPuddles, createPuddleSampler } from './puddles.js';
 import { distanceAcrossTrack } from './track.js';
@@ -57,6 +57,12 @@ export function createSurfaceSampler(paddockBlocks, puddles = buildPuddles()) {
     if (inPuddle(x, z)) return SURFACE.MUD;
 
     const { bi, bj } = blockIndexAt(x, z);
-    return paddockBlocks.has(blockKey(bi, bj)) ? SURFACE.PADDOCK : SURFACE.FIELD;
+    if (!paddockBlocks.has(blockKey(bi, bj))) return SURFACE.FIELD;
+
+    // The paddock is the packed square the renderer paints, not the whole
+    // block: past its edge a landmark block is the same open hillside as any
+    // other, and has to grip like it. See PADDOCK_HALF in config/world.js.
+    const inset = Math.max(distanceToBlockCentre(x), distanceToBlockCentre(z));
+    return inset <= PADDOCK_HALF ? SURFACE.PADDOCK : SURFACE.FIELD;
   };
 }

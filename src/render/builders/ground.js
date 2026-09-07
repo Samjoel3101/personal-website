@@ -1,7 +1,7 @@
 import { Group } from 'three';
 import { mergeParts } from '../geometry/merge.js';
 import { LANDMARKS } from '../../content/resume.js';
-import { LOT_HALF, WORLD } from '../../config/world.js';
+import { PADDOCK_HALF, WORLD } from '../../config/world.js';
 import { TERRAIN } from '../../config/palette.js';
 import { GROUND_LAYER, flatQuad } from '../geometry/flat.js';
 import { everyTrackRibbon } from '../geometry/ribbon.js';
@@ -46,7 +46,7 @@ function slab(geometries, color, receiveShadow) {
 /** Landmark blocks are packed service areas, which is what makes them drivable. */
 function paddocks() {
   return LANDMARKS.map((landmark) =>
-    flatQuad(LOT_HALF * 2, LOT_HALF * 2, landmark.x, landmark.z, GROUND_LAYER.PADDOCK),
+    flatQuad(PADDOCK_HALF * 2, PADDOCK_HALF * 2, landmark.x, landmark.z, GROUND_LAYER.PADDOCK),
   );
 }
 

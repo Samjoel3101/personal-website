@@ -14,7 +14,11 @@ import { PlaneGeometry } from 'three';
  * PUDDLE is the odd one out: puddles sit out in the fields where the ground has
  * height, so its rung is used as a clearance above the terrain rather than
  * above y = 0. It is on the same ladder anyway, because the question it answers
- * is the same one.
+ * is the same one. It is also much the largest rung, and has to be: a puddle's
+ * triangles are wider than a terrain facet, so between their corners the hill
+ * they are laid over can rise through them. Measured against the drawn
+ * surface, 0.8 with two rings is what clears every one of the forty; the lip
+ * that leaves at the rim is under a tenth of a wheel.
  */
 export const GROUND_LAYER = Object.freeze({
   BASE: 0,
@@ -26,7 +30,7 @@ export const GROUND_LAYER = Object.freeze({
   PAD: 0.12,
   PAD_CHEVRON: 0.14,
   START_LINE: 0.16,
-  PUDDLE: 0.18,
+  PUDDLE: 0.8,
 });
 
 /** A horizontal quad of `width` by `depth`, centred on (x, z) at height y. */

@@ -133,14 +133,7 @@ const THEME_BUILDERS = {
     for (let i = 0; i < 3; i += 1) {
       rock(block, spot(block), rangeFrom(block.rng, 8, 15), rangeFrom(block.rng, 12, 24));
     }
-    block.scenery.push(
-      box(block, 'bales', spot(block, 0.8), {
-        halfWidth: rangeFrom(block.rng, 13, 19),
-        halfDepth: rangeFrom(block.rng, 9, 13),
-        height: rangeFrom(block.rng, 14, 20),
-        color: PROPS.TIMBER,
-      }),
-    );
+    block.scenery.push(baleStack(block, spot(block, 0.8), PROPS.TIMBER));
   },
 
   /** Big outcrops with rubble scattered around their feet. */
@@ -167,14 +160,7 @@ const THEME_BUILDERS = {
 
     const stacks = 2 + Math.floor(block.rng() * 3);
     for (let i = 0; i < stacks; i += 1) {
-      block.scenery.push(
-        box(block, 'bales', spot(block), {
-          halfWidth: rangeFrom(block.rng, 9, 16),
-          halfDepth: rangeFrom(block.rng, 9, 16),
-          height: rangeFrom(block.rng, 12, 24),
-          color: PROPS.HAY,
-        }),
-      );
+      block.scenery.push(baleStack(block, spot(block), PROPS.HAY));
     }
 
     tree(block, spot(block), 46, 64);
@@ -248,4 +234,28 @@ export function eachBlock() {
     }
   }
   return blocks;
+}
+
+/**
+ * A stack of round bales.
+ *
+ * Authored close to square on purpose. The renderer draws these as actual
+ * cylinders filling the collision box, so a box half as deep as it is wide
+ * would squash every bale into an ellipse — which is exactly what these used
+ * to look like. Height comes out a little under the width because a two-high
+ * stack is wider than it is tall.
+ */
+function baleStack(block, at, color) {
+  const half = rangeFrom(block.rng, 8, 11);
+  return box(block, 'bales', at, {
+    halfWidth: half,
+    halfDepth: half,
+    // Height equals the depth, and that is not a free choice: the renderer
+    // draws these as two bales side by side and two high, so the stack is
+    // exactly as tall as it is deep. Any other ratio squashes each bale's
+    // circular section into an ellipse — which is how they came to look like
+    // yellow slabs with no bales in them.
+    height: half * 2,
+    color,
+  });
 }

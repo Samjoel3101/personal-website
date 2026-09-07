@@ -88,6 +88,18 @@ To keep the two consistent where it matters, the terrain is exactly zero along
 the track corridor and inside every landmark paddock, and a unit test pins
 that. Flat where you drive, hills where you look.
 
+There are in fact two ground surfaces, and the difference matters. `heightAt`
+is a smooth analytic field; the mesh samples it on a 16-unit lattice and joins
+those samples with flat triangles, so between lattice lines the mesh is
+somewhere else entirely — by as much as seven units. Anything seated on the
+analytic field therefore floats over or sinks into the ground the player can
+actually see, and a corridor that is flat analytically still tilts a facet up
+through the ribbons laid on it. `src/render/terrain-surface.js` is the single
+answer to that: it holds the field flat for a facet's diagonal beyond the
+corridor so no facet touching it can rise, and reproduces the mesh's own
+interpolation so everything else lands exactly on the drawn surface. Every
+renderer module that puts something on the ground goes through it.
+
 ## Rendering
 
 Everything outside `src/render` talks to `src/render/stage.js` and nothing
@@ -108,6 +120,7 @@ Inside:
 | `quality.js`         | Moves between quality tiers from measured frame intervals       |
 | `materials.js`       | Shared Lambert cache. **Read the colour trap note**             |
 | `facade-material.js` | Per-instance UV scaling so windows are size-correct             |
+| `terrain-surface.js` | The ground as DRAWN: one definition everything on it agrees on  |
 | `ground-follow.js`   | How things sit on the terrain: damped follow, and one-shot seat |
 | `model-instances.js` | Normalises a loaded glTF and instances it, rather than cloning  |
 | `builders/*`         | One builder per kind of thing in the world                      |
@@ -135,9 +148,12 @@ the intended image and pays for the draw distance. The rig is warmer and lower
 than the pastel city's was — mud and rock carry shadow that a lilac facade
 could not, and a heightfield lit from overhead is invisible.
 
-Downloaded models keep whatever material they shipped with, which for the
-rally kit is `MeshStandardMaterial`. Half a dozen instanced meshes of it is a
-rounding error next to the ground.
+Downloaded models do not keep the material they shipped with.
+`render/model-instances.js` flattens every one onto a Lambert carrying the same
+texture, for two reasons: a `MeshStandardMaterial` shades visibly differently
+beside everything else in the scene, and Kenney's untextured kits are authored
+`metallicFactor: 1` — fully metallic, with no environment map to reflect, which
+renders them black.
 
 ### Quality ladder
 

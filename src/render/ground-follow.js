@@ -1,5 +1,5 @@
 import { damp } from '../core/math.js';
-import { heightAt, slopeAt } from '../world/terrain.js';
+import { surfaceHeightAt, surfaceSlopeAt } from './terrain-surface.js';
 
 /**
  * How things sit on the terrain: a damped read for things that move, and a
@@ -14,6 +14,10 @@ import { heightAt, slopeAt } from '../world/terrain.js';
  * frame at 250 units per second puts a 16-unit facet edge straight into the
  * camera as a jolt; approaching it exponentially turns the same facets into
  * suspension.
+ *
+ * Both read the ground as the mesh DRAWS it rather than the analytic field —
+ * see src/render/terrain-surface.js — so nothing seated here floats over or
+ * sinks into the hillside the player can actually see.
  */
 export function createGroundFollow(lambda) {
   let height = 0;
@@ -25,7 +29,7 @@ export function createGroundFollow(lambda) {
 
     /** @returns {number} the damped ground height under (x, z) */
     update(x, z, dt) {
-      height = damp(height, heightAt(x, z), lambda, dt);
+      height = damp(height, surfaceHeightAt(x, z), lambda, dt);
       return height;
     },
   };
@@ -40,10 +44,10 @@ export function createGroundFollow(lambda) {
  * what a barn dropped on a hillside actually looks like.
  */
 export function seatOnGround(x, z, halfWidth = 0, halfDepth = 0) {
-  const height = heightAt(x, z);
+  const height = surfaceHeightAt(x, z);
   if (halfWidth === 0 && halfDepth === 0) return height;
 
-  const gradient = slopeAt(x, z, 8);
+  const gradient = surfaceSlopeAt(x, z);
   const drop = Math.abs(gradient.dx) * halfWidth + Math.abs(gradient.dz) * halfDepth;
   return height - drop - 1;
 }
