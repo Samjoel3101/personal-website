@@ -19,10 +19,16 @@ that used to be at the top of this list:
 - **A purpose-built kart model.** Done. Kenney's rally truck is wired in with
   `role: "kart"`, and `src/render/builders/kart.js` now finds
   `wheel-front-left` and friends by name and spins those.
-- **Modular building meshes.** Replaced. There are no buildings — the blocks
-  hold rocks, barns, bale stacks and spectator stands, and downloaded forest
-  patches and spectator camps upgrade them through
-  `stage.useSceneryModel(id, model)`.
+- **Modular building meshes.** Done. Each farm block holds a farmhouse and an
+  outbuilding, upgraded to Quaternius LowPoly Buildings through
+  `stage.useSceneryModel(id, model)`. The blocks also hold rocks, bale stacks
+  and spectator stands.
+- **Move the stage onto Quaternius / Kenney art.** Done — see
+  `docs/QUATERNIUS-KIT-PLAN.md`. Trees, rocks and buildings are Quaternius
+  (Stylized Nature MegaKit, LowPoly Buildings); the player kart and all traffic
+  are Kenney (Car Kit); everything is mirrored web-optimised at
+  `github.com/Samjoel3101/3d-assets` and pinned to a commit. The ground,
+  track ribbon and sky stay procedural by design.
 
 The one piece of the plan's polish phase that landed is the speed-based field
 of view kick in `src/render/camera.js`. The rest of it is item 1 below.
@@ -52,21 +58,29 @@ be lazy and must never block the first frame. Expect to re-tune
 `SUN.AMBIENT_INTENSITY` down: an environment map already supplies the ambient
 the hemisphere light is currently faking.
 
-### 3. Move the stage onto Quaternius art
+### 3. Ground detail, and more of the nature kit
 
-**Files:** `assets/manifest.json`, `src/assets/loader.js`,
-`src/render/builders/{trees,scenery}.js`
-**Effort:** ~2 days across nature + buildings
-**Full plan:** `docs/QUATERNIUS-KIT-PLAN.md`
+**Files:** new `src/render/builders/ground-detail.js`, `assets/manifest.json`
+**Effort:** half a day
 
-Replace the procedural / Kenney scenery with two CC0 Quaternius kits — the
-Stylized Nature MegaKit (trees, rocks, ferns) and LowPoly Buildings (houses, a
-shop, a bank). Web-optimised `.glb` builds are mirrored at
-`github.com/Samjoel3101/3d-assets`, pinned to a commit the same way the Kenney
-entries are. The one non-obvious cost: those `.glb` use `EXT_meshopt_compression`,
-so `loader.js` has to register `MeshoptDecoder` (~10 KB gz). Keep the rule that
-every model no-ops when absent, and keep instancing not cloning — see
-`src/render/model-instances.js`.
+The mirror carries 68 Quaternius nature models; the stage uses six. Ferns,
+grass tufts, mushrooms and pebbles (`Fern_1`, `Grass_Common_Tall`,
+`Mushroom_Common`, `Pebble_Round_*` — all already in the mirror) scattered
+along the verge with a seeded RNG would fill the middle distance. Pure
+addition, instanced, seated through `terrain-surface.js`. Also unused:
+`DeadTree_*` and `TwistedTree_*` for roadside character, and the Car Kit
+`cone`/`debris-*` for the boost-ramp approaches.
+
+### 5. A tile-based track family
+
+**Files:** `src/world/track.js`, `src/config/world.js`, a new track builder
+
+The Kenney 3D Road Tiles are mirrored (`kenney-3d-road-tiles/`) but not wired:
+the track is a continuous procedural ribbon, and discrete straight/curve tiles
+need a grid the wobble does not have. A real tile track means a second track
+model behind the same interface `world/track.js` exposes — `trackOffsetAt`,
+`trackSlopeAt` — keeping the torus-seam and boost-pad invariants
+`tests/track.test.js` pins. Big job; the ribbon looks right as it is.
 
 ### 4. A second track family
 
@@ -92,7 +106,8 @@ pins exactly that.
 - **Shadows only cover ±420 units around the kart.** Beyond that the shadow
   frustum ends. Distant shadows are lost in fog anyway; raising
   `SUN.SHADOW_RADIUS` costs shadow-map resolution everywhere.
-- **The `three` chunk is 159 KB gzipped.** That is most of the page weight. Not
+- **The `three` chunk is 166 KB gzipped** (159 KB before the Meshopt decoder
+  the mirrored kits need). That is most of the page weight. Not
   much to be done short of hand-rolling WebGL, which would cost far more than
   it saves.
 - **No audio assets.** Everything is synthesised. Real engine samples would
