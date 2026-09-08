@@ -96,12 +96,12 @@ export function tallGrass() {
  */
 function mat({ hex, tipHex }) {
   const parts = [];
-  for (let i = 0; i < 19; i += 1) {
-    const angle = (i / 19) * Math.PI * 2 + i * 1.3;
+  for (let i = 0; i < 13; i += 1) {
+    const angle = (i / 13) * Math.PI * 2 + i * 1.3;
     const reach = 0.26 + (i % 4) * 0.15;
     // Thin. A mat is read as grass or as leaves entirely by the width of one
     // blade against its length, and these are drawn five metres wide.
-    const blade = new ConeGeometry(0.042, 1, 3);
+    const blade = new ConeGeometry(0.05, 1, 3);
     blade.translate(0, 0.5, 0);
 
     parts.push(

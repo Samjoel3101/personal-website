@@ -90,7 +90,7 @@ const SHAPES = {
  * thrown away. These are the sizes that keep the drawn tile count in the low
  * hundreds at eye level.
  */
-const TILE = { canopy: 500, cover: 550 };
+const TILE = { canopy: 400, cover: 420 };
 
 /**
  * How far the fetched models reach, in world units.
@@ -105,7 +105,7 @@ const TILE = { canopy: 500, cover: 550 };
  * Chosen against the fog rather than by eye: far enough that the swap happens
  * where haze has already taken most of the detail, near enough to matter.
  */
-const MODEL_DISTANCE = 420;
+const MODEL_DISTANCE = 340;
 
 export function buildFlora(valley) {
   const group = new Group();
