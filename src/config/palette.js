@@ -1,137 +1,103 @@
 /**
- * Every colour in the world, in one place.
+ * Every colour in the scene.
  *
- * The register is a muddy backcountry rally stage: saturated earth, moss and
- * timber under a low warm sun. The lighting model is flat Lambert, so it never
- * pushes a surface toward grey on its own — the palette has to carry the
- * contrast itself, which is why the earth tones here are darker and the greens
- * more olive than they look listed out.
+ * The register is the low-poly nature look: flat, saturated, unshaded by
+ * anything but a single warm sun. The lighting model is Lambert, which never
+ * pushes a surface toward grey on its own, so the palette has to carry the
+ * contrast itself — the greens are darker and the sands warmer than they look
+ * listed out here.
+ *
+ * Anything keyed by biome id is blended by the same weights that drive the
+ * terrain, so a colour only ever has to be right at the middle of its band.
  */
+
+/** The sky gradient. The horizon stop is blended toward the fog at runtime. */
 export const SKY = Object.freeze({
-  TOP: '#2e6ea8',
-  MIDDLE: '#79b6dd',
-  /** Must match the scene fog exactly, or the far hills end at a visible line.
-   *  Hazy sage rather than the near-white it was: fog this pale bleaches
-   *  whatever it touches, and a rally stage should go soft in the distance,
-   *  not go blank. */
-  HORIZON: '#cad3bd',
+  TOP: '#2f7fc4',
+  MIDDLE: '#8ac2e4',
+  HORIZON: '#dfe7dc',
 });
 
-/** The ground you drive on and the ground you look at. */
-export const TERRAIN = Object.freeze({
-  /** Packed dirt and gravel: the racing line. */
-  TRACK: '#8a6a44',
-  /** Darker dirt where the ruts hold water. */
-  TRACK_WET: '#6f5334',
-  /** The ragged edge where the track frays into the verge. */
-  MUD: '#4f3b26',
-  /** Standing water. The one surface you do not want to be on. */
-  PUDDLE: '#35301f',
-  /** Grass shoulder, mown short by tyres. */
-  VERGE: '#6f8f3f',
-  FIELD: '#7ba244',
-  FIELD_DARK: '#4c7233',
-  ROCK: '#8a8577',
-  ROCK_DARK: '#615d53',
-  SAND: '#c2a878',
+/** Horizon and fog, per biome. The far distance is where the journey reads. */
+export const HAZE = Object.freeze({
+  forest: '#c9dcd0',
+  woodland: '#d8e0c6',
+  scrub: '#e6ddb6',
+  desert: '#f2dcab',
+});
+
+/** Ground, per biome: the flat, the slope, and the bare rock under both. */
+export const GROUND = Object.freeze({
+  forest: { flat: '#3f6f33', slope: '#345c2f', bare: '#5c4a32' },
+  woodland: { flat: '#5c8438', slope: '#4a6b30', bare: '#6b5535' },
+  scrub: { flat: '#93964b', slope: '#7d7b44', bare: '#9c7b4b' },
+  desert: { flat: '#d9b676', slope: '#c49a5c', bare: '#b0794c' },
 });
 
 /**
- * Rally structures: barns, lookouts, service garages, spectator stands. Timber,
- * corrugated iron and painted board rather than a pastel facade.
+ * Exposed rock: on anything too steep to hold soil, and on every boulder.
+ *
+ * Neutral rather than olive. An earlier grey-green here made every lit
+ * boulder top read as a mossy plateau — under a warm sun a stone with any
+ * green in it stops being a stone.
  */
-export const STRUCTURES = Object.freeze([
-  '#8a5a33',
-  '#a97b45',
-  '#6f5f4c',
-  '#9c8d6d',
-  '#7d4a38',
-  '#b39262',
-  '#5f6b52',
-  '#a3654a',
-  '#8f8271',
-  '#6b4c34',
-]);
-
-export const GLASS = Object.freeze({
-  DARK: '#3f4a44',
-  LIT: '#ffd98f',
+export const ROCK = Object.freeze({
+  COOL: '#8b8578',
+  WARM: '#9c6a45',
 });
 
-/** Support vehicles: service trucks, marshal cars, the odd abandoned wreck. */
-export const VEHICLES = Object.freeze([
-  '#c8452f',
-  '#3a6fa8',
-  '#e2ddcb',
-  '#4f5548',
-  '#3f8f5e',
-  '#e0af35',
-  '#8a9188',
-  '#7a5b8c',
-  '#e07a34',
-  '#4aa5a8',
-]);
-
-export const FOLIAGE = Object.freeze({
-  TRUNK: '#5b4029',
-  DARK: '#2b5a2a',
-  MID: '#3d7a33',
-  LIGHT: '#6aa03f',
+/** Sand ring around standing water, and the water itself. */
+export const WATER = Object.freeze({
+  SHALLOW: '#4f9c92',
+  DEEP: '#1f5f66',
+  BANK: '#b9a173',
 });
 
-/** Trackside dressing: bales, marker poles, tyre walls, bunting. */
-export const PROPS = Object.freeze({
-  TIMBER: '#7b5230',
-  HAY: '#d8b451',
-  TYRE: '#2a2a2c',
-  FLAG_RED: '#d94b3a',
-  FLAG_WHITE: '#f0ece0',
-  METAL: '#6b7069',
+/** Plant life. Species pick from here rather than inventing their own greens. */
+export const FLORA = Object.freeze({
+  PINE_DARK: '#22503a',
+  PINE_MID: '#2f6b43',
+  PINE_LIGHT: '#3f8a4c',
+  BROADLEAF_DARK: '#3c7233',
+  BROADLEAF_MID: '#549140',
+  BROADLEAF_LIGHT: '#77ab4a',
+  BARK: '#4a3524',
+  BARK_LIGHT: '#6b503a',
+  BIRCH_BARK: '#d5cfbe',
+  DEAD_WOOD: '#8d7250',
+  GRASS_GREEN: '#5f9b3d',
+  GRASS_DRY: '#b9a95e',
+  CACTUS: '#3d7a4e',
+  CACTUS_DARK: '#2d5c3c',
+  PALM_FROND: '#4f8f45',
+  PALM_TRUNK: '#8a6a44',
+  FLOWER_A: '#e2685f',
+  FLOWER_B: '#efc75e',
+  MUSHROOM_CAP: '#c04b3c',
+  MUSHROOM_STEM: '#e8ddc4',
 });
 
 /**
- * Downloaded kits, re-tinted onto this palette by material name.
+ * Downloaded kits, repainted onto this palette by glTF material name.
  *
  * Kenney's untextured kits carry flat named materials rather than an atlas,
- * and the colours in the files are not the colours the kit is drawn with: the
- * greens arrive as a bright teal and the browns as salmon. Rather than import
- * a foreign palette that fights the terrain, every name this stage recognises
- * is repainted from the palette above; anything unrecognised keeps whatever
- * colour it shipped with, so a new kit degrades to its own look rather than to
- * nothing.
- *
- * Keys are glTF material names, verified against the files themselves.
+ * and the colours in the files are not the colours the kit is drawn with:
+ * the greens arrive teal and the browns salmon. Every name recognised here is
+ * repainted from the palette above so a fetched model sits in the same scene
+ * as the procedural one beside it; anything unrecognised keeps the colour it
+ * shipped with, so a new kit degrades to its own look rather than to nothing.
  */
 export const KIT_TINTS = Object.freeze({
-  grass: FOLIAGE.LIGHT,
-  leafsGreen: FOLIAGE.MID,
-  leafsDark: FOLIAGE.DARK,
-  woodBark: FOLIAGE.TRUNK,
-  woodBarkDark: FOLIAGE.TRUNK,
-  wood: PROPS.TIMBER,
-  woodDark: PROPS.TIMBER,
-  woodInner: PROPS.HAY,
-  dirt: TERRAIN.ROCK,
-  stone: TERRAIN.ROCK_DARK,
-});
-
-export const KART_COLOURS = Object.freeze({
-  BODY: '#d9482f',
-  BODY_LIGHT: '#f08a5c',
-  BODY_DARK: '#8f2a1c',
-  TYRE: '#22242c',
-  RIM: '#c9d0dc',
-  SUIT: '#3a5f8c',
-  HELMET: '#ffd23c',
-  BOOST_FLAME: '#ffb03c',
-  /** Roll cage tubing. Dark, because the cage's job is to break the sky
-   *  behind the driver and the sky is never darker than this. */
-  CAGE: '#39404b',
-  /** The open floorpan the cage stands on. */
-  FLOORPAN: '#b83c26',
-  /** Stub axles and suspension links, outboard of the frame. */
-  AXLE: '#8d949e',
-  /** Roof light pod housing, and the lenses in it. */
-  LIGHT_BAR: '#2b2f36',
-  LIGHT_LENS: '#fff2c4',
+  grass: FLORA.GRASS_GREEN,
+  leafsGreen: FLORA.BROADLEAF_MID,
+  leafsDark: FLORA.PINE_DARK,
+  woodBark: FLORA.BARK,
+  woodBarkDark: FLORA.BARK,
+  wood: FLORA.BARK_LIGHT,
+  woodDark: FLORA.BARK,
+  woodInner: FLORA.DEAD_WOOD,
+  dirt: GROUND.woodland.bare,
+  stone: ROCK.COOL,
+  cactus: FLORA.CACTUS,
+  sand: GROUND.desert.flat,
 });

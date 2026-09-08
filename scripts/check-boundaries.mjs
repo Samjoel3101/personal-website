@@ -1,5 +1,5 @@
-// Enforces CLAUDE.md rule 2: src/world, src/physics, src/content and
-// src/core must run in Node with no DOM and no WebGL. A `three` import, or an
+// Enforces CLAUDE.md rule 2: src/world, src/core and src/config must run in
+// Node with no DOM and no WebGL. A `three` import, or an
 // import reaching into a rendering/DOM-facing layer, breaks that and was
 // previously only caught by a human noticing.
 import { readFileSync } from 'node:fs';
@@ -8,8 +8,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const rootDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const guardedDirs = ['src/world', 'src/physics', 'src/content', 'src/core'];
-const forbiddenDirs = ['src/render', 'src/ui', 'src/audio', 'src/input', 'src/game', 'src/assets'];
+const guardedDirs = ['src/world', 'src/core', 'src/config'];
+const forbiddenDirs = ['src/render', 'src/ui', 'src/input', 'src/app', 'src/assets'];
 const importRe = /\bimport\s+(?:[^'"]+?\s+from\s+)?['"]([^'"]+)['"]|\bimport\(\s*['"]([^'"]+)['"]/g;
 
 function walk(dir) {
@@ -49,7 +49,7 @@ if (failures.length > 0) {
   console.error('Layer boundary violation — the world model must stay renderer- and DOM-free:\n');
   for (const failure of failures) console.error(`  ${failure}`);
   console.error(
-    '\nSee CLAUDE.md rule 2. Move the logic that needs three/DOM into src/render, src/ui, src/audio, src/input, src/game or src/assets, and pass the result in as data.',
+    '\nSee CLAUDE.md rule 2. Move the logic that needs three/DOM into src/render, src/ui, src/input, src/app or src/assets, and pass the result in as data.',
   );
   process.exit(1);
 }

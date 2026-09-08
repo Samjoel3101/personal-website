@@ -1,9 +1,9 @@
 /**
  * Deterministic pseudo-random numbers.
  *
- * The city is generated from a fixed seed so that it is byte-identical on
+ * The valley is generated from a fixed seed so that it is byte-identical on
  * every visit and in every test run. Anything that calls Math.random during
- * generation makes the layout untestable and the screenshots unstable, so
+ * generation makes the planting untestable and the screenshots unstable, so
  * nothing does.
  */
 

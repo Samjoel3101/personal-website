@@ -1,90 +1,125 @@
 import { PerspectiveCamera, Vector3 } from 'three';
-import { CAMERA } from '../config/render.js';
-import { KART } from '../config/tuning.js';
+import { CAMERA, JOURNEY } from '../config/render.js';
+import { WORLD } from '../config/world.js';
 import { clamp, damp } from '../core/math.js';
-import { createGroundFollow } from './ground-follow.js';
 
 /**
- * Chase camera.
+ * The flight down the valley.
  *
- * The kart is pinned to the scene origin — the city moves around it, which is
- * how a wrapping world avoids ever teleporting the player (see
- * src/render/scene.js). So the camera orbits a fixed point rather than
- * following a moving one, and the lag that makes cornering feel like
- * cornering shows up as the camera swinging around the kart.
+ * The camera is the only thing in this scene that moves, and it is what turns
+ * a landscape into a journey: it drifts forward on its own, holds a fixed
+ * height above whatever ground is beneath it, and hands the viewer steering,
+ * throttle and a look-around on top. Reaching the far end turns it round
+ * rather than stopping, so the scene never settles into a state where nothing
+ * is happening.
  *
- * The one thing it has to track is the terrain: the kart is lifted onto the
- * heightfield in src/render/scene.js, so a camera pinned to y = 0 would sink
- * into a hill the moment you left the track. It follows the same ground more
- * softly than the kart does, which reads as suspension rather than as a
- * camera fighting the scenery.
+ * Height and aim both come from the drawn surface, which is why this needs the
+ * valley: flying at a constant altitude over rolling ground means skimming the
+ * hills and losing the hollows.
  */
-/** Softer than the kart's, so the view does not bob over every facet. */
-const CAMERA_GROUND_LAMBDA = 5;
+const EDGE_MARGIN = 140;
 
-/**
- * Widens the frame as the kart gets fast.
- *
- * A chase camera at a fixed distance gives no sense of speed at all: the kart
- * fills the same pixels at 40 as at 380. Pushing the field of view out drags
- * the scenery past the edges of the frame faster than the middle, which is the
- * whole effect. Kept small and slow — a big or snappy kick reads as a glitch.
- *
- * updateProjectionMatrix is skipped when nothing moved, so a kart sitting still
- * costs nothing.
- */
-function applyFovKick(camera, kart, dt) {
-  const fraction = clamp(Math.abs(kart.speed) / KART.MAX_SPEED, 0, 1.6);
-  const wanted = CAMERA.FOV + fraction * CAMERA.FOV_KICK;
-  const next = damp(camera.fov, wanted, CAMERA.FOV_LAMBDA, dt);
-  if (Math.abs(next - camera.fov) < 0.002) return;
-  camera.fov = next;
-  camera.updateProjectionMatrix();
-}
-export function createChaseCamera() {
+export function createJourneyCamera(valley) {
   const camera = new PerspectiveCamera(CAMERA.FOV, 1, CAMERA.NEAR, CAMERA.FAR);
   const target = new Vector3();
-  const desired = new Vector3();
-  const lookAt = new Vector3(0, CAMERA.LOOK_HEIGHT, 0);
-  const ground = createGroundFollow(CAMERA_GROUND_LAMBDA);
 
-  // Start behind the kart so the first frame is not a swing into place.
-  camera.position.set(0, CAMERA.HEIGHT, -CAMERA.DISTANCE);
+  let travel = JOURNEY.TURN_MARGIN;
+  let across = 0;
+  let heading = 1;
+  let speed = JOURNEY.DRIFT_SPEED;
+  let yaw = 0;
+  let pitch = 0;
+  let height = valley.heightAt(0, travel) + CAMERA.HEIGHT;
+
+  function advance(controls, dt) {
+    const wanted =
+      controls.forward === 0
+        ? JOURNEY.DRIFT_SPEED
+        : JOURNEY.DRIFT_SPEED + controls.forward * JOURNEY.FAST_SPEED;
+    speed = damp(speed, controls.paused ? 0 : wanted, JOURNEY.SPEED_LAMBDA, dt);
+
+    travel += speed * heading * dt;
+    across = clamp(
+      across + controls.strafe * JOURNEY.STRAFE_SPEED * dt,
+      -WORLD.HALF_WIDTH + EDGE_MARGIN,
+      WORLD.HALF_WIDTH - EDGE_MARGIN,
+    );
+
+    // Turn around at either end rather than stopping at a wall.
+    const far = WORLD.LENGTH - JOURNEY.TURN_MARGIN;
+    if (travel > far) {
+      travel = far;
+      heading = -1;
+    } else if (travel < JOURNEY.TURN_MARGIN) {
+      travel = JOURNEY.TURN_MARGIN;
+      heading = 1;
+    }
+  }
+
+  function aim(dt) {
+    const ahead = CAMERA.LOOK_AHEAD;
+    const lookX = clamp(
+      across + Math.sin(yaw) * ahead * heading,
+      -WORLD.HALF_WIDTH,
+      WORLD.HALF_WIDTH,
+    );
+    const lookZ = clamp(travel + Math.cos(yaw) * ahead * heading, 0, WORLD.LENGTH);
+
+    target.set(
+      damp(target.x, lookX, CAMERA.LAMBDA, dt),
+      damp(
+        target.y,
+        valley.heightAt(lookX, lookZ) + CAMERA.LOOK_HEIGHT + pitch * ahead,
+        CAMERA.LAMBDA,
+        dt,
+      ),
+      damp(target.z, lookZ, CAMERA.LAMBDA, dt),
+    );
+    camera.lookAt(target);
+  }
 
   return {
     camera,
+
+    update(controls, dt) {
+      yaw = clamp(yaw + controls.look.x, -CAMERA.MAX_YAW, CAMERA.MAX_YAW);
+      pitch = clamp(pitch + controls.look.y, CAMERA.MIN_PITCH, CAMERA.MAX_PITCH);
+
+      advance(controls, dt);
+
+      // Damped rather than snapped: the ground under the camera is a
+      // heightfield, and following it exactly turns every facet into a jolt.
+      height = damp(height, valley.heightAt(across, travel) + CAMERA.HEIGHT, CAMERA.LAMBDA, dt);
+      camera.position.set(across, height, travel);
+      aim(dt);
+    },
+
+    /**
+     * Puts the flight somewhere along the valley immediately.
+     *
+     * Exists for the end-to-end tests and the console: waiting out five and a
+     * half kilometres of drift to look at the desert is not a test, it is a
+     * timeout. Nothing in the running scene calls it.
+     */
+    jumpTo({ x = across, z = travel } = {}) {
+      across = clamp(x, -WORLD.HALF_WIDTH + EDGE_MARGIN, WORLD.HALF_WIDTH - EDGE_MARGIN);
+      travel = clamp(z, JOURNEY.TURN_MARGIN, WORLD.LENGTH - JOURNEY.TURN_MARGIN);
+      height = valley.heightAt(across, travel) + CAMERA.HEIGHT;
+      target.set(across, height, travel);
+    },
 
     setAspect(aspect) {
       camera.aspect = aspect;
       camera.updateProjectionMatrix();
     },
 
-    /**
-     * @param {{x: number, z: number, heading: number, slide: number, speed: number}} kart
-     * @param {number} dt seconds
-     */
-    update(kart, dt) {
-      // Behind means opposite the heading; +Z is forward at heading 0.
-      const sin = Math.sin(kart.heading);
-      const cos = Math.cos(kart.heading);
+    /** 0 at the forest end, 1 at the desert end. */
+    get progress() {
+      return travel / WORLD.LENGTH;
+    },
 
-      const groundHeight = ground.update(kart.x, kart.z, dt);
-      lookAt.y = CAMERA.LOOK_HEIGHT + groundHeight;
-
-      // Drifting swings the camera wide, which is what sells a slide.
-      const lateral = kart.slide * 0.5;
-      desired.set(
-        -sin * CAMERA.DISTANCE - cos * lateral,
-        CAMERA.HEIGHT + groundHeight,
-        -cos * CAMERA.DISTANCE + sin * lateral,
-      );
-
-      target.copy(desired);
-      camera.position.x = damp(camera.position.x, target.x, CAMERA.FOLLOW_LAMBDA, dt);
-      camera.position.y = damp(camera.position.y, target.y, CAMERA.FOLLOW_LAMBDA, dt);
-      camera.position.z = damp(camera.position.z, target.z, CAMERA.FOLLOW_LAMBDA, dt);
-      camera.lookAt(lookAt);
-      applyFovKick(camera, kart, dt);
+    get state() {
+      return { x: across, z: travel, heading, speed, yaw, pitch };
     },
   };
 }

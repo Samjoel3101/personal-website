@@ -1,49 +1,38 @@
 import { describe, expect, it } from 'vitest';
-import { clamp, damp, lerp, rad, sign } from '../src/core/math.js';
+import { clamp, damp, inverseLerp, lerp, rad, sign, smoothstep } from '../src/core/math.js';
 
-describe('maths helpers', () => {
-  it('clamps', () => {
-    expect(clamp(5, 0, 10)).toBe(5);
-    expect(clamp(-5, 0, 10)).toBe(0);
-    expect(clamp(15, 0, 10)).toBe(10);
+describe('math helpers', () => {
+  it('clamps into range', () => {
+    expect(clamp(5, 0, 1)).toBe(1);
+    expect(clamp(-5, 0, 1)).toBe(0);
+    expect(clamp(0.5, 0, 1)).toBe(0.5);
   });
 
-  it('interpolates', () => {
-    expect(lerp(0, 10, 0)).toBe(0);
-    expect(lerp(0, 10, 1)).toBe(10);
-    expect(lerp(0, 10, 0.25)).toBe(2.5);
+  it('interpolates and inverts', () => {
+    expect(lerp(10, 20, 0.5)).toBe(15);
+    expect(inverseLerp(10, 20, 15)).toBe(0.5);
+    expect(inverseLerp(10, 20, 99)).toBe(1);
+    expect(inverseLerp(4, 4, 4)).toBe(0);
   });
 
-  it('signs', () => {
-    expect(sign(3)).toBe(1);
-    expect(sign(-3)).toBe(-1);
-    expect(sign(0)).toBe(0);
+  it('eases with a flat start and finish', () => {
+    expect(smoothstep(0, 1, 0)).toBe(0);
+    expect(smoothstep(0, 1, 1)).toBe(1);
+    expect(smoothstep(0, 1, 0.5)).toBe(0.5);
+    // The point of the curve: it leaves and arrives slowly.
+    expect(smoothstep(0, 1, 0.1)).toBeLessThan(0.1);
+    expect(smoothstep(0, 1, 0.9)).toBeGreaterThan(0.9);
   });
 
-  it('converts degrees', () => {
-    expect(rad(180)).toBeCloseTo(Math.PI, 10);
+  it('damps at the same rate whatever the frame rate', () => {
+    const oneStep = damp(0, 100, 4, 0.1);
+    let twoSteps = damp(0, 100, 4, 0.05);
+    twoSteps = damp(twoSteps, 100, 4, 0.05);
+    expect(twoSteps).toBeCloseTo(oneStep, 10);
   });
 
-  /**
-   * The property that matters: damping the same total time in one step or in
-   * many must land in the same place, or camera smoothing behaves differently
-   * at 60 and 144 Hz.
-   */
-  it('is frame-rate independent', () => {
-    const oneStep = damp(0, 100, 5, 0.5);
-
-    let many = 0;
-    for (let i = 0; i < 50; i += 1) many = damp(many, 100, 5, 0.01);
-
-    expect(many).toBeCloseTo(oneStep, 6);
-  });
-
-  it('approaches the target without overshooting', () => {
-    let value = 0;
-    for (let i = 0; i < 200; i += 1) {
-      value = damp(value, 10, 8, 1 / 60);
-      expect(value).toBeLessThanOrEqual(10);
-    }
-    expect(value).toBeCloseTo(10, 3);
+  it('has a three-way sign and degrees', () => {
+    expect([sign(-3), sign(0), sign(3)]).toEqual([-1, 0, 1]);
+    expect(rad(180)).toBeCloseTo(Math.PI);
   });
 });

@@ -1,9 +1,9 @@
 {
-  "name": "kart-resume",
-  "version": "2.0.0",
+  "name": "forest-to-desert",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
-  "description": "An interactive resume you drive through: a WebGL kart racer around a procedurally generated city.",
+  "description": "A procedurally generated valley you fly through, from pine forest to open desert.",
   "license": "MIT",
   "engines": {
     "node": ">=20"

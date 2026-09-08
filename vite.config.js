@@ -7,7 +7,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsInlineLimit: 4096,
-    // three.js is one deliberate 630 kB chunk (159 kB gzipped). Splitting it
+    // three.js is one deliberate chunk of a few hundred kB. Splitting it
     // further would only trade one request for several of the same total size,
     // so the default warning is noise here rather than a signal.
     chunkSizeWarningLimit: 700,

@@ -1,27 +1,24 @@
-import { createChaseCamera } from './camera.js';
-import { createPostProcessing } from './postfx.js';
+import { createJourneyCamera } from './camera.js';
 import { createQualityController } from './quality.js';
 import { createRenderer } from './renderer.js';
-import { createGameScene } from './scene.js';
+import { createValleyScene } from './scene.js';
 
 /**
  * The renderer's front door.
  *
  * Everything outside src/render talks to this and nothing else: it owns the
- * GPU context, the camera, the scene graph, the post chain and the quality
- * ladder, and exposes five verbs. Swapping the whole renderer means
- * reimplementing this interface, not touching the game.
+ * GPU context, the camera, the scene graph and the quality ladder, and exposes
+ * five verbs. Swapping the whole renderer means reimplementing this interface,
+ * not touching the world model.
  */
-export function createStage(canvas, city) {
+export function createStage(canvas, valley) {
   const output = createRenderer(canvas);
-  const view = createChaseCamera();
-  const world = createGameScene(city);
-  const post = createPostProcessing(output.renderer, world.scene, view.camera);
+  const view = createJourneyCamera(valley);
+  const world = createValleyScene(valley);
 
   const quality = createQualityController((tier) => {
     output.applyQuality(tier);
     world.setQuality(tier);
-    post.setEnabled(tier.bloom);
     resize();
   });
 
@@ -32,23 +29,21 @@ export function createStage(canvas, city) {
     width = Math.max(1, Math.floor(nextWidth));
     height = Math.max(1, Math.floor(nextHeight));
     output.setSize(width, height);
-    post.setSize(width, height);
     view.setAspect(width / height);
   }
 
   output.applyQuality(quality.tier);
-  post.setEnabled(quality.tier.bloom);
+  world.setQuality(quality.tier);
 
   return {
     resize,
 
-    /** Advance the visuals. `dt` is seconds since the previous frame. */
-    render(kartState, dt) {
+    /** Advance and draw one frame. `dt` is seconds since the previous one. */
+    render(controls, dt) {
       output.beginFrame();
-      world.update(kartState, dt);
-      view.update(kartState, dt);
-      if (post.enabled) post.render();
-      else output.renderer.render(world.scene, view.camera);
+      view.update(controls, dt);
+      world.update(view.camera.position, dt);
+      output.renderer.render(world.scene, view.camera);
     },
 
     /** Feed a frame interval in milliseconds to the quality controller. */
@@ -56,27 +51,31 @@ export function createStage(canvas, city) {
       quality.sample(ms);
     },
 
-    /** Swap the procedural kart for a loaded glTF, if one arrived. */
-    useKartModel(model) {
-      return world.kart.useModel(model);
+    /** Upgrade a species with a fetched model, if one arrived. */
+    useModel(assetId, model) {
+      return world.useModel(assetId, model);
     },
 
-    /** Upgrade a piece of scenery with a loaded glTF, if one arrived. */
-    useSceneryModel(id, model) {
-      return world.useSceneryModel(id, model);
+    /** Move the flight along the valley. For the tests and the console. */
+    jumpTo(where) {
+      view.jumpTo(where);
     },
 
-    /** Dress the ground in a real material, if its textures arrived. */
-    useGroundTexture(maps) {
-      return world.useGroundTexture(maps);
+    /** How far down the valley the camera is, 0..1. */
+    get progress() {
+      return view.progress;
     },
 
     get diagnostics() {
-      return { quality: quality.tier.name, draws: output.drawInfo.calls };
+      return {
+        quality: quality.tier.name,
+        draws: output.drawInfo.calls,
+        triangles: output.drawInfo.triangles,
+        camera: view.state,
+      };
     },
 
     dispose() {
-      post.dispose();
       output.dispose();
     },
   };

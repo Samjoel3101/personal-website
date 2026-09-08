@@ -1,42 +1,54 @@
-import { KART } from '../config/tuning.js';
-import { wrapDelta } from '../core/torus.js';
+import { clamp } from '../core/math.js';
 
 /**
- * The always-on overlay: how many stops you have found, which way the next one
- * is, how fast you are going, and how much boost is left.
+ * The heads-up display: where you are on the journey, and how to fly it.
  *
- * The compass is the single most important element here. Without it the stage
- * is a maze; with it the stage is a map you happen to be driving through.
+ * Written to on every frame, so it does the one thing that matters for a DOM
+ * overlay in an animation loop — it compares before it writes. Assigning the
+ * same string to `textContent` sixty times a second is a style recalculation
+ * sixty times a second, and it will show up in the frame budget long before
+ * anything in the scene does.
  */
-export function createHud(elements, discovery) {
-  elements.progress.textContent = `Found 0/${discovery.total}`;
+export function createHud(elements, controls) {
+  let lastBiome = '';
+  let lastProgress = -1;
+
+  elements.pause.addEventListener('click', () => {
+    setPaused(controls.togglePaused());
+  });
+
+  // Touch has no keyboard to hold, so the one on-screen control is a throttle.
+  const press = (value) => (event) => {
+    event.preventDefault();
+    elements.fly.dataset.held = value ? 'yes' : 'no';
+  };
+  elements.fly.addEventListener('pointerdown', press(true));
+  elements.fly.addEventListener('pointerup', press(false));
+  elements.fly.addEventListener('pointercancel', press(false));
+
+  function setPaused(paused) {
+    elements.pause.textContent = paused ? 'Resume' : 'Pause';
+    elements.pause.setAttribute('aria-pressed', String(paused));
+  }
+  setPaused(controls.paused);
 
   return {
-    update(kart, speedKph) {
-      elements.progress.textContent = `Found ${discovery.found.size}/${discovery.total}`;
-      elements.speed.textContent = String(speedKph);
-      elements.boostBar.style.width = `${Math.round((kart.boost / KART.BOOST_DURATION) * 100)}%`;
-      updateCompass(elements, discovery, kart);
+    /** True while the on-screen throttle is held. */
+    get flying() {
+      return elements.fly.dataset.held === 'yes';
+    },
+
+    update({ biome, progress }) {
+      if (biome !== lastBiome) {
+        elements.biome.textContent = biome;
+        lastBiome = biome;
+      }
+      const percent = Math.round(clamp(progress, 0, 1) * 100);
+      if (percent !== lastProgress) {
+        elements.progress.style.width = `${percent}%`;
+        elements.progress.parentElement.setAttribute('aria-valuenow', String(percent));
+        lastProgress = percent;
+      }
     },
   };
-}
-
-function updateCompass(elements, discovery, kart) {
-  const target = discovery.nextTarget(kart);
-
-  if (!target) {
-    elements.compassName.textContent = 'All found';
-    elements.compassDistance.textContent = 'free roam';
-    elements.compassArrow.style.transform = 'rotate(0deg)';
-    return;
-  }
-
-  // Bearing relative to where the kart is pointing, so "up" means straight on.
-  const dx = wrapDelta(target.landmark.x - kart.x);
-  const dz = wrapDelta(target.landmark.z - kart.z);
-  const bearing = Math.atan2(dx, dz) - kart.heading;
-
-  elements.compassArrow.style.transform = `rotate(${(bearing * 180) / Math.PI}deg)`;
-  elements.compassName.textContent = target.landmark.title;
-  elements.compassDistance.textContent = `${Math.round(target.distance)} m away`;
 }

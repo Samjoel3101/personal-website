@@ -1,94 +1,105 @@
 /**
- * Dimensions of the rally stage. Every other module derives its geometry from
- * these numbers rather than hard-coding its own, so the world can be resized in
- * one place.
+ * The shape of the land, in one place.
  *
- * The world is a torus: driving off one edge arrives at the other. SIZE is a
- * power of two so wrapping is a bitmask rather than a modulo.
+ * The scene is a single valley that runs from a wet pine forest in the north
+ * to open desert in the south. Everything is expressed against these numbers
+ * rather than hard-coded twice, so the valley can be made longer or wider by
+ * editing this file alone.
+ *
+ * Axes: +x is across the valley, +z is the journey. z = 0 is deep forest,
+ * z = LENGTH is deep desert.
  */
 export const WORLD = Object.freeze({
-  /** Length of one edge of the square world, in world units. */
-  SIZE: 2048,
-  /** SIZE - 1, for bitmask wrapping of integer coordinates. */
-  MASK: 2047,
-  /** Spacing between track centre lines. */
-  BLOCK: 512,
-  /** Number of tracks along each axis (SIZE / BLOCK). */
-  GRID: 4,
-  /** Half-width of the packed dirt. */
-  ROAD_HALF: 46,
-  /** Width of the grass verge outside the dirt. */
-  WALK: 18,
+  /** Full width across the valley. */
+  WIDTH: 1600,
+  HALF_WIDTH: 800,
+  /** Length of the journey, forest to desert. */
+  LENGTH: 5600,
+  /** Terrain mesh lattice spacing. Divides WIDTH and LENGTH exactly. */
+  CELL: 20,
 });
 
 /**
- * How far the track wanders off its grid line.
+ * The four bands of the journey, in order, each pinned to the point along the
+ * journey (0..1) where it is the only thing you can see.
  *
- * The shape is TRACK.WOBBLE * sin(2π * along / WORLD.BLOCK), which is zero at
- * every multiple of BLOCK / 2 — so the track passes dead through every junction
- * AND through every block midpoint, where the boost pads sit. Neither needs
- * special-casing. See src/world/track.js.
+ * Blending is linear between neighbouring anchors and smoothstepped, so at any
+ * point exactly two bands are in play and their weights sum to one. That is
+ * what lets ground colour, fog, terrain amplitude and planting density all be
+ * driven by the same four numbers without any of them agreeing in advance —
+ * see src/world/biome.js.
  */
-export const TRACK = Object.freeze({
-  WOBBLE: 58,
+export const BIOMES = Object.freeze([
+  { id: 'forest', name: 'Pine forest', at: 0.17 },
+  { id: 'woodland', name: 'Thinning woodland', at: 0.44 },
+  { id: 'scrub', name: 'Dry scrub', at: 0.72 },
+  { id: 'desert', name: 'Open desert', at: 0.95 },
+]);
+
+/**
+ * How far the biome boundary wanders off a straight line across the valley.
+ *
+ * Without it the forest ends along a ruler-straight line at a fixed z, which
+ * reads as a bug from any angle that shows both sides at once. The warp is a
+ * function of x only, so the journey still advances monotonically wherever you
+ * stand.
+ */
+export const BIOME_WARP = Object.freeze({ AMOUNT: 420, SCALE: 0.0016 });
+
+/** Terrain relief. Amplitudes are per band and blended by biome weight. */
+export const TERRAIN = Object.freeze({
+  /** Rolling ground under the forest, in world units of peak height. */
+  HILLS: { forest: 78, woodland: 56, scrub: 34, desert: 15 },
+  /** Wind-blown dune ridges. Desert only, or the forest floor corrugates. */
+  DUNES: { forest: 0, woodland: 0, scrub: 12, desert: 34 },
+  /** Frequencies of the two relief fields, in cycles per world unit. */
+  HILL_SCALE: 0.0016,
+  DUNE_SCALE: 0.0075,
+  /** Fine breakup laid over everything so no slope is perfectly smooth. */
+  DETAIL_SCALE: 0.02,
+  DETAIL_AMOUNT: 3.2,
+  /**
+   * The valley walls, which is how a finite world gets away with having an
+   * edge. The ground rises steeply past WALL_START (as a fraction of the half
+   * width) so the far side of every view is hillside rather than a horizon
+   * with nothing behind it.
+   */
+  WALL_START: 0.55,
+  WALL_HEIGHT: 300,
 });
 
 /**
- * Half-width of a block's usable interior, from its centre to the verge.
- *
- * The wobble is subtracted so that scenery can never be swallowed by a track
- * that has swung toward it: the lots are smaller than a grid would need, which
- * suits sparse rally scenery anyway.
+ * Flat-topped desert buttes. Placed by hand rather than scattered: three
+ * silhouettes on the horizon is scenery, thirty is noise.
  */
-export const LOT_HALF = WORLD.BLOCK / 2 - WORLD.ROAD_HALF - WORLD.WALK - TRACK.WOBBLE;
+export const MESAS = Object.freeze([
+  { x: -430, z: 4180, radius: 300, height: 210 },
+  { x: 470, z: 5030, radius: 240, height: 165 },
+  { x: -110, z: 5450, radius: 190, height: 120 },
+]);
 
 /**
- * Half-width of a landmark's packed service area, centre to verge.
+ * Standing water: one forest pond, one desert oasis.
  *
- * Deliberately NOT LOT_HALF. Scenery has to clear a track that swings toward
- * it, which is why LOT_HALF subtracts the wobble — but the paddock is ground,
- * and ground has nothing to dodge: it runs all the way out to where the verge
- * begins. Using LOT_HALF here is what left a third of every landmark block
- * classified as packed dirt while being drawn, and driven, as open hillside.
- * The sampler, the painted quad and the terrain's flat mask all read this one.
+ * A pool's surface height is not written here, because a fixed height in a
+ * landscape that rolls is a pool halfway up a hillside. It is taken from the
+ * terrain at the pool's own centre — see `poolLevel` in src/world/terrain.js —
+ * and the basin is then carved relative to that: `depth` below the surface
+ * inside `radius`, climbing to `bank` above it out to `radius * BASIN_FALLOFF`.
+ * The bank is what keeps the water inside its own outline instead of pooling
+ * in every dip nearby.
  */
-export const PADDOCK_HALF = WORLD.BLOCK / 2 - WORLD.ROAD_HALF - WORLD.WALK;
+export const POOLS = Object.freeze([
+  { id: 'pond', x: -250, z: 900, radius: 185, depth: 30, bank: 20 },
+  { id: 'oasis', x: 300, z: 4600, radius: 130, depth: 20, bank: 16 },
+]);
 
-/** Centre coordinate of block `index` along one axis. */
-export const blockCentre = (index) => index * WORLD.BLOCK + WORLD.BLOCK / 2;
+export const BASIN_FALLOFF = 1.9;
 
-/** The valid landmark centres, as a flat list of coordinates. */
-export const BLOCK_CENTRES = Array.from({ length: WORLD.GRID }, (_, i) => blockCentre(i));
-
-/**
- * Ground materials. The physics reads these to decide grip; the renderer reads
- * them to decide what to paint. They are an enum rather than a bitmap so the
- * lookup is a pure function of position, testable without a canvas.
- *
- * The indices are load-bearing: GRIP in src/config/tuning.js is an array keyed
- * by them, so a member may be renamed in place but never reordered, and a new
- * one goes on the end.
- */
-export const SURFACE = Object.freeze({
-  /** Packed dirt and gravel: the racing line. */
-  TRACK: 0,
-  /** Grass shoulder. Costs you a little. */
-  VERGE: 1,
-  /** The packed service area at a landmark. */
-  PADDOCK: 2,
-  /** Open meadow. */
-  FIELD: 3,
-  /** A chevron ramp. */
-  BOOST: 4,
-  /** A puddle: the worst place on the stage to be. */
-  MUD: 5,
+/** Half the world, for callers that need to clamp into bounds. */
+export const bounds = Object.freeze({
+  minX: -WORLD.HALF_WIDTH,
+  maxX: WORLD.HALF_WIDTH,
+  minZ: 0,
+  maxZ: WORLD.LENGTH,
 });
-
-/** Boost pad footprint, centred on the track at the middle of each block segment. */
-export const BOOST_PAD = Object.freeze({
-  HALF_ACROSS: WORLD.ROAD_HALF - 12,
-  HALF_ALONG: 26,
-});
-
-/** How close the kart must get to a landmark centre to trigger its card. */
-export const DISCOVER_RADIUS = 115;

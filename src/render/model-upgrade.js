@@ -1,0 +1,77 @@
+import { Box3, Color, MeshLambertMaterial, Vector3 } from 'three';
+import { KIT_TINTS } from '../config/palette.js';
+
+/**
+ * Turns a fetched glTF into something the instanced planting can draw.
+ *
+ * Two jobs. It bakes each mesh's world transform into a copy of its geometry
+ * and normalises the result onto the same contract every procedural shape
+ * meets — one unit tall, centred on x and z, base at y = 0 — so a downloaded
+ * pine drops into the same instancing path, at the same sizes, as the one it
+ * replaces. And it flattens the materials.
+ *
+ * That second job is not cosmetic. A glTF arrives as MeshStandardMaterial,
+ * roughly twice the fragment cost of the Lambert everything else uses and
+ * visibly different beside it — and Kenney's untextured kits are authored
+ * `metallicFactor: 1`. A fully metallic surface with no environment map to
+ * reflect has nothing to return but black, so those models render as
+ * silhouettes and look for all the world like a shader bug.
+ *
+ * Everything here must survive `model` being null. Assets are an upgrade,
+ * never a dependency.
+ */
+const flattened = new Map();
+
+function flatten(material) {
+  if (!material || material.isMeshLambertMaterial) return material;
+  if (flattened.has(material)) return flattened.get(material);
+
+  const tint = KIT_TINTS[material.name];
+  const lambert = new MeshLambertMaterial({
+    color: tint ? new Color(tint) : (material.color?.clone() ?? new Color(0xffffff)),
+    map: material.map ?? null,
+    transparent: material.transparent,
+    opacity: material.opacity,
+    alphaTest: material.alphaTest,
+    side: material.side,
+    // The instance tint multiplies through vertexColors on procedural shapes;
+    // a kit model has no colour attribute, so its tint arrives as instance
+    // colour alone and vertexColors must stay off. See ./materials.js.
+    vertexColors: false,
+  });
+  lambert.name = material.name;
+  flattened.set(material, lambert);
+  return lambert;
+}
+
+/**
+ * @param {import('three').Object3D|null} model
+ * @returns {{geometry, material}[]} one entry per mesh, empty if absent
+ */
+export function normalisedParts(model) {
+  if (!model) return [];
+  model.updateMatrixWorld(true);
+
+  const parts = [];
+  model.traverse((child) => {
+    if (!child.isMesh || !child.geometry) return;
+    const geometry = child.geometry.clone();
+    geometry.applyMatrix4(child.matrixWorld);
+    parts.push({ geometry, material: flatten(child.material) });
+  });
+  if (parts.length === 0) return [];
+
+  const bounds = new Box3();
+  for (const part of parts) {
+    part.geometry.computeBoundingBox();
+    bounds.union(part.geometry.boundingBox);
+  }
+  const centre = bounds.getCenter(new Vector3());
+  const height = bounds.getSize(new Vector3()).y || 1;
+
+  for (const part of parts) {
+    part.geometry.translate(-centre.x, -bounds.min.y, -centre.z);
+    part.geometry.scale(1 / height, 1 / height, 1 / height);
+  }
+  return parts;
+}

@@ -25,7 +25,7 @@ export function createCloudTexture(seed = 4242) {
   for (let deck = 0; deck < DECKS; deck += 1) {
     const scale = 1.15 - deck * 0.24;
     const alpha = 0.97 - deck * 0.18;
-    // Lower and deeper than a midday city sky: the deck sits over the hills
+    // Low and deep: the deck sits over the hills
     // rather than in a clear ring above them, and the shader fades it out
     // right at the horizon so it never smears into a band.
     const bandTop = HEIGHT * (0.1 + deck * 0.16);

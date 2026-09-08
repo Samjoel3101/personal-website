@@ -1,123 +1,60 @@
-import { Color, Fog, Group, Scene } from 'three';
+import { Color, Fog, Scene } from 'three';
 import { ATMOSPHERE } from '../config/render.js';
-import { SKY } from '../config/palette.js';
-import { clamp, damp } from '../core/math.js';
-import { surfaceSlopeAt } from './terrain-surface.js';
-import { buildCars } from './builders/cars.js';
-import { buildGround } from './builders/ground.js';
-import { buildKart } from './builders/kart.js';
-import { buildLamps } from './builders/lamps.js';
-import { buildMarkers } from './builders/markers.js';
-import { buildPuddles } from './builders/puddles.js';
-import { buildScenery } from './builders/scenery.js';
-import { buildTerrain } from './builders/terrain.js';
-import { buildTrees } from './builders/trees.js';
-import { createGroundFollow } from './ground-follow.js';
+import { HAZE } from '../config/palette.js';
+import { BIOME_IDS } from '../world/biome.js';
+import { blendHex } from '../core/colour.js';
+import { buildFlora } from './flora.js';
+import { buildTerrainMesh } from './terrain-mesh.js';
+import { buildWater } from './water.js';
 import { createLighting } from './lighting.js';
 import { createSky } from './sky.js';
 
 /**
- * Assembles the scene and keeps it in step with the simulation.
+ * The scene graph, and the one thing in it that changes.
  *
- * The kart never moves. It sits at the origin and the entire world slides
- * underneath it, which is what lets a wrapping world work without ever
- * teleporting the player or losing float precision a long way from origin. The
- * world is built tiled 3x3 so whichever direction you drive, there is always
- * more of it ahead — see src/render/geometry/tiling.js.
+ * Everything is built once: the ground, the water, every plant. What updates
+ * per frame is the weather. The fog colour, the scene background and the sky
+ * dome's horizon stop are all mixed from the biome haze under the camera and
+ * eased toward it, so flying south takes you from a cool, damp grey-green
+ * horizon to a hot sand one without a boundary you could point at.
+ *
+ * All three have to agree exactly, or the far hills end at a visible line
+ * where the fog stops and the dome begins.
  */
-
-/** How hard the kart follows the ground. High enough to look attached. */
-const KART_GROUND_LAMBDA = 12;
-/** Radians of pitch or roll the kart will take from a slope. */
-const MAX_TILT = 0.34;
-/** How quickly it settles into a new attitude. */
-const TILT_LAMBDA = 7;
-
-export function createGameScene(city) {
+export function createValleyScene(valley) {
   const scene = new Scene();
-  scene.background = new Color(SKY.HORIZON);
-  scene.fog = new Fog(new Color(SKY.HORIZON), ATMOSPHERE.FOG_NEAR, ATMOSPHERE.FOG_FAR);
+  const haze = new Color(HAZE.forest);
+  const wanted = new Color();
 
-  scene.add(createSky());
+  scene.background = haze;
+  scene.fog = new Fog(haze, ATMOSPHERE.FOG_NEAR, ATMOSPHERE.FOG_FAR);
+
+  const sky = createSky();
   const lighting = createLighting(scene);
+  const flora = buildFlora(valley);
 
-  const cars = buildCars(city);
-  const scenery = buildScenery(city);
-  const trees = buildTrees(city);
-  const terrain = buildTerrain();
-
-  const worldGroup = new Group();
-  worldGroup.name = 'world';
-  worldGroup.add(
-    terrain.group,
-    buildGround(),
-    buildPuddles(city),
-    scenery.group,
-    trees.group,
-    buildLamps(city),
-    cars.group,
-    buildMarkers(),
-  );
-  scene.add(worldGroup);
-
-  const kart = buildKart();
-  // Heading first, then the pitch and roll the ground asks for, so a tilt is
-  // read in the kart's own frame rather than the world's.
-  kart.group.rotation.order = 'YXZ';
-  scene.add(kart.group);
-
-  const ground = createGroundFollow(KART_GROUND_LAMBDA);
+  scene.add(sky.dome, buildTerrainMesh(valley), buildWater(valley.pools), flora.group);
 
   return {
     scene,
-    kart,
-    lighting,
+    flora,
 
-    /** @param {{x, z, heading, steer, speed}} kartState */
-    update(kartState, dt) {
-      worldGroup.position.set(-kartState.x, 0, -kartState.z);
-      kart.group.rotation.y = kartState.heading;
-      // Cosmetic only: the physics has no third dimension and never reads
-      // this. See src/render/ground-follow.js.
-      kart.group.position.y = ground.update(kartState.x, kartState.z, dt);
-      tiltToGround(kart.group, kartState, dt);
-      kart.update(kartState, dt);
-      // The world model has already moved the traffic this step; this puts the
-      // instances where it put the vehicles.
-      cars.update();
-    },
-
-    /**
-     * Hand a downloaded decoration to whichever builder knows what to do with
-     * it. Unknown ids and null models are a no-op by design: the site has to
-     * look finished with no assets fetched at all.
-     */
-    useSceneryModel(id, model) {
-      return scenery.useModel(id, model) || trees.useModel(id, model);
-    },
-
-    useGroundTexture(maps) {
-      return terrain.useTexture(maps);
+    /** @param {import('three').Vector3} viewer where the camera is now */
+    update(viewer, dt) {
+      const weights = valley.weightsAt(viewer.x, viewer.z);
+      wanted.set(blendHex(BIOME_IDS.map((id) => [HAZE[id], weights[id]])));
+      haze.lerp(wanted, 1 - Math.exp(-ATMOSPHERE.BLEND_LAMBDA * dt));
+      sky.setHaze(haze);
+      lighting.follow(viewer);
     },
 
     setQuality(tier) {
       lighting.setShadowsEnabled(tier.shadows);
     },
+
+    /** Swap a species' procedural shape for a fetched model. */
+    useModel(assetId, model) {
+      return flora.useModel(assetId, model);
+    },
   };
-}
-
-/** Leans the kart into the hill it is standing on. */
-function tiltToGround(group, kartState, dt) {
-  const gradient = surfaceSlopeAt(kartState.x, kartState.z);
-  const sin = Math.sin(kartState.heading);
-  const cos = Math.cos(kartState.heading);
-
-  // Forward is (sin, cos); right is (cos, -sin). Nose lifts going uphill.
-  const forward = gradient.dx * sin + gradient.dz * cos;
-  const right = gradient.dx * cos - gradient.dz * sin;
-
-  const pitch = clamp(-Math.atan(forward), -MAX_TILT, MAX_TILT);
-  const roll = clamp(Math.atan(right), -MAX_TILT, MAX_TILT);
-  group.rotation.x = damp(group.rotation.x, pitch, TILT_LAMBDA, dt);
-  group.rotation.z = damp(group.rotation.z, roll, TILT_LAMBDA, dt);
 }

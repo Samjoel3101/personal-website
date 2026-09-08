@@ -1,63 +1,55 @@
 import { BufferGeometry, Color, Float32BufferAttribute, Uint32BufferAttribute } from 'three';
 
 /**
- * A displaced, vertex-coloured grid over one world tile, with world-space UVs
- * for a ground texture to tile through.
+ * The ground, built from a sampled height grid.
  *
- * Indexed, with normals and colour taken from the field itself rather than
- * from each triangle. The earlier version was non-indexed with per-face
- * normals and per-face colour, which gave every one of its 33,000 facets a
- * hard edge and a flat tone — chunky up close, and a mess of shimmering plates
- * at any distance. Sampling per lattice vertex costs a quarter as many
- * vertices, and shades the hillside as the one continuous surface it is.
+ * Indexed, with normals and colour taken per lattice vertex rather than per
+ * face. Per-face shading on a field this size gives every one of its forty
+ * thousand facets a hard edge and a flat tone, which reads as a shimmering
+ * mess of plates at any distance; sampling per vertex costs a quarter of the
+ * vertices and shades the hillside as the one continuous surface it is. The
+ * facets are still there — everything standing *on* the ground is flat-shaded,
+ * and that is where the low-poly look lives.
  *
- * The cell split runs (x0, z0) → (x1, z1). `latticeHeightAt` in
- * src/world/terrain.js reproduces that split to tell the rest of the renderer
- * where this surface is between its lattice lines; change the diagonal here
- * and it has to change there too.
- *
- * One tile only. The caller instances it across the 3x3 tiling, so the whole
- * heightfield is a single geometry and a single draw call however many
- * triangles it carries — see src/render/geometry/tiling.js.
+ * The cell is split (a, b, c) and (a, c, d) — the diagonal runs from (x0, z0)
+ * to (x1, z1). `surfaceHeight` in src/world/terrain.js reproduces that split so
+ * the planting can sit exactly on the drawn surface. Change the winding here
+ * and it has to change there too, or every tree in the valley starts floating.
  */
-export function buildHeightfield({ size, cells, sample, normal, tint, uvTile }) {
-  const step = size / cells;
-  const across = cells + 1;
-  const count = across * across;
+export function buildHeightfield(grid, colourAt) {
+  const { columns, rows, across, cell, minX, minZ, heights } = grid;
+  const count = across * (rows + 1);
 
   const positions = new Float32Array(count * 3);
   const normals = new Float32Array(count * 3);
   const colours = new Float32Array(count * 3);
-  const uvs = new Float32Array(count * 2);
   const colour = new Color();
 
-  for (let j = 0; j < across; j += 1) {
-    const z = j * step;
-    for (let i = 0; i < across; i += 1) {
-      const x = i * step;
-      const y = sample(x, z);
-      const cursor = (j * across + i) * 3;
+  for (let j = 0; j <= rows; j += 1) {
+    for (let i = 0; i <= columns; i += 1) {
+      const index = j * across + i;
+      const x = minX + i * cell;
+      const z = minZ + j * cell;
+      const y = heights[index];
 
-      positions[cursor] = x;
-      positions[cursor + 1] = y;
-      positions[cursor + 2] = z;
+      positions[index * 3] = x;
+      positions[index * 3 + 1] = y;
+      positions[index * 3 + 2] = z;
 
-      const up = normal(x, z);
-      normals[cursor] = up.x;
-      normals[cursor + 1] = up.y;
-      normals[cursor + 2] = up.z;
+      // Central differences on the lattice itself, so the shading agrees with
+      // the triangles rather than with the analytic field they approximate.
+      const dx = sample(grid, i + 1, j) - sample(grid, i - 1, j);
+      const dz = sample(grid, i, j + 1) - sample(grid, i, j - 1);
+      const span = 2 * cell;
+      const length = Math.hypot(dx, span, dz) || 1;
+      normals[index * 3] = -dx / length;
+      normals[index * 3 + 1] = span / length;
+      normals[index * 3 + 2] = -dz / length;
 
-      colour.set(tint({ x, y, z }));
-      colours[cursor] = colour.r;
-      colours[cursor + 1] = colour.g;
-      colours[cursor + 2] = colour.b;
-
-      // World-space UVs. `size` divided by uvTile is a whole number, so the
-      // texture meets itself across the torus seam and across every one of the
-      // nine tiles rather than jumping at their edges.
-      const uvCursor = (j * across + i) * 2;
-      uvs[uvCursor] = x / uvTile;
-      uvs[uvCursor + 1] = z / uvTile;
+      colour.set(colourAt(x, z, Math.hypot(dx / span, dz / span)));
+      colours[index * 3] = colour.r;
+      colours[index * 3 + 1] = colour.g;
+      colours[index * 3 + 2] = colour.b;
     }
   }
 
@@ -65,18 +57,24 @@ export function buildHeightfield({ size, cells, sample, normal, tint, uvTile }) 
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
   geometry.setAttribute('normal', new Float32BufferAttribute(normals, 3));
   geometry.setAttribute('color', new Float32BufferAttribute(colours, 3));
-  geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
-  geometry.setIndex(buildIndex(cells, across));
+  geometry.setIndex(buildIndex(columns, rows, across));
+  geometry.computeBoundingSphere();
   return geometry;
 }
 
+function sample(grid, i, j) {
+  const column = Math.min(Math.max(i, 0), grid.columns);
+  const row = Math.min(Math.max(j, 0), grid.rows);
+  return grid.heights[row * grid.across + column];
+}
+
 /** Two triangles per cell, wound counter-clockwise seen from above. */
-function buildIndex(cells, across) {
-  const indices = new Uint32Array(cells * cells * 6);
+function buildIndex(columns, rows, across) {
+  const indices = new Uint32Array(columns * rows * 6);
   let cursor = 0;
 
-  for (let j = 0; j < cells; j += 1) {
-    for (let i = 0; i < cells; i += 1) {
+  for (let j = 0; j < rows; j += 1) {
+    for (let i = 0; i < columns; i += 1) {
       const a = j * across + i; // (x0, z0)
       const b = (j + 1) * across + i; // (x0, z1)
       const c = (j + 1) * across + i + 1; // (x1, z1)
@@ -91,8 +89,7 @@ function buildIndex(cells, across) {
       cursor += 6;
     }
   }
-
-  // Uint32 rather than Uint16: 129x129 vertices fit in 16 bits today, but
-  // raising CELLS would silently overflow them.
+  // Uint32 rather than Uint16: 81 x 281 vertices fit in 16 bits today, but a
+  // finer lattice would silently overflow them.
   return new Uint32BufferAttribute(indices, 1);
 }

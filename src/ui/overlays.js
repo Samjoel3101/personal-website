@@ -1,50 +1,36 @@
-import { OWNER } from '../content/resume.js';
-import { renderContactLinks } from './links.js';
-
 /**
- * The full-screen panels: loading, intro, and the finale.
+ * The two full-screen panels: the loading card and the title card.
  *
- * They are plain hidden/shown DOM rather than a router or a state library,
- * because there are three of them and they never nest.
+ * They are plain DOM with a `hidden` attribute rather than a state machine.
+ * There are two of them, they are shown once each, and anything more
+ * elaborate would be a framework in search of a problem.
  */
-export function createOverlays(elements, handlers) {
-  elements.introName.textContent = OWNER.name;
-  elements.introTagline.textContent = OWNER.tagline;
-
-  elements.startButton.addEventListener('click', handlers.onStart);
-  elements.skipButton.addEventListener('click', handlers.onSkipToResume);
-  elements.completeClose.addEventListener('click', handlers.onDismissComplete);
-
-  let completeShown = false;
-
+export function createOverlays(elements) {
   return {
+    /** Called while the valley is being generated. */
+    setLoadingNote(text) {
+      elements.loadingNote.textContent = text;
+    },
+
     showIntro() {
       elements.loading.hidden = true;
       elements.intro.hidden = false;
     },
 
-    hideIntro() {
+    /** @param {() => void} onBegin */
+    onBegin(handler) {
+      elements.begin.addEventListener('click', handler, { once: true });
+    },
+
+    startFlight() {
       elements.intro.hidden = true;
       elements.hud.hidden = false;
     },
 
-    /** Fires once, the first time every landmark has been read. */
-    showComplete(distanceMetres) {
-      if (completeShown) return;
-      completeShown = true;
-      elements.completeLine.textContent =
-        `That is the whole tour — ${(distanceMetres / 1000).toFixed(1)} km driven. ` +
-        'If any of it landed, the door is open.';
-      renderContactLinks(elements.completeLinks);
-      elements.complete.hidden = false;
-    },
-
-    hideComplete() {
-      elements.complete.hidden = true;
-    },
-
-    get isCompleteOpen() {
-      return !elements.complete.hidden;
+    fail(message) {
+      elements.loading.hidden = false;
+      elements.loading.classList.add('failed');
+      elements.loadingNote.textContent = message;
     },
   };
 }

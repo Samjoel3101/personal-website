@@ -11,8 +11,9 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
  * mistake if anything else is wrong.
  *
  * Expanding to non-indexed is the right normalisation for this project anyway.
- * Everything merged here is flat-shaded low-poly, which wants per-face normals,
- * and the geometries are small and built once.
+ * Everything merged here is flat-shaded low-poly, which wants per-face normals
+ * — and per-face normals are exactly what `computeVertexNormals` gives you on
+ * a non-indexed geometry.
  */
 export function mergeParts(geometries, label = 'geometry') {
   if (geometries.length === 0) throw new Error(`mergeParts(${label}): nothing to merge`);

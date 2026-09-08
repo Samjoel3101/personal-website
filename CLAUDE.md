@@ -1,8 +1,14 @@
 # Start here
 
-An interactive résumé you drive through: a WebGL kart racer around a
-procedurally generated backcountry rally stage, where each landmark opens a
-card with part of the owner's background.
+A procedurally generated valley you fly through, drawn in WebGL. It runs five
+and a half kilometres from a pine forest, through thinning woodland and dry
+scrub, into open desert — hills into dunes, ferns into cacti, a pond into an
+oasis. Nothing in it is hand-placed and nothing is a photograph.
+
+The art direction is Quaternius's Nature Mega Pack: flat-shaded, chunky,
+saturated, a species reduced to a dozen facets. Everything you see is built in
+code to that language; fetched models are an optional upgrade, never a
+dependency.
 
 **If you are picking up work on this repository, read this file, then
 `docs/ARCHITECTURE.md`, then the task you were given. Nothing else is required
@@ -19,17 +25,17 @@ There is no other setup. Third-party assets are optional — see _Assets_ below.
 
 ## The commands that matter
 
-| Command                             | What it does                                                            |
-| ----------------------------------- | ----------------------------------------------------------------------- |
-| `npm run dev`                       | Dev server with hot reload                                              |
-| `npm run check`                     | **Run this before you finish.** Lint, format, assets, unit tests, build |
-| `npm test`                          | Unit tests (fast, no browser)                                           |
-| `npm run test:watch`                | Unit tests in watch mode                                                |
-| `npm run e2e`                       | Browser tests. Builds and previews first; slow but real                 |
-| `npm run lint` / `npm run lint:fix` | ESLint                                                                  |
-| `npm run format`                    | Prettier                                                                |
-| `npm run assets:fetch -- --record`  | Download third-party assets and pin their hashes                        |
-| `npm run assets:verify`             | Check the asset manifest and hashes                                     |
+| Command                             | What it does                                                                   |
+| ----------------------------------- | ------------------------------------------------------------------------------ |
+| `npm run dev`                       | Dev server with hot reload                                                     |
+| `npm run check`                     | **Run this before you finish.** Lint, format, boundaries, assets, tests, build |
+| `npm test`                          | Unit tests (fast, no browser)                                                  |
+| `npm run test:watch`                | Unit tests in watch mode                                                       |
+| `npm run e2e`                       | Browser tests. Builds and previews first; slow but real                        |
+| `npm run lint` / `npm run lint:fix` | ESLint                                                                         |
+| `npm run format`                    | Prettier                                                                       |
+| `npm run assets:fetch -- --record`  | Download third-party models and pin their hashes                               |
+| `npm run assets:verify`             | Check the asset manifest and hashes                                            |
 
 ## The five rules
 
@@ -37,78 +43,79 @@ There is no other setup. Third-party assets are optional — see _Assets_ below.
    90-line function ceiling. If you are fighting those limits, the file has
    taken on a second job — split it, do not raise the limit.
 
-2. **The world model never imports the renderer.** `src/world`, `src/physics`,
-   `src/content` and `src/core` must run in Node with no DOM and no WebGL. That
-   is what makes them unit-testable, and it is why swapping the renderer was a
-   contained change rather than a rewrite. A `three` import under any of those
-   directories is a bug. The corollary that catches people: `src/world/terrain.js`
-   lives there and gives the ground height, but **only `src/render` may read
-   it** — the physics is two-dimensional and stays that way. `npm run check:boundaries` (part of `npm run check`)
-   enforces this — it fails the build on a `three` import or an import
-   reaching into `src/render`, `src/ui`, `src/audio`, `src/input`, `src/game`
-   or `src/assets` from any of the four guarded directories.
+2. **The world model never imports the renderer.** `src/world`, `src/core` and
+   `src/config` must run in Node with no DOM and no WebGL. That is what makes
+   the terrain, the planting and the palette unit-testable without a GPU, and
+   it is why the whole scene can be regenerated and inspected in a test in two
+   seconds. A `three` import under any of those directories is a bug.
+   `npm run check:boundaries` (part of `npm run check`) fails the build on one,
+   or on an import reaching into `src/render`, `src/ui`, `src/input`,
+   `src/app` or `src/assets`.
 
-3. **Never subtract two world coordinates directly.** The world wraps in both
-   axes. Use `wrapDelta` / `wrapDistance` from `src/core/torus.js`. Raw
-   subtraction works everywhere except across the seam, which is exactly the
-   case nobody tests by hand.
+3. **Nothing stands on the analytic terrain.** `heightAt` is a smooth field;
+   the ground you can see is flat triangles between lattice samples of it, and
+   between them the two disagree by several units. Everything seated on the
+   ground — a tree, a rock, the camera — reads `surfaceHeight` instead, which
+   reproduces the mesh's own triangles. Use the analytic field only to build
+   the lattice.
 
-4. **Assets are an upgrade, never a dependency.** Every builder must produce
-   something complete with no assets present. A fresh clone with no
-   `assets:fetch` run must look finished.
+4. **Assets are an upgrade, never a dependency.** Every species has a
+   procedural shape. A fresh clone with no `assets:fetch` run must look
+   finished.
 
-5. **Everything personal lives in `src/content/resume.js`.** No biography
-   anywhere else.
+5. **One number drives the journey.** `journeyAt(x, z)` is 0 in the deep forest
+   and 1 in the deep desert, and every other difference between the two ends —
+   the height of the hills, the colour of the ground, the fog, which species
+   are planted — is a blend keyed by it. Do not add a second notion of where
+   the desert starts.
 
 ## Where things are
 
 ```
 src/
-  config/      numbers, colours, tuning — no logic
-  core/        maths, RNG, the torus helpers, the loop, an event bus
-  content/     the résumé, and its schema
-  world/       stage layout, track curve, terrain, surfaces (pure data)
-  physics/     kart handling and collision (pure)
+  config/      numbers, colours, species tables, tuning — no logic
+  core/        maths, colour arithmetic, noise, RNG, the frame loop
+  world/       terrain, biomes, water, planting — pure data, runs in Node
   render/      everything WebGL; nothing outside talks past render/stage.js
-  audio/       synthesised sound
-  input/       keyboard and touch, both writing one input snapshot
-  ui/          DOM overlays: HUD, minimap, cards, résumé view
-  game/        the session that wires it all together
+  input/       keyboard, mouse and touch, all writing one snapshot
+  ui/          DOM overlays: the title card and the HUD
+  app/         the session that wires it all together
   assets/      the runtime asset loader and manifest view
 ```
 
 ## Traps that have already bitten someone
 
-- **Instanced colours.** Setting `vertexColors: true` on a mesh whose geometry
-  has no `color` attribute silently renders it black. Read the note at the top
-  of `src/render/materials.js` before adding an instanced mesh.
+- **The colour trap.** `vertexColors: true` on a geometry with no `color`
+  attribute renders black, silently. Read the note at the top of
+  `src/render/materials.js` before adding an instanced mesh — a fetched glTF
+  has no colour attribute and a procedural shape always does.
 - **Merging geometries.** `mergeGeometries` refuses a mix of indexed and
   non-indexed inputs and signals it by returning `null`, which fails much later
-  as a null dereference. Use `mergeParts` from
-  `src/render/geometry/merge.js`.
-- **Ground layer order.** Flat ground layers are coplanar; the verge ribbon is
-  wider than the track it flanks, so it must sit _below_ it. See
-  `GROUND_LAYER` in `src/render/geometry/flat.js`.
-- **Draw distance.** The stage is tiled 3×3 to hide its edges, which only works
-  while you cannot see more than half a world. Do not raise
-  `ATMOSPHERE.FOG_FAR` past `MAX_VISIBLE` without increasing the tiling.
-- **Boost pads.** They sit at every block midpoint. Any test that drives in a
-  straight line for more than a couple of seconds will cross one, which will
-  raise the speed you were expecting to fall.
-- **The track is not straight.** It snakes:
-  `TRACK.WOBBLE · sin(2π · along / BLOCK)`. Anything positioned against a grid
-  line — a prop, a ribbon, a test sample, a spawn point — must add
-  `trackOffsetAt` first, or it ends up in a ditch. Drive in a straight line for
-  three seconds and you are in a field, which is why `tests/kart.test.js` has a
-  `driveTrack` helper.
-- **The wobble's period is load-bearing.** It is zero at every multiple of
-  `BLOCK / 2`, which is how the track passes dead through every junction and
-  every boost pad. Change the period and both break at once.
-- **Terrain height is cosmetic.** `src/world/terrain.js` lifts the picture only.
-  Deriving any gameplay value from it — grip, collision, discovery — breaks the
-  one rule the whole simulation is built on.
-- **`SURFACE` indices are keys.** `GRIP` in `src/config/tuning.js` is an array
-  indexed by them. Rename a member in place, add one on the end, never reorder.
+  as a null dereference. Use `mergeParts` from `src/render/geometry/merge.js`.
+- **The unit contract.** Every shape in `src/render/geometry` is one unit tall,
+  centred on x and z, base at y = 0, and is placed with a single uniform scale
+  equal to its height. A shape that ignores that comes out buried, floating or
+  stretched.
+- **The triangle split is shared.** `buildHeightfield` splits each cell
+  (a, b, c) and (a, c, d); `surfaceHeight` in `src/world/terrain.js`
+  reproduces it. Change one and change both, or the whole valley starts
+  floating over its own ground.
+- **A pool's level is not in the config.** It is the natural terrain height at
+  the pool's centre, because a fixed water level in a landscape that rolls is a
+  pond halfway up a hill. The basin carve is total out to a little past the
+  waterline for the same reason — see `basinFactor`.
+- **Instancing is chunked.** Each species is split into slabs along z so the
+  frustum can reject most of them. A new instanced mesh needs
+  `computeBoundingSphere()` or it will be culled at the wrong moment, usually
+  by vanishing when you look straight at it.
+- **A fetched model wins.** If you edit a procedural shape and the browser
+  does not change, that species has an `asset` in `src/config/flora.js` and you
+  have run `assets:fetch`: what you are looking at is the model, repainted by
+  `KIT_TINTS`. Half a day went into a boulder that turned out to be a
+  grass-topped Kenney rock.
+- **Ground cover scales with quality, canopy does not.** `createValley` takes a
+  `groundCover` density; thinning it must never move a tree, and a test pins
+  that.
 
 ## Assets
 
@@ -120,16 +127,13 @@ verifies them into `public/assets/`, and regenerates `CREDITS.md`.
 attribution or a hash mismatch. Add assets by editing the manifest, never by
 dropping files into `public/`.
 
-Everything in the manifest is hosted on `raw.githubusercontent.com`, pinned to
-a commit rather than a branch — kenney.nl, ambientcg.com, polyhaven.com,
-poly.pizza and jsDelivr are all blocked by egress policy in the environment
-this is built in, and a branch URL would fail its own recorded hash the next
-time upstream pushed.
-
-Two things about the rally kit are easy to get wrong. Exactly one entry may
-carry `role: "kart"`. And `kit.rally.atlas` is never requested by id — it only
-has to land in a `Textures/` directory beside the models, which reference it by
-relative URI; put it anywhere else and they load **white**, not broken.
+A manifest entry with `role: "flora"` replaces one species' procedural shape:
+the id has to match the `asset` field of a species in `src/config/flora.js`, or
+nothing ever requests it. Everything is pinned to a commit on
+`raw.githubusercontent.com` rather than to a branch — quaternius.com,
+poly.pizza, kenney.nl, ambientcg.com and polyhaven.com are all blocked by the
+egress policy this is built under, and a branch URL would fail its own recorded
+hash the next time upstream pushed.
 
 `assets:fetch` writes the manifest and `CREDITS.md` through Prettier, so a
 `--record` run leaves `npm run check` green.

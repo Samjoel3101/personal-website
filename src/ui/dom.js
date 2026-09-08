@@ -1,45 +1,28 @@
 /**
- * Every element the UI touches, resolved once.
+ * The one place the interface looks anything up.
  *
- * Keeping the selectors in one place means a rename in index.html breaks
- * loudly here rather than silently somewhere deep in an event handler.
+ * Every id in index.html is named here, so a renamed element breaks in one
+ * obvious place rather than as a null dereference three modules away.
  */
-export function collectElements() {
-  const byId = (id) => document.getElementById(id);
+const IDS = {
+  canvas: 'scene',
+  loading: 'loading',
+  loadingNote: 'loading-note',
+  intro: 'intro',
+  begin: 'begin',
+  hud: 'hud',
+  biome: 'biome-name',
+  progress: 'progress-bar',
+  pause: 'pause',
+  hint: 'hint',
+  fly: 'fly',
+};
 
-  return {
-    canvas: byId('scene'),
-    hud: byId('hud'),
-    progress: byId('progress'),
-    compassArrow: byId('compass-arrow'),
-    compassName: byId('compass-name'),
-    compassDistance: byId('compass-distance'),
-    speed: byId('speed'),
-    boostBar: byId('boost-bar'),
-    minimap: byId('minimap'),
-    hint: byId('hint'),
-    touch: byId('touch'),
-    muteButton: byId('mute'),
-    resumeButton: byId('open-resume'),
-    loading: byId('loading'),
-    intro: byId('intro'),
-    introName: byId('intro-name'),
-    introTagline: byId('intro-tagline'),
-    startButton: byId('start'),
-    skipButton: byId('skip'),
-    card: byId('card'),
-    cardIcon: byId('card-icon'),
-    cardTitle: byId('card-title'),
-    cardSubtitle: byId('card-subtitle'),
-    cardBody: byId('card-body'),
-    cardLinks: byId('card-links'),
-    cardClose: byId('card-close'),
-    complete: byId('complete'),
-    completeLine: byId('complete-line'),
-    completeLinks: byId('complete-links'),
-    completeClose: byId('complete-close'),
-    resumeView: byId('resume-view'),
-    resumeInner: byId('resume-inner'),
-    resumeBack: byId('resume-back'),
-  };
+export function collectElements() {
+  const elements = {};
+  for (const [key, id] of Object.entries(IDS)) {
+    elements[key] = document.getElementById(id);
+    if (!elements[key]) throw new Error(`Missing element #${id}`);
+  }
+  return elements;
 }

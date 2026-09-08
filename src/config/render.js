@@ -1,73 +1,81 @@
-/** Renderer settings: camera framing, atmosphere, and the quality ladder. */
+/** Camera framing, atmosphere, sun and the quality ladder. */
 
 export const CAMERA = Object.freeze({
-  FOV: 62,
-  /** Extra degrees of field of view at full boost. Speed reads as speed only
-   *  if the edges of the frame move faster than the middle. */
-  FOV_KICK: 7,
-  /** How quickly the kick comes on and lets go, per second. Slower than the
-   *  camera follow on purpose: a snappy FOV reads as a glitch. */
-  FOV_LAMBDA: 3,
+  FOV: 58,
   NEAR: 1,
-  FAR: 1100,
-  /** Distance the camera trails behind the kart. */
-  DISTANCE: 68,
-  /** Height above the road. */
-  HEIGHT: 27,
-  /** Point above the kart the camera aims at. */
-  LOOK_HEIGHT: 11,
-  /** How quickly the camera catches up, per second. Lag is what makes
-   *  cornering feel like cornering. */
-  FOLLOW_LAMBDA: 7,
+  FAR: 4600,
+  /**
+   * Height the camera holds above whatever ground is under it.
+   *
+   * Above the canopy, deliberately. The pines reach 88 units and fly-through
+   * footage from inside a forest is a dark green blur with a trunk in it — the
+   * shape of the valley, which is the thing worth looking at, is only visible
+   * from above the trees.
+   */
+  HEIGHT: 112,
+  /** How far ahead down the valley it looks. */
+  LOOK_AHEAD: 380,
+  /** Height of the point it aims at, relative to the ground there. Well below
+   *  the camera, so the view is angled down over the landscape. */
+  LOOK_HEIGHT: 24,
+  /** How quickly it settles after a nudge, per second. */
+  LAMBDA: 3.4,
+  /** Limits on the viewer's own look, in radians. */
+  MAX_PITCH: 0.55,
+  MIN_PITCH: -0.42,
+  MAX_YAW: 1.15,
 });
 
 /**
- * Atmosphere, and the one hard constraint the wrapping world places on it.
+ * The flight down the valley.
  *
- * The city is tiled 3x3 in the scene so it has no visible edge. That works
- * only while you cannot see further than half the world (1024 units) — beyond
- * that you would be looking at a second copy of the same street and the
- * repetition would show. So the fog has to finish the picture before the
- * repeat begins, and the camera's far plane sits just behind it.
+ * The whole piece is a journey from one biome to another, so the default state
+ * is moving: the camera drifts forward on its own and the viewer steers,
+ * speeds up, slows down or stops. Reaching the end turns it around rather than
+ * stopping dead, so the scene never arrives at a state with nothing happening.
+ */
+export const JOURNEY = Object.freeze({
+  /** World units per second at rest on the controls. */
+  DRIFT_SPEED: 34,
+  /** Units per second held down. */
+  FAST_SPEED: 220,
+  /** How quickly the speed responds, per second. */
+  SPEED_LAMBDA: 2.6,
+  /** Sideways travel, per second, when steering across the valley. */
+  STRAFE_SPEED: 150,
+  /** Distance from either end at which the flight reverses. */
+  TURN_MARGIN: 240,
+});
+
+/**
+ * Atmosphere. The fog colour is not constant: it is mixed from the biome haze
+ * at the camera, which is most of why the desert reads as hot from a mile away
+ * and the forest reads as damp.
  */
 export const ATMOSPHERE = Object.freeze({
-  /* Deliberately far out. Fog starting at 300 put haze on the next corner:
-     the middle distance lost its colour before it lost its detail, which is
-     what made the stage read as chalk rather than as weather. Everything
-     between here and FOG_FAR still fades, it just fades over the far half of
-     the view instead of most of it. */
-  FOG_NEAR: 520,
-  FOG_FAR: 980,
-  /** Hard ceiling: WORLD.SIZE / 2. Do not raise past this without also
-   *  increasing the tiling in src/render/builders/. */
-  MAX_VISIBLE: 1024,
+  FOG_NEAR: 420,
+  FOG_FAR: 3000,
+  /** How quickly the fog and sky follow the biome underfoot, per second. */
+  BLEND_LAMBDA: 0.9,
 });
 
 export const SUN = Object.freeze({
-  /** Direction toward the sun, normalised by the lighting module. Low in the
-   *  sky: a late-afternoon rally sun rakes across the hills, which is what
-   *  gives a heightfield its shape. Raise y and the terrain flattens out. */
-  DIRECTION: { x: 0.5, y: 0.34, z: -0.52 },
-  INTENSITY: 2.5,
-  /* Modest, and now a little lower than the city needed. Ambient plus a key
-     light washes every surface toward white under filmic tone mapping, and mud
-     is the first thing to stop reading as mud. Rally scenery can carry more
-     shadow contrast than pastel facades could, so the sun does more of the
-     work and this does less. */
-  AMBIENT_INTENSITY: 0.62,
+  /** Direction toward the sun. Low and off to one side: a raking light is the
+   *  only thing that gives a heightfield its shape. */
+  DIRECTION: { x: 0.62, y: 0.4, z: -0.38 },
+  INTENSITY: 2.4,
+  AMBIENT_INTENSITY: 0.55,
   SHADOW_MAP_SIZE: 2048,
-  /** Half-extent of the orthographic shadow frustum, in world units. */
-  SHADOW_RADIUS: 420,
+  /** Half-extent of the orthographic shadow frustum, in world units. It
+   *  follows the camera, so this is the radius of crisp shadow, not the world. */
+  SHADOW_RADIUS: 620,
 });
 
-/**
- * Quality ladder. The runtime picks a tier from the measured frame interval
- * and can move up or down it; see src/render/quality.js.
- */
+/** The runtime picks a tier from measured frame intervals; see render/quality.js. */
 export const QUALITY_TIERS = Object.freeze([
-  { name: 'low', pixelRatio: 0.7, shadows: false, bloom: false },
-  { name: 'medium', pixelRatio: 1.0, shadows: true, bloom: false },
-  { name: 'high', pixelRatio: 1.5, shadows: true, bloom: true },
+  { name: 'low', pixelRatio: 0.7, shadows: false, groundCover: 0.35 },
+  { name: 'medium', pixelRatio: 1.0, shadows: true, groundCover: 0.7 },
+  { name: 'high', pixelRatio: 1.5, shadows: true, groundCover: 1 },
 ]);
 
 export const DEFAULT_QUALITY_INDEX = 2;

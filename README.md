@@ -1,75 +1,62 @@
-# Drive my résumé
+# Forest to desert
 
-An interactive résumé you drive through: a WebGL kart racer around a
-procedurally generated rally stage, where each of six landmarks opens a card with part
-of my background.
+A procedurally generated valley you fly through, drawn in WebGL. Five and a
+half kilometres of it, running from a pine forest through thinning woodland and
+dry scrub into open desert — hills into dunes, ferns into cacti, a pond into an
+oasis.
 
-There is also a **Text version** button. A recruiter with four minutes should
-not have to learn to drive.
+Everything in it is generated: the terrain is a noise field, the ground colour
+is blended from four biome palettes, and every tree, cactus, rock and tuft of
+grass is placed by a deterministic scatter and drawn from geometry built in
+code. Nothing is hand-placed and nothing is a photograph. The art direction is
+Quaternius's Nature Mega Pack — flat-shaded, chunky, saturated.
 
 ```bash
 npm install
-npm run dev
+npm run dev      # http://localhost:5173
 ```
 
-## What it is made of
+## Flying it
 
-|                      |                                                          |
-| -------------------- | -------------------------------------------------------- |
-| Rendering            | three.js (WebGL2) — instanced meshes, shadow maps, bloom |
-| Build                | Vite                                                     |
-| Tests                | Vitest (unit) + Playwright (browser)                     |
-| Quality              | ESLint, Prettier, size and complexity limits             |
-| Runtime dependencies | one: `three`                                             |
+| Control                            | Does                      |
+| ---------------------------------- | ------------------------- |
+| Drag, or <kbd>Q</kbd>/<kbd>E</kbd> | Look around               |
+| <kbd>W</kbd> / <kbd>S</kbd>        | Throttle forward and back |
+| <kbd>A</kbd> / <kbd>D</kbd>        | Drift across the valley   |
+| <kbd>Space</kbd>                   | Hold still                |
 
-The terrain, the track, the scenery, the kart, the sky and every sound are
-generated in code. Third-party assets are optional upgrades declared in
-`assets/manifest.json`; the site is complete without any of them — delete
-`public/assets/` and it still looks finished.
+The camera drifts down the valley on its own and turns around at either end, so
+it never arrives anywhere and stops.
 
-## Making it yours
+## How it is built
 
-Edit **`src/content/resume.js`**. That is the only file with anything personal
-in it — the landmark cards, the compass, the minimap and the plain-text résumé
-all read from it. Landmark coordinates must sit on a block centre; a unit test
-enforces it.
+Three ideas carry the whole thing:
 
-## Documentation
+- **The world model never imports the renderer.** `src/world` is plain
+  JavaScript that runs in Node, so the terrain, the water and the planting are
+  covered by fast unit tests rather than by looking at screenshots.
+- **One number drives the journey.** `journeyAt(x, z)` runs 0 to 1 from forest
+  to desert, and the hills, the colours, the fog and every species' density are
+  blends keyed by it. There is no threshold anywhere that says "the desert
+  starts here".
+- **Assets are an upgrade, never a dependency.** Every species has a procedural
+  shape. Optional Kenney models replace them if `npm run assets:fetch` has been
+  run; with none of them present the valley is complete.
 
-| File                                           | For                                            |
-| ---------------------------------------------- | ---------------------------------------------- |
-| [`CLAUDE.md`](CLAUDE.md)                       | **Start here.** Commands, rules, and the traps |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How it fits together and why                   |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md)           | What to build next, specified                  |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md)           | Conventions                                    |
-| [`CREDITS.md`](CREDITS.md)                     | Attribution, generated from the manifest       |
+`docs/ARCHITECTURE.md` has the rest, and `CLAUDE.md` is the working brief for
+anyone — human or agent — picking the project up.
 
 ## Commands
 
-| Command                            |                                                           |
-| ---------------------------------- | --------------------------------------------------------- |
-| `npm run dev`                      | Dev server                                                |
-| `npm run check`                    | Lint, format, assets, tests, build — run before finishing |
-| `npm test`                         | Unit tests                                                |
-| `npm run e2e`                      | Browser tests                                             |
-| `npm run assets:fetch -- --record` | Download and pin third-party assets                       |
+| Command                | What it does                                        |
+| ---------------------- | --------------------------------------------------- |
+| `npm run dev`          | Dev server with hot reload                          |
+| `npm run check`        | Lint, format, boundaries, assets, unit tests, build |
+| `npm test`             | Unit tests                                          |
+| `npm run e2e`          | Playwright tests against a real build               |
+| `npm run assets:fetch` | Download the optional models and regenerate credits |
 
-## Deploying
+## Licence
 
-Static output. `npm run build`, then serve `dist/`. For GitHub Pages, point
-Pages at the branch and directory; `base` is already relative so it works from
-a repository subpath.
-
-## Controls
-
-`W`/`↑` accelerate · `S`/`↓` brake and reverse · `A`/`D` steer · `Shift` drift ·
-`M` mute · `Esc` close a card. Touch controls appear automatically on a phone.
-
-## Notes
-
-- The stage is a torus — drive off one edge and arrive at the other, so there
-  are no invisible walls and no way to get lost.
-- The layout is seeded, so it is identical on every visit and in every test.
-- Physics runs at a fixed 120 Hz regardless of display refresh rate.
-- Quality adapts to the machine: three tiers, chosen from measured frame
-  intervals.
+MIT for the code. Third-party assets are listed with their licences in
+`CREDITS.md` and declared in `assets/manifest.json`.

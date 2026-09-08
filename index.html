@@ -3,11 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Drive my résumé</title>
+    <title>Forest to desert</title>
     <meta
       name="description"
-      content="An interactive résumé you drive through. Race a backcountry rally stage and each landmark reveals part of my story."
+      content="A procedurally generated valley you fly through, from pine forest to open desert."
     />
+    <meta name="theme-color" content="#c9dcd0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!--
@@ -18,133 +19,83 @@
     <link
       rel="preload"
       as="style"
-      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&display=swap"
     />
     <link
       rel="stylesheet"
       media="print"
       onload="this.media = 'all'"
-      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&display=swap"
     />
     <link
       rel="icon"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🏎️</text></svg>"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🌲</text></svg>"
     />
   </head>
   <body>
     <canvas
       id="scene"
-      aria-label="A rally kart driving a procedurally generated dirt stage"
+      aria-label="A procedurally generated valley running from pine forest to open desert"
     ></canvas>
     <div id="vignette" aria-hidden="true"></div>
 
     <div id="hud" hidden>
       <div class="hud-row hud-top">
-        <div class="chip" id="progress">Found 0/6</div>
-        <div class="chip compass">
-          <span class="arrow" id="compass-arrow">▲</span>
-          <span class="compass-text">
-            <b id="compass-name">—</b>
-            <i id="compass-distance"></i>
-          </span>
+        <div class="chip journey">
+          <b id="biome-name">Pine forest</b>
+          <div
+            class="meter"
+            role="progressbar"
+            aria-label="Distance along the valley"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+          >
+            <i id="progress-bar"></i>
+          </div>
         </div>
-        <div class="hud-buttons">
-          <button class="chip btn" id="mute" type="button">Sound on</button>
-          <button class="chip btn" id="open-resume" type="button">Text version</button>
-        </div>
+        <button class="chip btn" id="pause" type="button" aria-pressed="false">Pause</button>
       </div>
 
       <div class="hud-row hud-bottom">
-        <div class="map-wrap">
-          <canvas id="minimap" aria-hidden="true"></canvas>
-          <div class="map-label">Stage map</div>
-        </div>
-        <div id="hint">Follow the arrow. Drive into a glowing ring to read a stop.</div>
-        <div class="speedo">
-          <span id="speed">0</span><small>km/h</small>
-          <div class="boost"><i id="boost-bar"></i></div>
-        </div>
-      </div>
-
-      <div id="touch" aria-hidden="true">
-        <div class="pad">
-          <button class="tbtn" data-action="left" type="button">◀</button>
-          <button class="tbtn" data-action="right" type="button">▶</button>
-        </div>
-        <div class="pedals">
-          <button class="tbtn brake" data-action="brake" type="button">Brake</button>
-          <button class="tbtn gas" data-action="accelerate" type="button">Go</button>
-        </div>
+        <p id="hint" class="chip soft">
+          Drag to look around · <kbd>W</kbd><kbd>S</kbd> throttle · <kbd>A</kbd><kbd>D</kbd> drift
+          across · <kbd>Space</kbd> hold still
+        </p>
+        <button class="fly" id="fly" type="button" data-held="no" aria-label="Fly faster">
+          Fly
+        </button>
       </div>
     </div>
 
     <div id="loading" class="overlay">
       <div class="panel">
-        <h1 class="glow">Grading the stage</h1>
-        <p class="mono">Cutting the track, raising the hills, filling the puddles…</p>
+        <h1>Growing the valley</h1>
+        <p class="mono" id="loading-note">Raising hills, filling pools, planting trees…</p>
         <div class="loadbar"><i></i></div>
       </div>
     </div>
 
     <div id="intro" class="overlay" hidden>
       <div class="panel wide">
-        <p class="kicker">An interactive résumé</p>
-        <h1 class="glow" id="intro-name">Your name</h1>
-        <p class="tagline" id="intro-tagline">Software engineer</p>
+        <p class="kicker">A procedural landscape</p>
+        <h1>Forest to desert</h1>
         <p class="blurb">
-          Six landmarks are scattered across the stage. Drive into one and it tells you something
-          about me — where I have worked, what I have built, what I do at the weekend. There is no
-          timer and nothing to lose.
+          One valley, five and a half kilometres of it, generated from noise and planted a species
+          at a time. Fly south and the pines thin into woodland, the woodland dries into scrub, and
+          the scrub opens out into dunes, cacti and an oasis. Nothing here is a photograph and
+          nothing is hand-placed.
         </p>
-        <div class="keys">
-          <div><kbd>W</kbd><kbd>↑</kbd><span>Accelerate</span></div>
-          <div><kbd>S</kbd><kbd>↓</kbd><span>Brake and reverse</span></div>
-          <div><kbd>A</kbd><kbd>D</kbd><span>Steer</span></div>
-          <div><kbd>Shift</kbd><span>Drift</span></div>
-          <div><kbd>M</kbd><span>Mute</span></div>
-          <div><kbd>Esc</kbd><span>Close a card</span></div>
-        </div>
-        <button class="cta" id="start" type="button">Start engine</button>
-        <button class="ghost" id="skip" type="button">Skip the game — read the plain résumé</button>
+        <button class="cta" id="begin" type="button">Begin the flight</button>
       </div>
-    </div>
-
-    <div id="card" class="overlay" hidden>
-      <div class="panel card-panel">
-        <div class="card-head">
-          <span class="card-icon" id="card-icon">🏢</span>
-          <div>
-            <h2 id="card-title">Title</h2>
-            <p id="card-subtitle">Subtitle</p>
-          </div>
-          <button class="close" id="card-close" type="button" aria-label="Close">✕</button>
-        </div>
-        <div id="card-body"></div>
-        <div id="card-links" class="card-links" hidden></div>
-        <p class="card-foot">Press <kbd>Esc</kbd> to get back in the kart</p>
-      </div>
-    </div>
-
-    <div id="complete" class="overlay" hidden>
-      <div class="panel">
-        <h1 class="glow">All stops found</h1>
-        <p class="blurb" id="complete-line">That is the whole tour.</p>
-        <div id="complete-links" class="card-links"></div>
-        <button class="cta" id="complete-close" type="button">Keep driving</button>
-      </div>
-    </div>
-
-    <div id="resume-view" hidden>
-      <div class="resume-inner" id="resume-inner"></div>
-      <button class="cta floating" id="resume-back" type="button">Back to the kart</button>
     </div>
 
     <noscript>
       <div class="noscript">
         <h1>This page needs JavaScript</h1>
         <p>
-          The résumé is rendered by a small game engine. With JavaScript disabled there is nothing
-          to show — email me instead and I will send a PDF.
+          The valley is generated and drawn in the browser. With JavaScript off there is nothing to
+          show.
         </p>
       </div>
     </noscript>

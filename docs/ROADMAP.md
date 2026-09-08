@@ -1,100 +1,66 @@
 # Roadmap
 
-Remaining work, ordered by value per unit of effort. Each item names the files
-it touches so it can be picked up cold.
+The valley is complete and correct as it stands: it generates, it plants, it
+draws, and it flies. What follows is work that would make it better, broken
+into tasks that can be done one at a time. Each names the files it touches.
 
-## Done
+## 1. Wind
 
-The rally rework (`docs/RALLY-PLAN.md`) answered or replaced four of the items
-that used to be at the top of this list:
+Nothing moves except the camera, and a landscape where nothing moves reads as a
+photograph of a landscape. A single sine on a vertex shader — displacing the
+canopy by a fraction of its height, phase offset per instance — would put the
+whole valley in motion for the cost of one uniform.
 
-- **Fetch the blocked assets.** Replaced. Every blocked host was dropped in
-  favour of `raw.githubusercontent.com`, which is reachable, and all six
-  manifest entries are now fetched and hash-pinned against a specific upstream
-  commit. Nothing in the manifest is marked `hostBlockedHere` any more.
-- **Real ground textures.** Replaced. The ground is a vertex-coloured
-  heightfield plus flat ribbons, which is the intended look rather than a
-  stopgap; a PBR mud pass would fight it. If someone wants one anyway, add
-  ambientCG entries and expect to re-tune the whole lighting rig.
-- **A purpose-built kart model.** Done. Kenney's rally truck is wired in with
-  `role: "kart"`, and `src/render/builders/kart.js` now finds
-  `wheel-front-left` and friends by name and spins those.
-- **Modular building meshes.** Replaced. There are no buildings — the blocks
-  hold rocks, barns, bale stacks and spectator stands, and downloaded forest
-  patches and spectator camps upgrade them through
-  `stage.useSceneryModel(id, model)`.
+_Touches:_ `src/render/materials.js` (an `onBeforeCompile` on the foliage
+material), `src/render/scene.js` (advance the uniform).
+_Watch out for:_ the trunk must not move with the canopy; displace by
+`position.y / height` so the base stays planted.
 
-The one piece of the plan's polish phase that landed is the speed-based field
-of view kick in `src/render/camera.js`. The rest of it is item 1 below.
+## 2. Time of day
 
-## Ready to pick up
+`SUN.DIRECTION` is a constant. Making it a function of the journey — dawn over
+the forest, hard noon over the desert — would let the light tell the same story
+as the ground. The palette already blends per biome, so the machinery exists.
 
-### 1. Mud spray, ruts and puddle sheen
+_Touches:_ `src/config/render.js`, `src/render/lighting.js`, `src/render/sky.js`.
+_Watch out for:_ the shadow frustum follows the camera; a low sun lengthens
+shadows past its edge, which shows up as shadows that end in a straight line.
 
-**Files:** new `src/render/builders/effects.js`, `src/render/scene.js`
-**Effort:** a day
+## 3. A second water body, and a river
 
-Phase 6 of the rally plan, left undone. `kart.state.slide` and
-`kart.state.surface` already carry everything needed: throw spray above a slide
-threshold and whenever the surface is `MUD` or `VERGE`, and lay rut decals on
-the ground behind the rear wheels. Both want an instanced pool with a ring
-buffer, not per-frame allocation. The decals have to follow the heightfield —
-see how `src/render/builders/puddles.js` lifts its discs.
+Two pools is thin. A river running the length of the forest and drying out in
+the scrub would tie the biomes together — and it is the natural home for the
+bank-weighted planting that already exists.
 
-### 2. Image-based lighting from an HDRI
+_Touches:_ `src/config/world.js`, `src/world/water.js` (a curve rather than a
+circle), `src/render/water.js`.
+_Watch out for:_ the basin carve is the load-bearing part; see the note on
+`basinFactor` about why the pull has to be total at the waterline.
 
-**Files:** `src/render/lighting.js`, `src/render/sky.js`
-**Depends on:** the pinned `env.sky` entry, which is fetched but not wired in
+## 4. Level of detail on the canopy
 
-Load the HDRI with `RGBELoader`, set it as the scene environment, and keep the
-gradient dome as the fallback. It is 1.4 MB — most of a page budget — so it must
-be lazy and must never block the first frame. Expect to re-tune
-`SUN.AMBIENT_INTENSITY` down: an environment map already supplies the ambient
-the hemisphere light is currently faking.
+Every tree is drawn at full detail at three thousand units, where it covers
+four pixels. A second, cruder geometry per species — swapped per chunk by
+distance — would cut the triangle count by most of itself.
 
-### 3. More scenery models from the rally kit
+_Touches:_ `src/render/geometry/instancing.js`, `src/render/flora.js`.
+_Watch out for:_ chunks are built once; the swap has to happen per frame
+against the camera, which means the chunk needs to know where it is.
 
-**Files:** `assets/manifest.json`, `src/render/builders/scenery.js`
-**Effort:** an hour per model
+## 5. Deep-linking a viewpoint
 
-The Starter Kit Racing repository has more than the four files pinned here.
-Adding one is a manifest entry with `role: "scenery"` plus a branch in
-`buildScenery`'s `useModel`. Keep the rule that every one of them no-ops when
-the model is absent, and keep instancing rather than cloning — see
-`src/render/model-instances.js`.
+`stage.jumpTo` already exists for the tests. Putting the position in the URL
+hash would make a particular view shareable, which is most of what a landscape
+is for.
 
-### 4. A second track family
+_Touches:_ `src/app/session.js`, `src/ui/hud.js`.
 
-**Files:** `src/config/world.js`, `src/world/track.js`
+## 6. More species
 
-The wobble is one sine with a period of one block. A second harmonic, or a
-different amplitude per line, would make the stages less uniform. The
-constraint is not negotiable: whatever the shape, it must be zero at every
-multiple of `BLOCK / 2` and have a period that divides `WORLD.SIZE`, or
-junctions, boost pads and the seam all break at once. `tests/track.test.js`
-pins exactly that.
+The tables in `src/config/flora.js` are the whole planting: a new species is a
+shape in `src/render/geometry/`, an entry in `SHAPES`, and a row of weights.
+Obvious gaps: a fallen dead palm, a yucca, a flowering desert shrub, a stand of
+birch bracket fungus.
 
-## Known limitations
-
-- **Draw distance is capped at half the world size** (1024 units) because the
-  stage is tiled 3×3. Seeing further means tiling 5×5, which quadruples
-  instance counts. Probably not worth it — fog closes the picture well before
-  then.
-- **Terrain height is cosmetic.** The kart is lifted and tilted onto the
-  heightfield but the physics is two-dimensional, so a hill neither slows you
-  down nor speeds you up. Changing that means a gravity model and a
-  three-dimensional collision pass, which is a different game.
-- **Shadows only cover ±420 units around the kart.** Beyond that the shadow
-  frustum ends. Distant shadows are lost in fog anyway; raising
-  `SUN.SHADOW_RADIUS` costs shadow-map resolution everywhere.
-- **The `three` chunk is 159 KB gzipped.** That is most of the page weight. Not
-  much to be done short of hand-rolling WebGL, which would cost far more than
-  it saves.
-- **No audio assets.** Everything is synthesised. Real engine samples would
-  sound better; they would also be the first thing to make the site heavy.
-
-## Deliberately not doing
-
-- **Multiplayer or leaderboards.** This is a résumé.
-- **A physics engine.** The arcade model is the right feel and is 140 lines.
-- **Cross-browser WebGPU.** WebGL2 is universal and fast enough here.
+_Watch out for:_ the unit contract in `src/render/geometry/shapes.js`, and the
+budget — the ground pass runs tens of thousands of times.

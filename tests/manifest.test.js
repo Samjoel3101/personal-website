@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { validateAsset, validateManifest } from '../scripts/validate-manifest.mjs';
+import { SPECIES } from '../src/config/flora.js';
 
 const manifest = JSON.parse(readFileSync(new URL('../assets/manifest.json', import.meta.url)));
 
@@ -35,5 +36,16 @@ describe('asset manifest', () => {
 
   it('gives every asset a role, so nothing is downloaded by accident', () => {
     for (const asset of manifest.assets) expect(asset.role).toBeTruthy();
+  });
+
+  it('backs every species that names a model with a manifest entry', () => {
+    const ids = new Set(manifest.assets.map((asset) => asset.id));
+    for (const species of SPECIES) {
+      if (species.asset) expect(ids, `species ${species.id}`).toContain(species.asset);
+    }
+  });
+
+  it('keeps every asset optional, which is what rule 4 means', () => {
+    for (const asset of manifest.assets) expect(asset.required).toBe(false);
   });
 });

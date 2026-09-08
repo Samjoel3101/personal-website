@@ -1,178 +1,154 @@
-import { PADDOCK_HALF, WORLD } from '../config/world.js';
-import { LANDMARKS } from '../content/resume.js';
-import { wrapDelta } from '../core/torus.js';
-import { distanceToTrack } from './track.js';
+import { MESAS, TERRAIN, WORLD } from '../config/world.js';
+import { clamp, lerp, smoothstep } from '../core/math.js';
+import { fbm, noise2, ridged } from '../core/noise.js';
+import { biomeWeights, blendValue, journeyAt } from './biome.js';
+import { basinFactor, basinTarget } from './water.js';
 
 /**
- * Rolling ground, as a pure function of position.
+ * The shape of the ground: one pure function of position, and the sampled grid
+ * the renderer and the planting both stand on.
  *
- * THIS IS VISUAL ONLY. Nothing in src/physics reads it: collision, discovery
- * and surface sampling stay strictly two-dimensional, exactly as they were when
- * the world was flat. The renderer lifts the kart, the camera and the scenery
- * onto this field; the simulation never learns it exists. That is deliberate —
- * a kart whose handling depended on a heightfield would need a whole gravity
- * model, and the arcade feel this game wants does not survive one.
+ * Four fields are summed. Rolling hills carry the forest; ridged noise builds
+ * dune crests that only exist in the desert; a fine detail field keeps any
+ * slope from being perfectly smooth; and the valley walls climb at both edges
+ * so the world can be finite without ever showing an edge. Mesas and water
+ * basins are then blended in over the top.
  *
- * The field has two properties everything else depends on:
- *
- *   1. It is seamless. The lattice cell sizes divide WORLD.SIZE and the lattice
- *      index wraps, so heightAt(x, z) === heightAt(x + WORLD.SIZE, z). Anything
- *      else would put a cliff along the torus seam.
- *   2. It is exactly zero where you drive — along the track corridor and inside
- *      every landmark paddock — and ramps up over the next stretch of ground.
- *      Flat where you drive, hills where you look.
+ * Every amplitude is blended by biome weight, so the ground itself changes
+ * character along the journey rather than being repainted — the forest is
+ * lumpy, the desert is combed.
  */
-
-/** Fixed seed: the same hills on every visit and in every CI run. */
-const TERRAIN_SEED = 0x5eed01;
-
-/**
- * Two octaves of value noise. Both cell sizes divide WORLD.SIZE, which is what
- * makes the lattice wrap; change one to a size that does not and the seam comes
- * back.
- */
-const OCTAVES = Object.freeze([
-  { cell: 256, amplitude: 18, salt: 0 },
-  { cell: 128, amplitude: 8, salt: 8191 },
-]);
-
-/** Tallest the ground can get, for tests and for the renderer's colour ramp. */
-export const MAX_TERRAIN_HEIGHT = OCTAVES.reduce((sum, o) => sum + o.amplitude, 0);
-
-/** Ground stays dead flat out to here, measured from the track centre line. */
-const FLAT_HALF_WIDTH = WORLD.ROAD_HALF + WORLD.WALK;
-/** And then climbs to full height over this distance. */
-const CORRIDOR_RAMP = 70;
-
-/** Integer hash → [0, 1). Deterministic, and cheap enough to call per vertex. */
-function latticeValue(ix, iz, salt) {
-  let h = Math.imul(ix ^ 0x27d4eb2d, 0x165667b1) ^ Math.imul(iz ^ salt, 0x9e3779b1);
-  h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d);
-  h ^= h >>> 12;
-  h = Math.imul(h, 0x297a2d39);
-  h ^= h >>> 15;
-  return (h >>> 0) / 4294967296;
-}
-
-/** Hermite fade. C1-continuous, so no facet edge shows at a lattice boundary. */
-const fade = (t) => t * t * (3 - 2 * t);
-
-const mix = (a, b, t) => a + (b - a) * t;
-
-/**
- * One octave of value noise on a wrapping lattice.
- *
- * `cell` must divide WORLD.SIZE and the resulting cell count must be a power of
- * two, because the wrap is a bitmask — which is also what makes it correct for
- * negative indices, where a modulo would not be.
- */
-function valueNoise(x, z, { cell, salt }) {
-  const mask = WORLD.SIZE / cell - 1;
-  const gx = x / cell;
-  const gz = z / cell;
-  const ix = Math.floor(gx);
-  const iz = Math.floor(gz);
-  const u = fade(gx - ix);
-  const v = fade(gz - iz);
-
-  const x0 = ix & mask;
-  const x1 = (ix + 1) & mask;
-  const z0 = iz & mask;
-  const z1 = (iz + 1) & mask;
-
-  const top = mix(latticeValue(x0, z0, salt), latticeValue(x1, z0, salt), u);
-  const bottom = mix(latticeValue(x0, z1, salt), latticeValue(x1, z1, salt), u);
-  return mix(top, bottom, v);
-}
-
-/** 0 at or below `flatTo`, 1 beyond `flatTo + CORRIDOR_RAMP`, smooth between. */
-function ramp(distance, flatTo) {
-  const t = (distance - flatTo) / CORRIDOR_RAMP;
-  if (t <= 0) return 0;
-  if (t >= 1) return 1;
-  return fade(t);
+export function heightAt(x, z) {
+  return carveBasins(x, z, naturalHeightAt(x, z));
 }
 
 /**
- * How much of the noise survives here. Zero anywhere the kart is meant to be
- * able to drive without the ground moving under it.
+ * The land as it would be with no water in it.
+ *
+ * Exists so a pool can sit at the height of the ground it fills: the carve
+ * needs a surface level, and asking `heightAt` for one at the pool's centre
+ * would ask about the hole it is about to dig.
  */
-function corridorMask(x, z, flatMargin) {
-  let mask = ramp(distanceToTrack(x, z), FLAT_HALF_WIDTH + flatMargin);
-  if (mask === 0) return 0;
+export function naturalHeightAt(x, z) {
+  const weights = biomeWeights(journeyAt(x, z));
+  const hills =
+    fbm(x * TERRAIN.HILL_SCALE, z * TERRAIN.HILL_SCALE, { octaves: 4, seed: 11 }) *
+    blendValue(weights, TERRAIN.HILLS);
+  const dunes =
+    (ridged(x * TERRAIN.DUNE_SCALE, z * TERRAIN.DUNE_SCALE * 0.34, { seed: 23 }) - 0.45) *
+    blendValue(weights, TERRAIN.DUNES) *
+    2;
+  const detail =
+    noise2(x * TERRAIN.DETAIL_SCALE, z * TERRAIN.DETAIL_SCALE, 41) * TERRAIN.DETAIL_AMOUNT;
+  return hills + dunes + detail + wallHeight(x, z) + mesaHeight(x, z);
+}
 
-  for (const landmark of LANDMARKS) {
-    // Chebyshev distance: the paddock is a square block interior, not a disc.
-    const inset = Math.max(
-      Math.abs(wrapDelta(x - landmark.x)),
-      Math.abs(wrapDelta(z - landmark.z)),
-    );
-    mask = Math.min(mask, ramp(inset, PADDOCK_HALF + flatMargin));
-    if (mask === 0) return 0;
+/** Surface height of a pool, memoised: the natural ground at its centre. */
+const levels = new Map();
+export function poolLevel(pool) {
+  if (!levels.has(pool.id)) levels.set(pool.id, naturalHeightAt(pool.x, pool.z));
+  return levels.get(pool.id);
+}
+
+/** The valley sides. Rises as a square so the floor stays flat and the climb
+ *  steepens, which is what makes it read as a hillside rather than a bowl. */
+function wallHeight(x, z) {
+  const across = Math.abs(x) / WORLD.HALF_WIDTH;
+  const rise = smoothstep(TERRAIN.WALL_START, 1.05, across);
+  const roughness = 1 + 0.4 * fbm(x * 0.004, z * 0.004, { octaves: 3, seed: 77 });
+  return rise * rise * TERRAIN.WALL_HEIGHT * roughness;
+}
+
+/** Flat-topped buttes: a plateau inside 62% of the radius, a cliff outside it. */
+function mesaHeight(x, z) {
+  let sum = 0;
+  for (const mesa of MESAS) {
+    const distance = Math.hypot(x - mesa.x, z - mesa.z) / mesa.radius;
+    const shape = smoothstep(1, 0.62, distance);
+    if (shape > 0) {
+      const notch = 1 + 0.12 * noise2(x * 0.01, z * 0.01, mesa.radius | 0);
+      sum += mesa.height * shape * notch;
+    }
   }
-  return mask;
+  return sum;
+}
+
+/** Pulls the ground into a pool's basin, leaving a raised bank around it. */
+function carveBasins(x, z, height) {
+  const { factor, pool } = basinFactor(x, z);
+  if (!pool || factor <= 0) return height;
+  return lerp(height, basinTarget(pool, poolLevel(pool), x, z), factor);
 }
 
 /**
- * Ground height in world units, 0 .. MAX_TERRAIN_HEIGHT.
+ * The terrain sampled on the drawing lattice.
  *
- * `flatMargin` widens the dead-flat corridor. A renderer drawing this field as
- * facets needs it: a facet with one corner out on the hillside interpolates
- * above zero all the way to its other corner, which puts ground up through a
- * flat ribbon laid at y = 0. Holding the field flat for a facet's reach beyond
- * the corridor means every facet that touches the corridor is level, so
- * nothing can poke through.
+ * Everything that has to agree with the picture reads this rather than
+ * `heightAt`. The drawn surface is flat triangles between lattice points, so
+ * between them it is somewhere else entirely — by several units on a hillside.
+ * Anything seated on the analytic field therefore floats or sinks visibly, and
+ * a tree standing in mid-air is the single most obvious thing a scene like
+ * this can get wrong.
+ *
+ * `surfaceHeight` reproduces the mesh's own triangle split exactly. Change the
+ * winding in src/render/geometry/heightfield.js and it has to change here too.
  */
-export function heightAt(x, z, flatMargin = 0) {
-  const mask = corridorMask(x, z, flatMargin);
-  if (mask === 0) return 0;
+export function sampleGrid({ cell = WORLD.CELL } = {}) {
+  const columns = Math.round(WORLD.WIDTH / cell);
+  const rows = Math.round(WORLD.LENGTH / cell);
+  const across = columns + 1;
+  const heights = new Float32Array(across * (rows + 1));
 
-  let height = 0;
-  for (const octave of OCTAVES) {
-    height += valueNoise(x + TERRAIN_SEED, z + TERRAIN_SEED, octave) * octave.amplitude;
+  for (let j = 0; j <= rows; j += 1) {
+    for (let i = 0; i <= columns; i += 1) {
+      heights[j * across + i] = heightAt(-WORLD.HALF_WIDTH + i * cell, j * cell);
+    }
   }
-  return height * mask;
+  return { cell, columns, rows, across, heights, minX: -WORLD.HALF_WIDTH, minZ: 0 };
 }
 
-/**
- * The field as a mesh of `facet`-sized cells actually draws it.
- *
- * heightAt is smooth; a mesh sampling it on a lattice is piecewise linear, and
- * between lattice lines the two disagree by as much as several units. That gap
- * is not academic: anything seated with heightAt — a puddle, a barn, the kart
- * — sinks into or floats over the ground the player can see. This reproduces
- * the mesh's own interpolation, including which way its cells are split, so
- * anything placed with it lands exactly on the drawn surface.
- *
- * Must stay in step with src/render/geometry/heightfield.js, whose cells are
- * split along the (x0, z0) → (x1, z1) diagonal.
- */
-export function latticeHeightAt(x, z, facet, flatMargin = 0) {
-  const ix = Math.floor(x / facet);
-  const iz = Math.floor(z / facet);
-  const u = x / facet - ix;
-  const v = z / facet - iz;
-  const x0 = ix * facet;
-  const z0 = iz * facet;
-  const x1 = x0 + facet;
-  const z1 = z0 + facet;
+const at = (grid, i, j) => {
+  const column = clamp(i, 0, grid.columns);
+  const row = clamp(j, 0, grid.rows);
+  return grid.heights[row * grid.across + column];
+};
 
-  const h00 = heightAt(x0, z0, flatMargin);
-  const h11 = heightAt(x1, z1, flatMargin);
+/** Height of the drawn surface at any point, matching the mesh triangle for
+ *  triangle. */
+export function surfaceHeight(grid, x, z) {
+  const gx = (x - grid.minX) / grid.cell;
+  const gz = (z - grid.minZ) / grid.cell;
+  const i = Math.floor(gx);
+  const j = Math.floor(gz);
+  const fx = gx - i;
+  const fz = gz - j;
 
-  if (v >= u) {
-    const h01 = heightAt(x0, z1, flatMargin);
-    return (1 - v) * h00 + (v - u) * h01 + u * h11;
+  const a = at(grid, i, j);
+  const c = at(grid, i + 1, j + 1);
+  if (fx <= fz) {
+    const b = at(grid, i, j + 1);
+    return a + (b - a) * (fz - fx) + (c - a) * fx;
   }
-  const h10 = heightAt(x1, z0, flatMargin);
-  return (1 - u) * h00 + v * h11 + (u - v) * h10;
+  const d = at(grid, i + 1, j);
+  return a + (d - a) * (fx - fz) + (c - a) * fz;
 }
 
-/** Central-difference gradient: how steeply the ground rises along each axis. */
-export function slopeAt(x, z, epsilon = 6, flatMargin = 0) {
-  const ahead = (dx, dz) => heightAt(x + dx, z + dz, flatMargin);
-  return {
-    dx: (ahead(epsilon, 0) - ahead(-epsilon, 0)) / (2 * epsilon),
-    dz: (ahead(0, epsilon) - ahead(0, -epsilon)) / (2 * epsilon),
-  };
+/** Steepness of the drawn surface: rise over run, from the lattice itself. */
+export function surfaceSlope(grid, x, z) {
+  const i = Math.round((x - grid.minX) / grid.cell);
+  const j = Math.round((z - grid.minZ) / grid.cell);
+  const dx = (at(grid, i + 1, j) - at(grid, i - 1, j)) / (2 * grid.cell);
+  const dz = (at(grid, i, j + 1) - at(grid, i, j - 1)) / (2 * grid.cell);
+  return Math.hypot(dx, dz);
+}
+
+/** Upward normal of the drawn surface, as a plain vector. */
+export function surfaceNormal(grid, x, z) {
+  const i = Math.round((x - grid.minX) / grid.cell);
+  const j = Math.round((z - grid.minZ) / grid.cell);
+  const dx = at(grid, i + 1, j) - at(grid, i - 1, j);
+  const dz = at(grid, i, j + 1) - at(grid, i, j - 1);
+  const span = 2 * grid.cell;
+  const length = Math.hypot(dx, span, dz) || 1;
+  return { x: -dx / length, y: span / length, z: -dz / length };
 }
