@@ -1,4 +1,4 @@
-import { ACESFilmicToneMapping, PCFSoftShadowMap, WebGLRenderer } from 'three';
+import { ACESFilmicToneMapping, PCFShadowMap, WebGLRenderer } from 'three';
 import { clamp } from '../core/math.js';
 
 /** Above this the extra pixels cost frames and buy nothing anyone can see. */
@@ -18,7 +18,10 @@ export function createRenderer(canvas) {
   });
 
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFSoftShadowMap;
+  // PCF rather than PCFSoft: the soft variant is deprecated as of three 0.185
+  // and silently falls back to this anyway, having printed a warning into
+  // everyone's console on the way.
+  renderer.shadowMap.type = PCFShadowMap;
   // Filmic tone mapping keeps the bright sky from clipping to flat white
   // without desaturating the earth and moss the palette depends on.
   renderer.toneMapping = ACESFilmicToneMapping;

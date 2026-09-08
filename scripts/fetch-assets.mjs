@@ -7,6 +7,13 @@
  * `required`. Everything else is optional by design: the renderer falls back to
  * procedural geometry, so a blocked CDN degrades the visuals rather than
  * breaking the build.
+ *
+ * This runs automatically before `npm run dev` and `npm run build` (as
+ * `predev` and `prebuild`), because nothing binary is committed and the
+ * failure mode without it is silent: a fresh clone renders the whole valley
+ * out of procedural shapes and looks, quite reasonably, like the models were
+ * never wired up. Already-downloaded files are hash-checked and skipped, so
+ * the second run costs nothing.
  */
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
@@ -28,8 +35,15 @@ async function alreadyCorrect(asset) {
   }
 }
 
+/** Bounded, because this now sits in front of `npm run dev`: an unreachable
+ *  host must cost a few seconds, not hang the dev server behind a TCP timeout. */
+const TIMEOUT_MS = 20_000;
+
 async function download(asset) {
-  const response = await fetch(asset.url, { redirect: 'follow' });
+  const response = await fetch(asset.url, {
+    redirect: 'follow',
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return Buffer.from(await response.arrayBuffer());
 }
@@ -97,6 +111,7 @@ async function checkLocal(asset) {
 const manifest = await readManifest();
 let failures = 0;
 let changed = false;
+let onDisk = 0;
 
 for (const asset of manifest.assets) {
   process.stdout.write(`  ${asset.id.padEnd(22)} `);
@@ -105,11 +120,14 @@ for (const asset of manifest.assets) {
     if (result.status === 'fetched') {
       console.log(`fetched ${(result.bytes / 1024).toFixed(0)} KB`);
       changed = true;
+      onDisk += 1;
     } else if (result.status === 'cached') {
       console.log('cached, hash matches');
+      onDisk += 1;
     } else if (result.status === 'pinned') {
       console.log('supplied locally, hash recorded');
       changed = true;
+      onDisk += 1;
     } else if (result.status === 'supply') {
       console.log(`not installed — ${result.reason}`);
     } else if (result.status === 'unpinned') {
@@ -128,7 +146,20 @@ for (const asset of manifest.assets) {
 
 if (changed && record) await writeManifest(manifest);
 await writeCredits(manifest);
-console.log('\nCREDITS.md regenerated from the manifest.');
+
+/*
+ * Say plainly what the scene will look like, because the alternative is
+ * silence: with no models on disk everything falls back to procedural shapes
+ * and looks finished, which is by design and is also indistinguishable from
+ * the models never having been wired up.
+ */
+const models = manifest.assets.filter((asset) => asset.role === 'flora').length;
+console.log(`\n${onDisk} of ${models} models on disk; CREDITS.md regenerated.`);
+if (onDisk === 0) {
+  console.log('The valley will draw entirely from procedural geometry.');
+} else if (onDisk < models) {
+  console.log('Species without one keep their procedural shape.');
+}
 
 if (failures > 0) {
   console.error(`\n${failures} required asset(s) could not be fetched.`);

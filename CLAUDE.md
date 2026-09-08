@@ -24,21 +24,26 @@ npm install
 npm run dev            # http://localhost:5173
 ```
 
-There is no other setup. Third-party assets are optional — see _Assets_ below.
+There is no other setup. `dev` and `build` fetch the third-party models first
+(`predev` / `prebuild`, cached after the first run), because nothing binary is
+committed and the failure mode without them is silent: a fresh clone draws the
+whole valley from procedural shapes and looks exactly like a broken model
+pipeline. `window.__valley.debug.models` says how many species actually
+upgraded, and the console says so too when none did.
 
 ## The commands that matter
 
-| Command                             | What it does                                                                   |
-| ----------------------------------- | ------------------------------------------------------------------------------ |
-| `npm run dev`                       | Dev server with hot reload                                                     |
-| `npm run check`                     | **Run this before you finish.** Lint, format, boundaries, assets, tests, build |
-| `npm test`                          | Unit tests (fast, no browser)                                                  |
-| `npm run test:watch`                | Unit tests in watch mode                                                       |
-| `npm run e2e`                       | Browser tests. Builds and previews first; slow but real                        |
-| `npm run lint` / `npm run lint:fix` | ESLint                                                                         |
-| `npm run format`                    | Prettier                                                                       |
-| `npm run assets:fetch -- --record`  | Download third-party models and pin their hashes                               |
-| `npm run assets:verify`             | Check the asset manifest and hashes                                            |
+| Command                             | What it does                                                                                       |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `npm run dev`                       | Dev server with hot reload                                                                         |
+| `npm run check`                     | **Run this before you finish.** Lint, format, boundaries, assets, tests, build                     |
+| `npm test`                          | Unit tests (fast, no browser)                                                                      |
+| `npm run test:watch`                | Unit tests in watch mode                                                                           |
+| `npm run e2e`                       | Browser tests. Builds and previews first; slow but real                                            |
+| `npm run lint` / `npm run lint:fix` | ESLint                                                                                             |
+| `npm run format`                    | Prettier                                                                                           |
+| `npm run assets:fetch -- --record`  | Download third-party models and pin their hashes (`dev`/`build` do the download part on their own) |
+| `npm run assets:verify`             | Check the asset manifest and hashes                                                                |
 
 ## The five rules
 
@@ -157,7 +162,9 @@ src/
 
 Nothing binary is committed. `assets/manifest.json` declares every third-party
 file with its licence, author and SHA-256; `npm run assets:fetch` downloads and
-verifies them into `public/assets/`, and regenerates `CREDITS.md`.
+verifies them into `public/assets/`, and regenerates `CREDITS.md`. It runs
+automatically before `dev` and `build`; a second run is a hash check and costs
+nothing.
 
 `npm run assets:verify` runs in CI and fails on an unlicensed entry, a missing
 attribution or a hash mismatch. Add assets by editing the manifest, never by

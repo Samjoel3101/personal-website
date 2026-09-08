@@ -17,6 +17,9 @@ npm install
 npm run dev      # http://localhost:5173
 ```
 
+The first `dev` (or `build`) downloads the models it needs — a couple of
+megabytes, cached afterwards. Nothing binary lives in this repository.
+
 ## Flying it
 
 | Control                            | Does                      |

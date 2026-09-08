@@ -59,9 +59,33 @@ export function createSession(elements) {
       });
     },
 
-    /** Used by the end-to-end suite, and handy in the console. */
-    get debug() {
-      return { running: loop.running, progress: stage.progress, ...stage.diagnostics };
+    /**
+     * Used by the end-to-end suite, and handy in the console.
+     *
+     * `models` is written here by the asset loader once it has finished, so
+     * `__valley.debug.models` answers "did the models actually load?" without
+     * reading the network tab.
+     */
+    debug: {
+      models: { loaded: 0, wanted: 0 },
+      get running() {
+        return loop.running;
+      },
+      get progress() {
+        return stage.progress;
+      },
+      get quality() {
+        return stage.diagnostics.quality;
+      },
+      get draws() {
+        return stage.diagnostics.draws;
+      },
+      get triangles() {
+        return stage.diagnostics.triangles;
+      },
+      get camera() {
+        return stage.diagnostics.camera;
+      },
     },
 
     dispose() {

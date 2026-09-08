@@ -45,19 +45,42 @@ async function boot() {
  */
 async function loadOptionalAssets(session) {
   const assets = createAssetLoader();
+  const wanted = SPECIES.filter((species) => species.assets?.length);
+  let loaded = 0;
 
   await Promise.all(
-    SPECIES.filter((species) => species.assets?.length).map(async (species) => {
+    wanted.map(async (species) => {
       for (const id of species.assets) {
         if (!assetIds.includes(id) || assetInfo(id)?.role !== 'flora') continue;
         const model = await assets.model(id);
-        if (model && session.stage.useModel(id, model)) return;
+        if (model && session.stage.useModel(id, model)) {
+          loaded += 1;
+          return;
+        }
       }
     }),
   );
 
-  if (assets.failures.length > 0) {
-    console.warn('Optional models unavailable, using procedural shapes:', assets.failures);
+  session.debug.models = { loaded, wanted: wanted.length };
+
+  /*
+   * Say something when nothing arrived.
+   *
+   * Nothing binary is committed, so a fresh clone has an empty public/assets
+   * and every species falls back to its procedural shape. That is the design
+   * working — but it is also exactly what a broken model pipeline looks like,
+   * and the difference has to be one line in the console rather than a guess.
+   */
+  if (loaded === 0) {
+    console.warn(
+      `No models on disk: all ${wanted.length} species are drawing their procedural shapes. ` +
+        'Run `npm run assets:fetch` to download them (it also runs before `npm run dev`).',
+    );
+  } else if (assets.failures.length > 0) {
+    console.warn(
+      `${loaded}/${wanted.length} species upgraded; the rest are procedural:`,
+      assets.failures,
+    );
   }
 }
 
