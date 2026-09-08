@@ -25,6 +25,24 @@ export function pebble() {
   );
 }
 
+/**
+ * A stone worn flat into a path: wide, low, barely proud of the ground.
+ *
+ * Sized by height like everything else, so the shape carries its own
+ * proportions — a metre across and a hand deep.
+ */
+export function flatStone() {
+  return finish(
+    [
+      part(roughen(new IcosahedronGeometry(0.5, 0), 0.35, 23), ROCK.PALE, {
+        scale: [2.6, 0.75, 2.2],
+        y: 0.3,
+      }),
+    ],
+    'flat-stone',
+  );
+}
+
 /** A rounded lump with a darker one leaning on it. */
 export function boulder() {
   return finish(

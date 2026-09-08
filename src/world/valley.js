@@ -1,6 +1,7 @@
 import { CANOPY, GROUND_COVER, SCATTER } from '../config/flora.js';
 import { POOLS, WORLD, bounds } from '../config/world.js';
 import { biomeWeights, dominantBiome, journeyAt } from './biome.js';
+import { buildShade } from './shade.js';
 import { plant } from './scatter.js';
 import { poolLevel, sampleGrid, surfaceHeight, surfaceNormal, surfaceSlope } from './terrain.js';
 
@@ -24,11 +25,15 @@ export function createValley({ groundCover = 1 } = {}) {
     cell: SCATTER.CANOPY_CELL,
     clearance: SCATTER.CANOPY_CLEARANCE,
   });
+  // The canopy first, then the shade it casts, then everything that grows
+  // under it: the undergrowth pass reads the trees rather than guessing.
+  const shade = buildShade(canopy);
   const cover = plant(grid, {
     species: GROUND_COVER,
     cell: SCATTER.GROUND_CELL,
     density: groundCover,
     seed: SCATTER.SEED ^ 0x9e37,
+    shade,
   });
 
   const pools = POOLS.map((pool) => ({ ...pool, level: poolLevel(pool) }));
@@ -37,6 +42,7 @@ export function createValley({ groundCover = 1 } = {}) {
     grid,
     canopy,
     cover,
+    shade,
     pools,
     bounds,
     size: WORLD,

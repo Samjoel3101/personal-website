@@ -14,15 +14,18 @@ import {
 import { aspen, birch, mapleGold, mapleRed, oak } from './geometry/broadleaf-shapes.js';
 import {
   bush,
+  clover,
+  dryMat,
   fern,
   grass,
   grassDry,
+  grassMat,
   log,
   mushroom,
   reed,
   tallGrass,
 } from './geometry/cover-shapes.js';
-import { boulder, pebble, shard } from './geometry/stone-shapes.js';
+import { boulder, flatStone, pebble, shard } from './geometry/stone-shapes.js';
 import {
   flowerBlue,
   flowerPink,
@@ -58,6 +61,9 @@ const SHAPES = {
   grass,
   'tall-grass': tallGrass,
   'grass-dry': grassDry,
+  'grass-mat': grassMat,
+  'dry-mat': dryMat,
+  clover,
   fern,
   bush,
   'flower-blue': flowerBlue,
@@ -68,6 +74,7 @@ const SHAPES = {
   mushroom,
   reed,
   rock: pebble,
+  'flat-stone': flatStone,
   boulder,
   shard,
   log,

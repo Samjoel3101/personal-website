@@ -78,7 +78,15 @@ upgraded, and the console says so too when none did.
    are planted — is a blend keyed by it. Do not add a second notion of where
    the desert starts.
 
-6. **The trail is the composition.** `src/world/path.js` owns one centre line;
+6. **Arrangement, not scatter.** Ground cover grows in stands: `src/world/patches.js`
+   places six plant communities in a two-axis square (damp/open) and each
+   species declares an affinity for them, while `src/world/shade.js` builds a
+   canopy-cover field from the trees so ferns and mushrooms sit under them and
+   dry grass sits in the clearings. Affinities are normalised by their own mean
+   — they _redistribute_ a species, never add to it — so a new affinity cannot
+   quietly rebalance the valley.
+
+7. **The trail is the composition.** `src/world/path.js` owns one centre line;
    the terrain levels across it, the ground turns to earth on it, the planting
    refuses it and lines its edge with flowers, and the camera walks it at eye
    level. Anything that changes where the path goes has to keep it inside the
@@ -156,7 +164,19 @@ src/
   `src/render/model-upgrade.js`.
 - **Ground cover scales with quality, canopy does not.** `createValley` takes a
   `groundCover` density; thinning it must never move a tree, and a test pins
-  that.
+  that. Density is applied to a cell's _occupancy_, not to its weights: once
+  the floor is saturated — total weight well over one, which it is anywhere the
+  undergrowth is thick — scaling weights thins nothing at all.
+- **Mats carry the coverage, tufts carry the character.** The reference art has
+  no bare ground: the green _is_ plants. One tuft per cell can never do that at
+  any spacing the frame budget allows, so `grass-mat` and `dry-mat` are wide,
+  low, cheap shapes that spread twice their own height, and the tufts stand in
+  them. Because the planting gives each grid cell exactly one plant, mats
+  winning cells costs nothing — the instance count is fixed by the grid.
+- **The two `shade`s are different things.** The `shade` _community_ in
+  `patches.js` is a place in the damp/open square; the `shade` _field_ in
+  `shade.js` is how much canopy is actually overhead. A species can want one,
+  the other, or both.
 
 ## Assets
 

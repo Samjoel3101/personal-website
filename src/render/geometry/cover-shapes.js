@@ -1,6 +1,6 @@
 import { ConeGeometry, CylinderGeometry, SphereGeometry } from 'three';
 import { FLORA } from '../../config/palette.js';
-import { finish, part } from './shapes.js';
+import { finish, part, roughen } from './shapes.js';
 
 /**
  * Undergrowth, stones and dead wood: the dense pass.
@@ -82,6 +82,54 @@ export function tallGrass() {
   );
 }
 
+/**
+ * A wide, low mat of many short blades.
+ *
+ * The single most important shape on the floor, and the answer to a hard
+ * constraint. The reference art has no bare ground at all — the green *is*
+ * plants — and covering a valley that way one tuft at a time would need
+ * something like a million instances. A mat covers eight or ten units for
+ * thirty triangles, and because the planting gives every grid cell exactly one
+ * plant, mats winning cells that tufts used to win costs nothing at all: the
+ * instance count is fixed by the grid, and this is simply a far better use of
+ * it. Tufts then stand *in* the mats rather than on a lawn.
+ */
+function mat({ hex, tipHex }) {
+  const parts = [];
+  for (let i = 0; i < 19; i += 1) {
+    const angle = (i / 19) * Math.PI * 2 + i * 1.3;
+    const reach = 0.26 + (i % 4) * 0.15;
+    // Thin. A mat is read as grass or as leaves entirely by the width of one
+    // blade against its length, and these are drawn five metres wide.
+    const blade = new ConeGeometry(0.042, 1, 3);
+    blade.translate(0, 0.5, 0);
+
+    parts.push(
+      part(blade, hex, {
+        gradient: i % 3 === 0 ? tipHex : hex,
+        // Splayed almost flat and shrinking outward, so the mat has a domed
+        // middle and a feathered edge rather than a hard rim.
+        scale: [1, 0.78 - (i % 4) * 0.11, 0.34],
+        lean: 0.62 + (i % 3) * 0.16,
+        spin: angle,
+        x: Math.cos(angle) * reach,
+        z: Math.sin(angle) * reach,
+      }),
+    );
+  }
+  return parts;
+}
+
+export function grassMat() {
+  // Rooted in the ground's own green and lightening only at the tips: a mat
+  // painted brighter than the earth under it reads as a patch laid on top.
+  return finish(mat({ hex: FLORA.MAT_GREEN, tipHex: FLORA.GRASS_GREEN }), 'grass-mat');
+}
+
+export function dryMat() {
+  return finish(mat({ hex: FLORA.MAT_DRY, tipHex: FLORA.GRASS_DRY }), 'dry-mat');
+}
+
 export function grassDry() {
   return finish(
     blades({
@@ -127,21 +175,60 @@ export function reed() {
   );
 }
 
+/**
+ * A clover mat: broad round leaves close to the ground.
+ *
+ * The dominant thing on the reference art's forest floor, and a different job
+ * from grass — grass gives the floor height and movement, this gives it
+ * *cover*. Deliberately far wider than it is tall: shapes are scaled by
+ * height, so a mat two units high spreads six or seven across and a scattering
+ * of them closes the gaps between the tufts. Tufts alone, at any spacing the
+ * frame budget allows, leave a lawn with things standing on it.
+ */
+export function clover() {
+  const parts = [];
+  for (let i = 0; i < 11; i += 1) {
+    const angle = (i / 11) * Math.PI * 2 + i * 1.4;
+    const reach = 0.22 + (i % 4) * 0.16;
+    // Barely off the ground. Leaves on visible stems read as lily pads
+    // floating over the floor rather than as something growing out of it.
+    const lift = 0.18 + (i % 3) * 0.1;
+
+    parts.push(
+      part(new SphereGeometry(0.13 - (i % 3) * 0.02, 5, 3), FLORA.BROADLEAF_MID, {
+        gradient: i % 2 === 0 ? FLORA.GRASS_LIGHT : FLORA.BROADLEAF_LIGHT,
+        scale: [1, 0.3, 1],
+        x: Math.cos(angle) * reach,
+        y: lift,
+        z: Math.sin(angle) * reach,
+      }),
+    );
+  }
+  return finish(parts, 'clover', { smooth: true });
+}
+
+/**
+ * A leafy shrub.
+ *
+ * Flat-shaded and knocked about, unlike the tree crowns next door: a bush is
+ * seen from two metres away rather than twenty, and a smooth sphere at that
+ * range is a beach ball. The facets are the leaves.
+ */
 export function bush() {
   return finish(
     [
-      part(new SphereGeometry(0.42, 6, 4), FLORA.BROADLEAF_DARK, {
+      part(roughen(new SphereGeometry(0.42, 7, 5), 0.3, 31), FLORA.BROADLEAF_DARK, {
         gradient: FLORA.BROADLEAF_MID,
         y: 0.4,
         scale: [1, 0.9, 1],
       }),
-      part(new SphereGeometry(0.3, 5, 3), FLORA.BROADLEAF_MID, {
+      part(roughen(new SphereGeometry(0.3, 6, 4), 0.3, 37), FLORA.BROADLEAF_MID, {
         gradient: FLORA.BROADLEAF_LIGHT,
         x: 0.24,
         y: 0.3,
         z: 0.1,
       }),
-      part(new SphereGeometry(0.26, 5, 3), FLORA.BROADLEAF_DARK, {
+      part(roughen(new SphereGeometry(0.26, 6, 4), 0.3, 41), FLORA.BROADLEAF_DARK, {
         gradient: FLORA.BROADLEAF_MID,
         x: -0.2,
         y: 0.34,
@@ -149,7 +236,6 @@ export function bush() {
       }),
     ],
     'bush',
-    { smooth: true },
   );
 }
 

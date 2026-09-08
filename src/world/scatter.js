@@ -7,6 +7,8 @@ import { biomeWeights, blendValue, journeyAt } from './biome.js';
 import { surfaceHeight, surfaceSlope } from './terrain.js';
 import { bankFactor, isSubmerged } from './water.js';
 import { pathFactor, vergeFactor } from './path.js';
+import { patchAt, patchValue } from './patches.js';
+import { shadeAt } from './shade.js';
 
 /**
  * Where everything grows.
@@ -28,15 +30,38 @@ import { pathFactor, vergeFactor } from './path.js';
  */
 
 /** Everything a cell needs to know about the ground it is standing on. */
-function siteAt(x, z, clearance) {
+function siteAt(x, z, clearance, shade) {
   return {
     x,
     z,
     weights: biomeWeights(journeyAt(x, z)),
+    patch: patchAt(x, z),
+    shade: shade ? shadeAt(shade, x, z) : 0,
     bank: bankFactor(x, z),
     path: pathFactor(x, z, clearance),
     verge: vergeFactor(x, z),
   };
+}
+
+/**
+ * How a species feels about standing under trees.
+ *
+ * `shade` runs -1 (wants open light) to +1 (wants cover), and the factor swings
+ * either side of one. It is the second half of arrangement: the communities in
+ * ./patches.js decide what grows *together*, and this decides where those
+ * stands sit relative to the canopy — ferns and mushrooms in under the trees,
+ * dry grass and flowers out in the light.
+ */
+function shadeFactor(species, shade) {
+  if (!species.shade) return 1;
+
+  const match = species.shade > 0 ? shade : 1 - shade;
+  // Raised to a power rather than mixed linearly. Half the forest floor sits
+  // at middling cover, and a linear response barely moves a species there —
+  // dry grass ended up almost as shaded as the ferns. The exponent turns a
+  // preference into an actual habitat: a clearing gets six times the sun
+  // lovers a thicket does.
+  return Math.max(0.04, (0.5 + match) ** (3 * Math.abs(species.shade)));
 }
 
 /** Willing to grow on any shoreline, which is what a species gets by default. */
@@ -64,8 +89,11 @@ function belonging(species, base) {
  * the only weight a species has, which lets a reed be worth nothing at all
  * away from water and quite a lot on a bank.
  */
-function weightOf(species, site, densityScale) {
-  const base = blendValue(site.weights, species.weight);
+function weightOf(species, site) {
+  const biome = blendValue(site.weights, species.weight);
+  // The community and the canopy redistribute a species' density; they never
+  // add to it. See `patchValue`.
+  const base = biome * patchValue(site.patch, species.patch) * shadeFactor(species, site.shade);
   // The shoreline term carries its own bands. Water draws plants to it, but
   // it does not make a palm reasonable beside a pine: `bankBands` is where a
   // species says which stretches of the journey it is willing to be a
@@ -89,29 +117,47 @@ function weightOf(species, site, densityScale) {
   // every reason a species might otherwise have had to be here. A species may
   // keep further back than its pass does — see `clearance` — which is how a
   // pine stands off the path while a pebble sits on its lip.
+  //
+  // `onPath` inverts it, for the few things that belong *on* the trail and
+  // nowhere else: the stones worn into it.
   const path =
     species.clearance === undefined ? site.path : pathFactor(site.x, site.z, species.clearance);
-  return (base + shoreline + edge) * densityScale * (1 - path);
+  const room = species.onPath ? path : 1 - path;
+  return (base + shoreline + edge) * room;
 }
 
-/** Weighted pick over `species`, or null for an empty cell. */
-function choose(species, site, densityScale, roll) {
+/**
+ * Weighted pick over `species`, or null for an empty cell.
+ *
+ * Two decisions, from one roll. Whether the cell is occupied at all is
+ * `min(total, 1) × density`: a cell whose species barely want it stays empty
+ * in proportion, which is what thins a forest into woodland rather than merely
+ * changing which species fills every slot — and `density` scales that
+ * occupancy directly rather than scaling the weights. That distinction is the
+ * whole quality ladder: once the floor is saturated (total weight well over
+ * one, which it is anywhere the undergrowth is thick), scaling weights thins
+ * nothing at all.
+ *
+ * Then which species, in proportion, by rescaling the same roll — one draw, so
+ * adding a species does not reshuffle the rest of the valley.
+ */
+function choose(species, site, density, roll) {
   let total = 0;
   const weights = species.map((entry) => {
-    const weight = weightOf(entry, site, densityScale);
+    const weight = weightOf(entry, site);
     total += weight;
     return weight;
   });
 
-  // Rolling against at least one keeps a cell whose total weight is below one
-  // empty in proportion — that is what thins a forest out rather than merely
-  // changing which species fills every slot.
-  let cursor = roll * Math.max(total, 1);
+  const occupancy = Math.min(total, 1) * density;
+  if (total <= 0 || roll >= occupancy) return null;
+
+  let cursor = (roll / occupancy) * total;
   for (let i = 0; i < species.length; i += 1) {
     cursor -= weights[i];
     if (cursor <= 0) return species[i];
   }
-  return null;
+  return species[species.length - 1];
 }
 
 /**
@@ -123,9 +169,13 @@ function choose(species, site, densityScale, roll) {
  * @param {number} options.cell grid spacing for this pass
  * @param {number} [options.density] overall multiplier, for the quality ladder
  * @param {number} [options.clearance] how far this pass keeps off the trail
+ * @param {object} [options.shade] canopy cover field, from ./shade.js
  * @returns {Map<string, Array>} items keyed by species id
  */
-export function plant(grid, { species, cell, density = 1, seed = SCATTER.SEED, clearance = 0 }) {
+export function plant(
+  grid,
+  { species, cell, density = 1, seed = SCATTER.SEED, clearance = 0, shade = null },
+) {
   const items = new Map(species.map((entry) => [entry.id, []]));
   const columns = Math.round(WORLD.WIDTH / cell);
   const rows = Math.round(WORLD.LENGTH / cell);
@@ -137,7 +187,7 @@ export function plant(grid, { species, cell, density = 1, seed = SCATTER.SEED, c
       const z = bounds.minZ + (j + 0.5 + (rng() - 0.5) * SCATTER.JITTER) * cell;
       if (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ) continue;
 
-      const chosen = choose(species, siteAt(x, z, clearance), density, rng());
+      const chosen = choose(species, siteAt(x, z, clearance, shade), density, rng());
       if (!chosen) continue;
 
       const item = place(grid, chosen, x, z, rng);

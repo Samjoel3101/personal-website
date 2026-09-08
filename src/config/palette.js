@@ -36,6 +36,20 @@ export const GROUND = Object.freeze({
 });
 
 /**
+ * What the plant communities do to the ground under them.
+ *
+ * The reference art's floor is not one green: it runs from rich shaded green
+ * through open meadow to drifts of dry gold, in stands tens of metres across.
+ * Half of that is the planting; the other half is the ground itself, and this
+ * is that half. Mixed in by the same field that decides what grows there — see
+ * src/world/patches.js.
+ */
+export const MEADOW = Object.freeze({
+  DRY: '#c9b45c',
+  RICH: '#3d7d2c',
+});
+
+/**
  * The trail's own earth, per biome.
  *
  * Warmer and lighter than the `bare` tone beside it: bare ground is soil that
@@ -57,10 +71,13 @@ export const TRAIL = Object.freeze({
  * being a wall.
  */
 export const ROCK = Object.freeze({
-  PALE: '#e2e5de',
-  SHADE: '#b6bbb2',
-  COOL: '#c9cdc4',
-  WARM: '#c08a5a',
+  /* Grey-green rather than near-white, matched to the pack's own stone: the
+     procedural rocks stand in for the fetched ones past MODEL_DISTANCE, and a
+     white boulder beside a grey one makes the swap the first thing you see. */
+  PALE: '#b3b9af',
+  SHADE: '#8d948a',
+  COOL: '#b4b9b0',
+  WARM: '#b0855e',
 });
 
 /** Standing water, and the sand ring around it. */
@@ -89,6 +106,10 @@ export const FLORA = Object.freeze({
   BIRCH_BARK: '#e8e3d5',
   BIRCH_MARK: '#5f5d54',
   DEAD_WOOD: '#a58e66',
+  /** The base of a ground mat: close to the ground's own green, so the mats
+   *  read as the floor rather than as patches laid on it. */
+  MAT_GREEN: '#4e9c33',
+  MAT_DRY: '#b39f4e',
   GRASS_GREEN: '#74c742',
   GRASS_LIGHT: '#9ade56',
   GRASS_DRY: '#c7b55f',

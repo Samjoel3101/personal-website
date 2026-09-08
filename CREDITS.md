@@ -32,6 +32,7 @@ Fetched and pinned by `npm run assets:fetch`.
 | Stylized Nature MegaKit — rock               | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
 | Stylized Nature MegaKit — standing rock      | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
 | Stylized Nature MegaKit — broad tree         | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — path stone         | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
 
 ## Fonts
 

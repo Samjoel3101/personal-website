@@ -138,6 +138,38 @@ bands it is willing to be a waterside plant in. A reed has no weight at all
 away from a bank; a palm has a little in the desert and a lot beside the oasis
 and none at all beside the forest pond.
 
+## Arrangement
+
+Density alone gives an even sprinkle of everything everywhere, and an even
+sprinkle is the one thing a forest floor never looks like. Two fields turn it
+into stands.
+
+`world/patches.js` places six plant communities — meadow, clover, dry, shade,
+flowery, stony — in a two-axis square: damp against open. Two noise fields say
+where a point lands in that square, and the nearest communities win, cleanly in
+the middle of a stand and blended at its edges. Two fields rather than six is
+cheaper (this is asked for every one of a hundred thousand plants) but the real
+gain is that adjacency means something: a dry drift borders a meadow because
+they are neighbours in the square, and never borders a fern bank, because
+nothing in a landscape goes straight from parched to deep shade.
+
+`world/shade.js` then splats the planted trees into a coarse lattice, so the
+undergrowth pass knows how much canopy stands over each point. Ferns, clover
+and mushrooms want it; dry grass, flowers and pebbles want the clearings. The
+response is a power curve rather than a blend, because half the floor sits at
+middling cover and a linear preference barely moves anything there.
+
+A species multiplies its biome weight by both. Affinities are normalised by
+their own mean, so they redistribute a species into its stands without planting
+more of it — which is what makes the tables safe to edit one at a time.
+
+The last piece is shape rather than placement. Coverage is carried by wide, low
+_mats_ — one covers eight units for a hundred triangles — and the tufts,
+flowers and ferns stand in them. Covering the floor a tuft at a time would need
+something like a million instances; mats winning grid cells that tufts used to
+win costs nothing at all, because the planting gives every cell exactly one
+plant either way.
+
 ## Drawing
 
 Everything is instanced. Each species is one geometry — merged from primitives,

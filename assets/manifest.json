@@ -320,6 +320,21 @@
       "required": false,
       "notes": "Stands in for the 'birch' species. The free tier has no birch, and a flat white procedural trunk beside these textured ones was the one thing in the canopy that read as a different scene.",
       "role": "flora"
+    },
+    {
+      "id": "pack.nature.trail-stone",
+      "kind": "model",
+      "file": "models/nature-megakit/RockPath_Round_Small_1.glb",
+      "url": "https://raw.githubusercontent.com/Samjoel3101/3d-assets/7ab55650fb29f8f99fb7367168705669f302f917/quaternius-stylized-nature/models/RockPath_Round_Small_1.glb",
+      "sha256": "a0e5cab179b66972308a389f6999cbc6a335c7fd06a8bb03a37894ea4cfc4a0f",
+      "license": "CC0-1.0",
+      "title": "Stylized Nature MegaKit — path stone",
+      "author": "Quaternius",
+      "source": "https://quaternius.com/packs/stylizednaturemegakit.html",
+      "mirror": "https://github.com/Samjoel3101/3d-assets/tree/7ab55650fb29f8f99fb7367168705669f302f917/quaternius-stylized-nature",
+      "required": false,
+      "notes": "The 'trail-stone' species: worn flat into the path itself. The pack ships these as path pieces and they are the detail that stops the trail being a painted stripe.",
+      "role": "flora"
     }
   ]
 }

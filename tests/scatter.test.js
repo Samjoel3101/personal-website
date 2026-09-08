@@ -6,10 +6,30 @@ import { sampleGrid, surfaceSlope } from '../src/world/terrain.js';
 import { journeyAt } from '../src/world/biome.js';
 import { PATH } from '../src/config/world.js';
 import { distanceToPath, vergeFactor } from '../src/world/path.js';
+import { COMMUNITY_IDS, patchAt } from '../src/world/patches.js';
+import { buildShade, shadeAt } from '../src/world/shade.js';
 
+/*
+ * The same three steps createValley takes, in the same order. Planting the
+ * cover without the canopy's shade — which is what this fixture used to do —
+ * tests a pipeline the app does not run: every species sees flat light, and
+ * half of what these tests are about disappears.
+ */
 const grid = sampleGrid();
-const canopy = plant(grid, { species: CANOPY, cell: SCATTER.CANOPY_CELL });
-const cover = plant(grid, { species: GROUND_COVER, cell: SCATTER.GROUND_CELL });
+const CANOPY_PASS = {
+  species: CANOPY,
+  cell: SCATTER.CANOPY_CELL,
+  clearance: SCATTER.CANOPY_CLEARANCE,
+};
+const canopy = plant(grid, CANOPY_PASS);
+const shade = buildShade(canopy);
+const COVER_PASS = {
+  species: GROUND_COVER,
+  cell: SCATTER.GROUND_CELL,
+  seed: SCATTER.SEED ^ 0x9e37,
+  shade,
+};
+const cover = plant(grid, COVER_PASS);
 
 const all = (items) => [...items.values()].flat();
 /** Mean journey position of a species: near 0 is forest, near 1 is desert. */
@@ -21,7 +41,7 @@ const nearestBank = (item) =>
 
 describe('planting', () => {
   it('is deterministic', () => {
-    const again = plant(grid, { species: CANOPY, cell: SCATTER.CANOPY_CELL });
+    const again = plant(grid, CANOPY_PASS);
     for (const [id, items] of canopy) {
       expect(again.get(id).length).toBe(items.length);
       if (items.length > 0) expect(again.get(id)[0]).toEqual(items[0]);
@@ -65,12 +85,29 @@ describe('planting', () => {
     }
   });
 
-  it('plants nothing on the trail', () => {
-    for (const item of [...all(canopy), ...all(cover)]) {
-      // Not "nothing within the verge": the verge is where the flowers go.
-      // Nothing on the bare earth is the rule, and the fringe of it is the
-      // scatter easing off rather than a boundary.
-      expect(distanceToPath(item.x, item.z)).toBeGreaterThan(PATH.HALF_WIDTH * 0.55);
+  it('plants nothing on the trail except what belongs there', () => {
+    const onPath = new Set(
+      [...CANOPY, ...GROUND_COVER].filter((species) => species.onPath).map((species) => species.id),
+    );
+
+    for (const [id, items] of [...canopy, ...cover]) {
+      if (onPath.has(id)) continue;
+      for (const item of items) {
+        // Not "nothing within the verge": the verge is where the flowers go.
+        // Nothing on the bare earth is the rule, and the fringe of it is the
+        // scatter easing off rather than a boundary.
+        expect(distanceToPath(item.x, item.z), `species ${id}`).toBeGreaterThan(
+          PATH.HALF_WIDTH * 0.55,
+        );
+      }
+    }
+  });
+
+  it('puts the trail stones on the trail, and only there', () => {
+    const stones = cover.get('trail-stone');
+    expect(stones.length).toBeGreaterThan(100);
+    for (const item of stones) {
+      expect(distanceToPath(item.x, item.z)).toBeLessThan(PATH.HALF_WIDTH + PATH.VERGE);
     }
   });
 
@@ -92,7 +129,12 @@ describe('planting', () => {
     }
     const areaShare = vergeCells / cells;
     const flowerShare = beside.length / flowers.length;
-    expect(flowerShare / areaShare).toBeGreaterThan(5);
+    // Three times the density of open ground, not the seven it was: flowers
+    // now also drift into the `flowery` plant community wherever it falls, so
+    // the trail is one of several places to find them rather than the only
+    // one. That is the reference's arrangement — a lined path AND drifts in
+    // the open — and the concentration that matters is still unmistakable.
+    expect(flowerShare / areaShare).toBeGreaterThan(3);
 
     // And enough of them to actually line a kilometre of path.
     expect(beside.length).toBeGreaterThan(150);
@@ -103,6 +145,49 @@ describe('planting', () => {
       for (const pool of POOLS) {
         expect(Math.hypot(item.x - pool.x, item.z - pool.z)).toBeGreaterThanOrEqual(pool.radius);
       }
+    }
+  });
+});
+
+describe('arrangement', () => {
+  /** Mean of `read` over a species' plants. */
+  const meanOver = (items, read) =>
+    items.reduce((total, item) => total + read(item), 0) / items.length;
+
+  it('puts the shade lovers under the trees and the sun lovers in the open', () => {
+    const under = (id) => meanOver(cover.get(id), (item) => shadeAt(shade, item.x, item.z));
+
+    expect(under('fern')).toBeGreaterThan(under('dry-mat') + 0.25);
+    expect(under('mushroom')).toBeGreaterThan(under('dry-mat') + 0.25);
+    expect(under('clover')).toBeGreaterThan(under('flower-yellow'));
+  });
+
+  it('gathers each species into the stands it belongs to', () => {
+    // A species' own community should hold several times the share of it that
+    // the community's share of the ground would give by chance. That ratio is
+    // the difference between mats and an even sprinkle.
+    const share = (id, community) =>
+      meanOver(cover.get(id), (item) => patchAt(item.x, item.z)[community]);
+
+    const ground = Object.fromEntries(COMMUNITY_IDS.map((c) => [c, 0]));
+    let cells = 0;
+    for (let z = 0; z < WORLD.LENGTH; z += 53) {
+      for (let x = -WORLD.HALF_WIDTH; x < WORLD.HALF_WIDTH; x += 53) {
+        const weights = patchAt(x, z);
+        for (const community of COMMUNITY_IDS) ground[community] += weights[community];
+        cells += 1;
+      }
+    }
+
+    for (const [id, community] of [
+      ['clover', 'clover'],
+      ['fern', 'shade'],
+      ['dry-mat', 'dry'],
+      ['pebble', 'stony'],
+      ['flower-blue', 'flowery'],
+    ]) {
+      const expected = ground[community] / cells;
+      expect(share(id, community) / expected, `${id} in ${community}`).toBeGreaterThan(2);
     }
   });
 });
@@ -138,7 +223,7 @@ describe('what grows where', () => {
   });
 
   it('thins out with the density, without rearranging the valley', () => {
-    const sparse = plant(grid, { species: GROUND_COVER, cell: SCATTER.GROUND_CELL, density: 0.3 });
+    const sparse = plant(grid, { ...COVER_PASS, density: 0.3 });
     expect(all(sparse).length).toBeLessThan(all(cover).length * 0.6);
     // Every surviving position is one the full-density pass also chose, so
     // turning the quality down thins the undergrowth rather than replanting it.

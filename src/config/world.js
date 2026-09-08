@@ -86,6 +86,26 @@ export const PATH = Object.freeze({
   FLATTEN: 3.4,
 });
 
+/**
+ * Plant communities — the stands the undergrowth grows in.
+ *
+ * SCALE sets how big a stand is: one over it is roughly the wavelength, so
+ * 0.011 gives mats around ninety units across, which at eye level is a stand
+ * you walk through in a few seconds rather than a texture you walk over.
+ *
+ * BLEND is how close a second community has to run before it mixes in. Small
+ * keeps stands distinct with soft edges; large dissolves the whole idea back
+ * into an even sprinkle of everything. See src/world/patches.js.
+ */
+export const PATCH = Object.freeze({
+  SCALE: 0.011,
+  BLEND: 0.22,
+  /** How hard the noise is pushed out toward the corners of the square. See
+   *  `spread` in src/world/patches.js: at 1 the middle community swallows half
+   *  the valley and the corners are never reached. */
+  GAIN: 1.5,
+});
+
 /** Terrain relief. Amplitudes are per band and blended by biome weight. */
 export const TERRAIN = Object.freeze({
   /** Rolling ground under the forest, in world units of peak height. */

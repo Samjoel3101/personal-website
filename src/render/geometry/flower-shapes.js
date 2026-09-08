@@ -17,13 +17,13 @@ import { finish, part } from './shapes.js';
  * it cannot turn a blue one violet without dragging its stem and leaves along
  * with it.
  */
-function clump(petal, { heads = 4, headSize = 0.14, tall = false } = {}) {
+function clump(petal, { heads = 5, headSize = 0.1, tall = false } = {}) {
   const parts = [];
   const stemTop = tall ? 0.78 : 0.62;
 
   for (let i = 0; i < heads; i += 1) {
     const angle = (i / heads) * Math.PI * 2 + 0.6;
-    const reach = 0.13 + (i % 3) * 0.05;
+    const reach = 0.16 + (i % 3) * 0.07;
     const height = stemTop - (i % 3) * 0.12;
 
     parts.push(

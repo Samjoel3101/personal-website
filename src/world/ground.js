@@ -1,15 +1,16 @@
-import { GROUND, ROCK, TRAIL, WATER } from '../config/palette.js';
+import { GROUND, MEADOW, ROCK, TRAIL, WATER } from '../config/palette.js';
 import { BIOME_IDS, biomeWeights, journeyAt } from './biome.js';
 import { blendHex, mixHex } from '../core/colour.js';
 import { noise2 } from '../core/noise.js';
 import { smoothstep } from '../core/math.js';
 import { bankFactor } from './water.js';
 import { pathFactor, scuffFactor } from './path.js';
+import { patchAt } from './patches.js';
 
 /**
  * What colour the ground is at a point.
  *
- * Four things decide it, in order. The biome blend gives the base — forest
+ * Five things decide it, in order. The biome blend gives the base — forest
  * green through to desert sand, mixed by exactly the same weights that decide
  * how tall the hills are. Steepness then peels that back: soil does not cling
  * to a cliff, so anything past a gentle slope shades toward its own bare tone
@@ -42,7 +43,16 @@ export function groundColour(x, z, slope) {
 
   // Broad mottling, so a hillside is never one flat wash of a single green.
   const mottle = noise2(x * 0.006, z * 0.006, 3);
-  colour = mixHex(colour, mottle > 0 ? steep : flat, Math.abs(mottle) * 0.35);
+  colour = mixHex(colour, mottle > 0 ? steep : flat, Math.abs(mottle) * 0.3);
+
+  // The plant communities, painted into the ground they grow on. A drift of
+  // dry grass sits on ground that has gone gold and a fern bank sits on ground
+  // that has gone dark, and those stands are most of what gives a wide shot
+  // its depth — the planting alone reads as texture.
+  const patch = patchAt(x, z);
+  const green = 1 - (weights.desert ?? 0);
+  colour = mixHex(colour, MEADOW.DRY, patch.dry * 0.6 * green);
+  colour = mixHex(colour, MEADOW.RICH, (patch.shade + patch.clover) * 0.3 * green);
 
   colour = mixHex(colour, WATER.BANK, bankFactor(x, z) * 0.85);
 
