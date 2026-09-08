@@ -151,13 +151,21 @@ composition is exactly what the note at the top of `render/materials.js` is
 about, and it is the trap most likely to catch the next change.
 
 Fetched models take the same path: `render/model-upgrade.js` normalises a glTF
-onto the same unit contract as the procedural shapes and re-instances the same
+onto the same unit contract as the procedural shapes and instances the same
 item list, so an asset that arrives changes what a species looks like and
 nothing else. An asset that never arrives changes nothing at all.
 
-Each species lists its models best first — the Quaternius pack model a human
-installed, then the Kenney one that can be fetched anywhere — and `main.js`
-takes the first that loads, requesting nothing after it.
+They do not replace the procedural meshes, though — they join them. Every tile
+of a species with a model has two forms, and one distance test a frame decides
+which is visible. That is the only reason the pack is affordable: a Quaternius
+pine is five thousand triangles against the procedural one's eighty, and a
+forest of two thousand of them is fifteen million triangles a frame. Swapping
+at four hundred units — where the fog has already taken most of the detail —
+brings that under seven, and the two silhouettes are close enough that the
+change is hard to catch.
+
+Each species lists its models best first (pack, then Kenney's kit for the palm
+and cactus the free tier lacks) and `main.js` takes the first that loads.
 
 Two of the shapes' conventions are worth knowing before adding one. Everything
 is normalised to unit height with its base at zero and placed with a single

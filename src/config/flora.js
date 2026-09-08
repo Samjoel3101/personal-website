@@ -23,7 +23,7 @@ import { WORLD } from './world.js';
 
 /** Grid spacing for each planting pass, in world units. */
 export const SCATTER = Object.freeze({
-  CANOPY_CELL: 34,
+  CANOPY_CELL: 40,
   /**
    * Undergrowth spacing. Small, because this is seen from inside it: at eye
    * level the floor has to be a carpet, and anything sparser than about a
@@ -53,42 +53,41 @@ export const SCATTER = Object.freeze({
 export const CANOPY = Object.freeze([
   {
     id: 'pine',
-    assets: ['pack.quaternius.pine', 'kit.nature.tree.pine'],
+    assets: ['pack.nature.pine', 'kit.nature.tree.pine'],
     shape: 'conifer',
     height: [46, 88],
     weight: { forest: 0.42, woodland: 0.08, scrub: 0.01, desert: 0 },
   },
   {
     id: 'spire',
-    assets: ['pack.quaternius.spire', 'kit.nature.tree.spire'],
+    assets: ['pack.nature.pine-slim', 'kit.nature.tree.spire'],
     shape: 'conifer-tall',
     height: [70, 120],
     weight: { forest: 0.2, woodland: 0.03, scrub: 0, desert: 0 },
   },
   {
     id: 'birch',
-    assets: ['pack.quaternius.birch'],
     shape: 'birch',
+    assets: ['pack.nature.tree-broad'],
     height: [44, 72],
     weight: { forest: 0.3, woodland: 0.26, scrub: 0.02, desert: 0 },
   },
   {
     id: 'aspen',
-    assets: ['pack.quaternius.aspen'],
+    assets: ['pack.nature.tree-slim'],
     shape: 'aspen',
     height: [40, 68],
     weight: { forest: 0.2, woodland: 0.24, scrub: 0.02, desert: 0 },
   },
   {
     id: 'oak',
-    assets: ['pack.quaternius.oak', 'kit.nature.tree.oak'],
+    assets: ['pack.nature.tree', 'kit.nature.tree.oak'],
     shape: 'oak',
     height: [38, 62],
     weight: { forest: 0.18, woodland: 0.24, scrub: 0.03, desert: 0 },
   },
   {
     id: 'maple-red',
-    assets: ['pack.quaternius.maple-red'],
     shape: 'maple-red',
     height: [36, 60],
     /** Autumn crowns are the warm half of the forest. Weighted highest at the
@@ -98,21 +97,29 @@ export const CANOPY = Object.freeze([
   },
   {
     id: 'maple-gold',
-    assets: ['pack.quaternius.maple-gold'],
     shape: 'maple-gold',
     height: [34, 58],
     weight: { forest: 0.26, woodland: 0.24, scrub: 0.03, desert: 0 },
   },
   {
+    id: 'twisted',
+    shape: 'oak',
+    height: [30, 54],
+    /** Gnarled and half-bare: the tree that carries the woodland into the
+     *  scrub, where a full green crown would look irrigated. */
+    weight: { forest: 0.06, woodland: 0.16, scrub: 0.12, desert: 0 },
+    assets: ['pack.nature.twisted'],
+  },
+  {
     id: 'deadwood',
-    assets: ['pack.quaternius.deadwood'],
+    assets: ['pack.nature.dead'],
     shape: 'dead-tree',
     height: [26, 52],
     weight: { forest: 0.02, woodland: 0.05, scrub: 0.13, desert: 0.04 },
   },
   {
     id: 'palm',
-    assets: ['pack.quaternius.palm', 'kit.nature.tree.palm'],
+    assets: ['kit.nature.tree.palm'],
     shape: 'palm',
     height: [42, 74],
     weight: { forest: 0, woodland: 0, scrub: 0.01, desert: 0.025 },
@@ -126,21 +133,21 @@ export const CANOPY = Object.freeze([
   },
   {
     id: 'saguaro',
-    assets: ['pack.quaternius.cactus-tall', 'kit.nature.cactus.tall'],
+    assets: ['kit.nature.cactus.tall'],
     shape: 'cactus',
     height: [22, 46],
     weight: { forest: 0, woodland: 0, scrub: 0.05, desert: 0.15 },
   },
   {
     id: 'barrel',
-    assets: ['pack.quaternius.cactus-short', 'kit.nature.cactus.short'],
+    assets: ['kit.nature.cactus.short'],
     shape: 'cactus-round',
     height: [6, 12],
     weight: { forest: 0, woodland: 0, scrub: 0.035, desert: 0.08 },
   },
   {
     id: 'boulder',
-    assets: ['pack.quaternius.rock-large'],
+    assets: ['pack.nature.rock'],
     shape: 'boulder',
     height: [8, 26],
     weight: { forest: 0.09, woodland: 0.06, scrub: 0.08, desert: 0.06 },
@@ -148,7 +155,7 @@ export const CANOPY = Object.freeze([
   },
   {
     id: 'shard',
-    assets: ['pack.quaternius.rock-shard'],
+    assets: ['pack.nature.rock-standing'],
     shape: 'shard',
     height: [10, 30],
     /** Pale rock breaking out of the undergrowth, in every band. It is the
@@ -161,7 +168,6 @@ export const CANOPY = Object.freeze([
   },
   {
     id: 'log',
-    assets: ['pack.quaternius.log'],
     shape: 'log',
     /** Read as a girth, not a height: the shape lies down, and it is about
      *  six times longer than the number given here. */
@@ -177,7 +183,6 @@ export const CANOPY = Object.freeze([
 export const GROUND_COVER = Object.freeze([
   {
     id: 'tuft',
-    assets: ['pack.quaternius.grass'],
     shape: 'grass',
     height: [3, 6.4],
     weight: { forest: 0.5, woodland: 0.5, scrub: 0.2, desert: 0.01 },
@@ -185,7 +190,6 @@ export const GROUND_COVER = Object.freeze([
   },
   {
     id: 'tall-tuft',
-    assets: ['pack.quaternius.tall-grass'],
     shape: 'tall-grass',
     height: [5, 8.5],
     weight: { forest: 0.3, woodland: 0.24, scrub: 0.1, desert: 0 },
@@ -199,21 +203,34 @@ export const GROUND_COVER = Object.freeze([
   },
   {
     id: 'fern',
-    assets: ['pack.quaternius.fern'],
+    assets: ['pack.nature.fern'],
     shape: 'fern',
     height: [3.2, 5.6],
     weight: { forest: 0.22, woodland: 0.09, scrub: 0.01, desert: 0 },
   },
   {
     id: 'bush',
-    assets: ['pack.quaternius.bush'],
+    assets: ['pack.nature.bush'],
     shape: 'bush',
     height: [5, 11],
-    weight: { forest: 0.08, woodland: 0.11, scrub: 0.12, desert: 0 },
+    weight: { forest: 0.05, woodland: 0.07, scrub: 0.09, desert: 0 },
+  },
+  {
+    id: 'clover',
+    shape: 'grass',
+    height: [1.6, 3],
+    weight: { forest: 0.14, woodland: 0.12, scrub: 0.02, desert: 0 },
+    vergeWeight: 0.3,
+  },
+  {
+    id: 'plant',
+    shape: 'fern',
+    height: [3.5, 6.5],
+    weight: { forest: 0.1, woodland: 0.08, scrub: 0.03, desert: 0 },
+    assets: ['pack.nature.plant'],
   },
   {
     id: 'pebble',
-    assets: ['pack.quaternius.rock-small'],
     shape: 'rock',
     height: [1.4, 4],
     weight: { forest: 0.04, woodland: 0.05, scrub: 0.14, desert: 0.12 },
@@ -222,7 +239,6 @@ export const GROUND_COVER = Object.freeze([
   },
   {
     id: 'flower-blue',
-    assets: ['pack.quaternius.flower-blue'],
     shape: 'flower-blue',
     height: [2.6, 4.4],
     weight: { forest: 0.035, woodland: 0.035, scrub: 0.004, desert: 0 },
@@ -233,7 +249,6 @@ export const GROUND_COVER = Object.freeze([
   },
   {
     id: 'flower-purple',
-    assets: ['pack.quaternius.flower-purple'],
     shape: 'flower-purple',
     height: [2.8, 4.8],
     weight: { forest: 0.03, woodland: 0.03, scrub: 0.004, desert: 0 },
@@ -241,7 +256,6 @@ export const GROUND_COVER = Object.freeze([
   },
   {
     id: 'flower-pink',
-    assets: ['pack.quaternius.flower-pink'],
     shape: 'flower-pink',
     height: [2.4, 4],
     weight: { forest: 0.02, woodland: 0.025, scrub: 0.004, desert: 0 },
@@ -249,7 +263,6 @@ export const GROUND_COVER = Object.freeze([
   },
   {
     id: 'flower-yellow',
-    assets: ['pack.quaternius.flower-yellow'],
     shape: 'flower-yellow',
     height: [2.2, 3.8],
     weight: { forest: 0.02, woodland: 0.03, scrub: 0.05, desert: 0.008 },
@@ -264,7 +277,7 @@ export const GROUND_COVER = Object.freeze([
   },
   {
     id: 'mushroom',
-    assets: ['pack.quaternius.mushroom'],
+    assets: ['pack.nature.mushroom'],
     shape: 'mushroom',
     height: [1.4, 3],
     weight: { forest: 0.035, woodland: 0.01, scrub: 0, desert: 0 },

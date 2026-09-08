@@ -83,7 +83,22 @@ const SHAPES = {
  * thrown away. These are the sizes that keep the drawn tile count in the low
  * hundreds at eye level.
  */
-const TILE = { canopy: 1000, cover: 550 };
+const TILE = { canopy: 500, cover: 550 };
+
+/**
+ * How far the fetched models reach, in world units.
+ *
+ * Beyond this the procedural shape is drawn instead, and that swap is what
+ * makes the pack affordable at all: a Quaternius pine is five thousand
+ * triangles where the procedural one is eighty, and a forest of two thousand
+ * of them is fifteen million triangles a frame. Near the camera the model is
+ * the whole point; at four hundred units it is thirty pixels tall behind half
+ * the fog, and the silhouettes are the same.
+ *
+ * Chosen against the fog rather than by eye: far enough that the swap happens
+ * where haze has already taken most of the detail, near enough to matter.
+ */
+const MODEL_DISTANCE = 420;
 
 export function buildFlora(valley) {
   const group = new Group();
@@ -97,45 +112,69 @@ export function buildFlora(valley) {
     group,
 
     /**
-     * Replaces a species' procedural shape with a fetched model.
+     * Adds a fetched model to a species as its near-distance form.
      *
-     * Idempotent per species by way of the caller: main.js walks each species'
-     * models best first and stops at the first that returns true here.
+     * The procedural meshes are kept, not replaced. Both sets are tiled the
+     * same way, so each tile has a model mesh and a procedural one and exactly
+     * one of them is visible — see `update` and MODEL_DISTANCE above.
      *
-     * Called per asset as it lands, long after the scene is already on screen,
-     * so it has to swap in place: the old meshes come out of the group and are
-     * disposed, and the same item list is instanced again against the model's
-     * parts. A model that never arrives simply never calls this.
+     * Called per asset as it lands, long after the scene is on screen. A model
+     * that never arrives simply never calls this, and every tile keeps showing
+     * the procedural shape at every distance.
      *
-     * @returns {boolean} whether anything was replaced
+     * @returns {boolean} whether anything was taken
      */
     useModel(assetId, model) {
       const entry = [...planted.values()].find((item) =>
         (item.species.assets ?? []).includes(assetId),
       );
-      const parts = entry ? normalisedParts(model) : [];
-      if (!entry || parts.length === 0) return false;
+      if (!entry || entry.model.length > 0) return false;
 
-      for (const mesh of entry.meshes) {
-        group.remove(mesh);
-        mesh.dispose();
-      }
-      entry.meshes = parts.flatMap((part) =>
+      const parts = normalisedParts(model);
+      if (parts.length === 0) return false;
+
+      entry.model = parts.flatMap((part) =>
         instancedChunks(part.geometry, part.material, entry.items, entry.options),
       );
-      for (const mesh of entry.meshes) mesh.name = entry.species.id;
-      group.add(...entry.meshes);
+      for (const mesh of entry.model) {
+        mesh.name = `${entry.species.id}:model`;
+        mesh.visible = false;
+      }
+      group.add(...entry.model);
       return true;
+    },
+
+    /**
+     * Picks the form of every tile against the camera. Once a frame.
+     *
+     * Each mesh knows where its own instances are — `computeBoundingSphere`
+     * ran at build time — so this is one distance test per tile and no
+     * traversal of anything.
+     */
+    update(viewer) {
+      for (const entry of planted.values()) {
+        if (entry.model.length === 0) continue;
+        for (const mesh of entry.model) mesh.visible = isNear(mesh, viewer);
+        for (const mesh of entry.meshes) mesh.visible = !isNear(mesh, viewer);
+      }
     },
 
     get diagnostics() {
       return [...planted.values()].map((entry) => ({
         id: entry.species.id,
         count: entry.items.length,
-        meshes: entry.meshes.length,
+        tiles: entry.meshes.length,
+        model: entry.model.length > 0,
       }));
     },
   };
+}
+
+/** Is this tile's own bounding sphere within model range of the viewer? */
+function isNear(mesh, viewer) {
+  const sphere = mesh.boundingSphere;
+  if (!sphere) return true;
+  return sphere.center.distanceTo(viewer) - sphere.radius < MODEL_DISTANCE;
 }
 
 function add(planted, group, species, items, options) {
@@ -153,6 +192,6 @@ function add(planted, group, species, items, options) {
     // is very hard to reason about from a screenshot.
     for (const mesh of meshes) mesh.name = entry.id;
     group.add(...meshes);
-    planted.set(entry.id, { species: entry, items: list, meshes, options });
+    planted.set(entry.id, { species: entry, items: list, meshes, model: [], options });
   }
 }

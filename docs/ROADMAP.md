@@ -37,15 +37,22 @@ circle), `src/render/water.js`.
 _Watch out for:_ the basin carve is the load-bearing part; see the note on
 `basinFactor` about why the pull has to be total at the waterline.
 
-## 4. Level of detail on the canopy
+## 4. A third level of detail
 
-Every tree is drawn at full detail at three thousand units, where it covers
-four pixels. A second, cruder geometry per species — swapped per chunk by
-distance — would cut the triangle count by most of itself.
+There are two forms per species now — the fetched model near the camera, the
+procedural shape beyond it — and the swap is a single distance test per tile
+(`MODEL_DISTANCE` in `src/render/flora.js`). What is missing is the far end: at
+six hundred units a procedural pine is still eighty triangles for four pixels,
+and the grass is still drawn one blade at a time.
 
-_Touches:_ `src/render/geometry/instancing.js`, `src/render/flora.js`.
-_Watch out for:_ chunks are built once; the swap has to happen per frame
-against the camera, which means the chunk needs to know where it is.
+The gain is in the undergrowth rather than the canopy: forty thousand tufts
+means the pack's own grass, clover, pebbles and flowers are all shut out of the
+scene on cost alone, and they are lovely.
+
+_Touches:_ `src/render/flora.js`, `src/render/geometry/instancing.js`,
+`assets/manifest.json` (the models are in the mirror, unpinned).
+_Watch out for:_ popping. The existing swap hides behind fog at four hundred
+units; a nearer one will not.
 
 ## 5. Branches off the trail
 

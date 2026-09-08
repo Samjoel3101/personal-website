@@ -41,6 +41,7 @@ export function createValleyScene(valley) {
 
     /** @param {import('three').Vector3} viewer where the camera is now */
     update(viewer, dt) {
+      flora.update(viewer);
       const weights = valley.weightsAt(viewer.x, viewer.z);
       wanted.set(blendHex(BIOME_IDS.map((id) => [HAZE[id], weights[id]])));
       haze.lerp(wanted, 1 - Math.exp(-ATMOSPHERE.BLEND_LAMBDA * dt));

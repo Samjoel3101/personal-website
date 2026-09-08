@@ -1,4 +1,5 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { TextureLoader } from 'three';
 import { assetUrl } from './registry.js';
 
@@ -13,6 +14,15 @@ import { assetUrl } from './registry.js';
  */
 export function createAssetLoader() {
   const gltf = new GLTFLoader();
+  /*
+   * The nature models are repacked: quantised geometry, Meshopt-compressed
+   * buffers, WebP textures. Quantisation and WebP need nothing from us, but
+   * without a Meshopt decoder registered the loader REJECTS the file outright
+   * — every model fails, silently falls back to procedural geometry, and the
+   * only clue is a line in the console. The decoder is a few kilobytes and is
+   * bundled with three.
+   */
+  gltf.setMeshoptDecoder(MeshoptDecoder);
   const textures = new TextureLoader();
   const cache = new Map();
   const failures = [];

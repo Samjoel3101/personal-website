@@ -47,11 +47,30 @@ describe('asset manifest', () => {
     }
   });
 
-  it('tells a human how to install everything it cannot fetch', () => {
+  it('tells a human how to install anything it cannot fetch', () => {
+    // No local entries today — everything is reachable through the mirror —
+    // but the rules that make one honest are still enforced, because the day
+    // one is added is the day they matter.
+    const local = { ...manifest.assets[0], provenance: 'local', url: undefined };
+    expect(validateAsset(manifest, local).join()).toMatch(/needs "install"/);
+    expect(validateAsset(manifest, { ...local, install: 'download it' })).toEqual([]);
+    expect(validateAsset(manifest, { ...local, install: 'x', url: 'http://a' }).join()).toMatch(
+      /must not carry a "url"/,
+    );
+
     for (const asset of manifest.assets) {
       if (asset.provenance !== 'local') continue;
       expect(asset.install, `asset ${asset.id}`).toMatch(/assets:link|public\/assets/);
       expect(asset.url ?? null).toBeNull();
+    }
+  });
+
+  it('pins every fetched model to a commit, never a branch', () => {
+    for (const asset of manifest.assets) {
+      if (!asset.url?.includes('raw.githubusercontent.com')) continue;
+      const [, ref] = asset.url.split('raw.githubusercontent.com/')[1].split(/\/(?=[^/]*$)/);
+      expect(asset.url, `asset ${asset.id}`).toMatch(/\/[0-9a-f]{40}\//);
+      expect(ref).toBeTruthy();
     }
   });
 

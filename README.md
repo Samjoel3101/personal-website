@@ -44,24 +44,22 @@ Three ideas carry the whole thing:
   shape. Optional models replace them if they are on disk; with none present
   the valley is complete.
 
-## Using the Quaternius pack
+## The models
 
-The look is modelled on [Quaternius's Stylized Nature
-MegaKit](https://quaternius.itch.io/stylized-nature-megakit) (CC0). The pack is
-behind a download page rather than at a URL, so it is not vendored here and the
-build environment cannot fetch it. To use the real meshes:
+The trees, rocks and undergrowth near the camera are [Quaternius's Stylized
+Nature MegaKit](https://quaternius.com/packs/stylizednaturemegakit.html) (CC0),
+pinned to a commit of a mirror at
+[Samjoel3101/3d-assets](https://github.com/Samjoel3101/3d-assets) and fetched
+by `npm run assets:fetch`. Kenney's Nature Kit fills the palm and cactus the
+free tier does not include.
 
-```bash
-# download and unzip the pack, then:
-npm run assets:link -- ~/Downloads/StylizedNatureMegaKit/glTF
-npm run assets:fetch -- --record     # pins the hashes of what landed
-npm run dev
-```
+Past four hundred units each of them is swapped for a procedural shape, which
+is what makes a five-thousand-triangle tree affordable in a forest of two
+thousand. Species planted by the tens of thousands — grass, clover, pebbles,
+flowers — stay procedural at every distance for the same reason.
 
-`assets:link` matches the pack's file names onto the manifest's slots — pine,
-birch, maple, bush, rock, cactus, flowers and the rest — and copies them into
-`public/assets/`. Anything it cannot match keeps its procedural shape. Kenney's
-Nature Kit is pinned as a fallback and is fetched automatically.
+Nothing binary is in this repository, and nothing here is required: with no
+assets fetched the valley draws entirely from code and is still finished.
 
 `docs/ARCHITECTURE.md` has the rest, and `CLAUDE.md` is the working brief for
 anyone — human or agent — picking the project up.

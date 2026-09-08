@@ -1,4 +1,11 @@
-import { Box3, Color, MeshLambertMaterial, Vector3 } from 'three';
+import {
+  Box3,
+  BufferGeometry,
+  Color,
+  Float32BufferAttribute,
+  MeshLambertMaterial,
+  Vector3,
+} from 'three';
 import { KIT_TINTS } from '../config/palette.js';
 
 /**
@@ -21,6 +28,45 @@ import { KIT_TINTS } from '../config/palette.js';
  * never a dependency.
  */
 const flattened = new Map();
+
+/** The attributes worth carrying over from a fetched model. */
+const ATTRIBUTES = [
+  ['position', 3],
+  ['normal', 3],
+  ['uv', 2],
+];
+
+/**
+ * Rebuilds a geometry with plain float attributes.
+ *
+ * The pack's models are quantised (`KHR_mesh_quantization`) and Meshopt-packed,
+ * so their positions arrive as normalised 16-bit integers in an interleaved
+ * buffer, with the node transform doing the de-quantisation. Baking that
+ * transform into the geometry — which is how every model here gets placed —
+ * then writes float world coordinates back into an int16 array, and what comes
+ * out the other side is a tree the size of a valley with its normals inside
+ * out. It took one look at a hundred-metre plank of bark to find.
+ *
+ * Reading through `getX`/`getY`/`getZ` denormalises properly, whatever the
+ * source layout, and this runs once per model at load.
+ */
+function toFloatGeometry(source) {
+  const geometry = new BufferGeometry();
+  for (const [name, size] of ATTRIBUTES) {
+    const attribute = source.getAttribute(name);
+    if (!attribute) continue;
+
+    const values = new Float32Array(attribute.count * size);
+    for (let i = 0; i < attribute.count; i += 1) {
+      values[i * size] = attribute.getX(i);
+      values[i * size + 1] = attribute.getY(i);
+      if (size > 2) values[i * size + 2] = attribute.getZ(i);
+    }
+    geometry.setAttribute(name, new Float32BufferAttribute(values, size));
+  }
+  if (source.index) geometry.setIndex(source.index.clone());
+  return geometry;
+}
 
 function flatten(material) {
   if (!material || material.isMeshLambertMaterial) return material;
@@ -55,7 +101,7 @@ export function normalisedParts(model) {
   const parts = [];
   model.traverse((child) => {
     if (!child.isMesh || !child.geometry) return;
-    const geometry = child.geometry.clone();
+    const geometry = toFloatGeometry(child.geometry);
     geometry.applyMatrix4(child.matrixWorld);
     parts.push({ geometry, material: flatten(child.material) });
   });

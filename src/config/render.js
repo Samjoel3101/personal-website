@@ -3,7 +3,7 @@
 export const CAMERA = Object.freeze({
   FOV: 62,
   NEAR: 0.5,
-  FAR: 2600,
+  FAR: 1700,
   /**
    * Height above the ground: eye level of someone walking the trail.
    *
@@ -62,8 +62,12 @@ export const ATMOSPHERE = Object.freeze({
      than flying over it. Haze between the trunks at a hundred units is most of
      what makes a forest read as deep; the same fog seen from above just
      erased the valley. */
-  FOG_NEAR: 160,
-  FOG_FAR: 1500,
+  FOG_NEAR: 140,
+  /* Nine hundred units is about a hundred and eighty metres of forest, which
+     is further than you can see through one. It is also a triangle budget:
+     the fetched trees are five thousand triangles each where the procedural
+     ones were two hundred, so what the fog does not hide, the GPU pays for. */
+  FOG_FAR: 800,
   /** How quickly the fog and sky follow the biome underfoot, per second. */
   BLEND_LAMBDA: 0.9,
 });

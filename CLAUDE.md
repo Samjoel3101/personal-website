@@ -6,11 +6,12 @@ scrub into open desert — hills into dunes, ferns into cacti, a pond into an
 oasis — and the camera walks that trail at eye level. Nothing in it is
 hand-placed and nothing is a photograph.
 
-The art direction is Quaternius's Stylized Nature MegaKit: bright, saturated,
-smooth-shaded crowns over faceted ground, flower-lined paths. Everything you
-see is built in code to that language. The pack itself cannot be downloaded
-from the environment this is built in (see _Assets_), so the manifest declares
-it as an install-it-yourself upgrade and the procedural shapes stand in.
+The art direction is Quaternius's Stylized Nature MegaKit, and the trees, rocks
+and undergrowth near you are the pack itself, fetched from a CC0 mirror. Beyond
+four hundred units they are swapped for procedural shapes built in code to the
+same language — that swap is what makes a five-thousand-triangle tree
+affordable in a forest of two thousand of them. With no assets fetched at all,
+the procedural shapes draw the whole valley and it is still finished.
 
 **If you are picking up work on this repository, read this file, then
 `docs/ARCHITECTURE.md`, then the task you were given. Nothing else is required
@@ -62,7 +63,8 @@ There is no other setup. Third-party assets are optional — see _Assets_ below.
    the lattice.
 
 4. **Assets are an upgrade, never a dependency.** Every species has a
-   procedural shape. A fresh clone with no `assets:fetch` run must look
+   procedural shape, and it is what is drawn beyond `MODEL_DISTANCE` even when
+   a model did arrive. A fresh clone with no `assets:fetch` run must look
    finished.
 
 5. **One number drives the journey.** `journeyAt(x, z)` is 0 in the deep forest
@@ -125,11 +127,16 @@ src/
   conifers want hard facets; broadleaf crowns, bushes and flower heads want
   smooth normals and a vertical gradient, or they read as crystals. See
   `paintGradient` in `src/render/geometry/shapes.js`.
-- **A fetched model wins.** If you edit a procedural shape and the browser
-  does not change, that species has an `asset` in `src/config/flora.js` and you
-  have run `assets:fetch`: what you are looking at is the model, repainted by
-  `KIT_TINTS`. Half a day went into a boulder that turned out to be a
-  grass-topped Kenney rock.
+- **A fetched model wins, near the camera.** If you edit a procedural shape and
+  the browser does not change, walk backwards: past `MODEL_DISTANCE` in
+  `src/render/flora.js` the procedural form is what draws. Half a day went into
+  a boulder that turned out to be a grass-topped Kenney rock.
+- **A fetched geometry may be quantised.** The MegaKit models are Meshopt-packed
+  with 16-bit normalised positions, so `applyMatrix4` on them writes floats into
+  an int16 array and produces a hundred-metre plank of bark. `normalisedParts`
+  rebuilds every attribute as float first; do not remove that step. The loader
+  also has to register `MeshoptDecoder`, or every model fails to parse and the
+  scene silently falls back to procedural.
 - **Two bands, not one.** The trail has a tight band where nothing grows
   (`pathFactor`) and a wide one that biases flowers and stones toward it
   (`vergeFactor`). Widening the first to get more flowers leaves the path

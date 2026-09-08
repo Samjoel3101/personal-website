@@ -42,6 +42,19 @@ function siteAt(x, z, clearance) {
 /** Willing to grow on any shoreline, which is what a species gets by default. */
 const EVERYWHERE = { forest: 1, woodland: 1, scrub: 1, desert: 1 };
 
+/** A species' best weight anywhere on the journey, memoised by species. */
+const peaks = new WeakMap();
+function peakWeight(species) {
+  if (!peaks.has(species)) peaks.set(species, Math.max(...Object.values(species.weight)));
+  return peaks.get(species);
+}
+
+/** How at home a species is here, 0..1, against the best it manages anywhere. */
+function belonging(species, base) {
+  const peak = peakWeight(species);
+  return peak > 0 ? Math.min(1, base / peak) : 0;
+}
+
 /**
  * Species weight here: the biome blend, plus a shoreline term.
  *
@@ -63,7 +76,14 @@ function weightOf(species, site, densityScale) {
   // The verge term is the same idea applied to the trail's edge, and it is
   // what lines the path with colour instead of leaving a bare gap through the
   // undergrowth.
-  const edge = species.vergeWeight ? species.vergeWeight * site.verge : 0;
+  //
+  // Scaled by how at home the species already is here, though — its own biome
+  // profile, normalised to its peak. A trail concentrates what grows beside
+  // it; it does not import anything. Ungated, this planted forest flowers
+  // along the path in the middle of the desert.
+  const edge = species.vergeWeight
+    ? species.vergeWeight * site.verge * belonging(species, base)
+    : 0;
 
   // Nothing grows on the trail. Last, and multiplicative, so it overrules
   // every reason a species might otherwise have had to be here. A species may
