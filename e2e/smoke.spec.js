@@ -42,11 +42,13 @@ test('flies down the valley on its own', async ({ page }) => {
   await beginFlight(page);
   const start = await page.evaluate(() => window.__valley.debug.camera.z);
 
-  // Wait for distance covered rather than for a wall-clock interval: on a
-  // machine with no GPU this runs at a few frames a second, so a fixed wait
-  // measures the runner's graphics stack rather than the flight.
-  await page.waitForFunction((from) => window.__valley.debug.camera.z > from + 200, start, {
-    timeout: 90_000,
+  // A short distance, waited for rather than timed. The drift is 34 units a
+  // second of *simulated* time, and on a runner with no GPU rendering a frame
+  // takes most of a second — so this covers a few units a second in practice,
+  // and asking for a hundred metres here would be measuring the graphics
+  // stack rather than the flight.
+  await page.waitForFunction((from) => window.__valley.debug.camera.z > from + 40, start, {
+    timeout: 150_000,
   });
 
   expect(await page.evaluate(() => window.__valley.debug.progress)).toBeGreaterThan(0);

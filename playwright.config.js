@@ -17,6 +17,13 @@ export default defineConfig({
      behaviour. */
   fullyParallel: false,
   workers: 1,
+  /* Well past Playwright's 30 s default, and not because anything here is
+     slow: on a machine with no GPU this is a software rasteriser drawing a
+     million triangles at a few frames a second, and the page itself takes
+     fifteen of those seconds to generate the valley and get to the title
+     card. A test that waits for the flight to cover ground needs room for
+     both. */
+  timeout: 180_000,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
