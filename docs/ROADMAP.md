@@ -47,7 +47,19 @@ _Touches:_ `src/render/geometry/instancing.js`, `src/render/flora.js`.
 _Watch out for:_ chunks are built once; the swap has to happen per frame
 against the camera, which means the chunk needs to know where it is.
 
-## 5. Deep-linking a viewpoint
+## 5. Branches off the trail
+
+The path is a function of z, which is what makes "how far am I from it?" cheap
+enough to ask a hundred thousand times at load — and it is also why the trail
+cannot fork. A second, shorter path down to the pond would be the single
+biggest thing left for the sense of place. It needs a second centre line
+rather than a branching one: `pathFactor` becomes the max of two, and the
+terrain levels across whichever is nearer.
+
+_Touches:_ `src/world/path.js`, `src/config/world.js`, `tests/path.test.js`.
+_Watch out for:_ the camera follows one line and would need to be told which.
+
+## 6. Deep-linking a viewpoint
 
 `stage.jumpTo` already exists for the tests. Putting the position in the URL
 hash would make a particular view shareable, which is most of what a landscape
@@ -55,7 +67,7 @@ is for.
 
 _Touches:_ `src/app/session.js`, `src/ui/hud.js`.
 
-## 6. More species
+## 7. More species
 
 The tables in `src/config/flora.js` are the whole planting: a new species is a
 shape in `src/render/geometry/`, an entry in `SHAPES`, and a row of weights.

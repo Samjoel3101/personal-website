@@ -19,6 +19,35 @@ import { mergeParts } from './merge.js';
  * with the per-instance tint, which multiplies on top of it.
  */
 
+/**
+ * Attaches a vertical colour gradient to a geometry.
+ *
+ * The single cheapest thing that makes stylised foliage read as volume rather
+ * than as a flat cut-out: the underside of a canopy is in its own shade and
+ * the top of it is in the sun, and no amount of lighting gets there on its own
+ * when the lighting is this soft by design. Bottom-to-top over the geometry's
+ * own bounding box, so it works on a whole crown or on one blade of grass.
+ */
+export function paintGradient(geometry, bottomHex, topHex) {
+  const bottom = new Color(bottomHex);
+  const top = new Color(topHex);
+  const position = geometry.getAttribute('position');
+  geometry.computeBoundingBox();
+  const { min, max } = geometry.boundingBox;
+  const span = max.y - min.y || 1;
+
+  const values = new Float32Array(position.count * 3);
+  const mixed = new Color();
+  for (let i = 0; i < position.count; i += 1) {
+    mixed.copy(bottom).lerp(top, (position.getY(i) - min.y) / span);
+    values[i * 3] = mixed.r;
+    values[i * 3 + 1] = mixed.g;
+    values[i * 3 + 2] = mixed.b;
+  }
+  geometry.setAttribute('color', new Float32BufferAttribute(values, 3));
+  return geometry;
+}
+
 /** Attaches a flat colour to a geometry as a vertex attribute. */
 export function paint(geometry, hex) {
   const colour = new Color(hex);
@@ -42,24 +71,35 @@ export function paint(geometry, hex) {
  *   lean?: number, scale?: [number, number, number]}} [placement]
  */
 export function part(geometry, hex, placement = {}) {
-  const { x = 0, y = 0, z = 0, tilt = 0, spin = 0, lean = 0, scale } = placement;
+  const { x = 0, y = 0, z = 0, tilt = 0, spin = 0, lean = 0, scale, gradient } = placement;
+  // Colour before the transform, so a gradient runs up the piece itself rather
+  // than up the world: a frond bent over horizontally still shades from stem
+  // to tip.
+  if (gradient) paintGradient(geometry, hex, gradient);
+  else paint(geometry, hex);
+
   if (scale) geometry.scale(scale[0], scale[1], scale[2]);
   if (tilt) geometry.rotateX(tilt);
   if (lean) geometry.rotateZ(lean);
   if (spin) geometry.rotateY(spin);
   geometry.translate(x, y, z);
-  return paint(geometry, hex);
+  return geometry;
 }
 
 /**
  * Merges the parts of a shape and normalises it onto the unit contract above.
  *
- * The normals are recomputed after the merge, on non-indexed geometry, which
- * is what gives every facet a hard edge — the whole look depends on it.
+ * By default the normals are recomputed after the merge, on non-indexed
+ * geometry, which gives every facet a hard edge — that is what a rock, a
+ * cactus and a pine want.
+ *
+ * `smooth` keeps each part's own normals instead. A sphere then shades as a
+ * sphere, which is what the rounder half of this art style is: a broadleaf
+ * canopy or a flower head faceted hard reads as a crystal, not as a plant.
  */
-export function finish(parts, label) {
+export function finish(parts, label, { smooth = false } = {}) {
   const geometry = mergeParts(parts, label);
-  geometry.computeVertexNormals();
+  if (!smooth) geometry.computeVertexNormals();
 
   geometry.computeBoundingBox();
   const bounds = geometry.boundingBox ?? new Box3();

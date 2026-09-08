@@ -4,6 +4,8 @@ import { POOLS, WORLD, bounds } from '../src/config/world.js';
 import { plant } from '../src/world/scatter.js';
 import { sampleGrid, surfaceSlope } from '../src/world/terrain.js';
 import { journeyAt } from '../src/world/biome.js';
+import { PATH } from '../src/config/world.js';
+import { distanceToPath, vergeFactor } from '../src/world/path.js';
 
 const grid = sampleGrid();
 const canopy = plant(grid, { species: CANOPY, cell: SCATTER.CANOPY_CELL });
@@ -63,6 +65,39 @@ describe('planting', () => {
     }
   });
 
+  it('plants nothing on the trail', () => {
+    for (const item of [...all(canopy), ...all(cover)]) {
+      // Not "nothing within the verge": the verge is where the flowers go.
+      // Nothing on the bare earth is the rule, and the fringe of it is the
+      // scatter easing off rather than a boundary.
+      expect(distanceToPath(item.x, item.z)).toBeGreaterThan(PATH.HALF_WIDTH * 0.55);
+    }
+  });
+
+  it('lines the trail with flowers rather than scattering them evenly', () => {
+    const flowers = [...cover.get('flower-blue'), ...cover.get('flower-purple')];
+    const beside = flowers.filter((item) => vergeFactor(item.x, item.z) > 0.1);
+
+    // The verge is a sliver of the valley — under two per cent of it — so the
+    // measure that means anything is density, not headcount. Sample the area
+    // share, and ask that flowers be several times thicker per unit of ground
+    // on the trail's edge than off it.
+    let vergeCells = 0;
+    let cells = 0;
+    for (let z = 0; z < WORLD.LENGTH; z += 47) {
+      for (let x = -WORLD.HALF_WIDTH; x < WORLD.HALF_WIDTH; x += 3) {
+        cells += 1;
+        if (vergeFactor(x, z) > 0.1) vergeCells += 1;
+      }
+    }
+    const areaShare = vergeCells / cells;
+    const flowerShare = beside.length / flowers.length;
+    expect(flowerShare / areaShare).toBeGreaterThan(5);
+
+    // And enough of them to actually line a kilometre of path.
+    expect(beside.length).toBeGreaterThan(150);
+  });
+
   it('plants nothing in open water', () => {
     for (const item of [...all(canopy), ...all(cover)]) {
       for (const pool of POOLS) {
@@ -79,6 +114,7 @@ describe('what grows where', () => {
     expect(meanJourney(canopy.get('saguaro'))).toBeGreaterThan(0.75);
     expect(meanJourney(canopy.get('barrel'))).toBeGreaterThan(0.75);
     expect(meanJourney(cover.get('fern'))).toBeLessThan(0.35);
+    expect(meanJourney(canopy.get('maple-red'))).toBeLessThan(0.55);
     expect(meanJourney(cover.get('mushroom'))).toBeLessThan(0.35);
   });
 

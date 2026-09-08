@@ -20,19 +20,20 @@ by `npm test` rather than by looking at a screenshot.
 
 ```
 config/world.js  ─┐
-config/flora.js  ─┤
+config/flora.js  ─┤   world/path.js  ── the trail: one centre line, a function of z
 config/palette.js ┴─> world/biome.js ── journeyAt(x, z): 0 forest … 1 desert
-                             │
-                             ├─> world/terrain.js ──> height field + sampled grid
-                             ├─> world/water.js   ──> pools, basins, banks
-                             ├─> world/ground.js  ──> the colour of a point
-                             └─> world/scatter.js ──> what grows where
+                             │                    │
+                             ├─> world/terrain.js ┤──> height field + sampled grid
+                             ├─> world/water.js   │──> pools, basins, banks
+                             ├─> world/ground.js  │──> the colour of a point
+                             └─> world/scatter.js ┘──> what grows where
                                         │
                           world/valley.js  (plain data: grid, canopy, cover, pools)
                                         │
                     ┌───────────────────┴───────────────────┐
               render/scene.js                          ui/hud.js
         terrain mesh · water · flora                (via app/session.js)
+              render/camera.js ── walks the trail
 ```
 
 `createValley()` returns plain objects and functions. The renderer turns them
@@ -57,6 +58,44 @@ The boundary is warped by a noise field in x, so the forest reaches further
 down one side of the valley than the other. The warp is a function of x alone,
 which keeps the journey monotonic along z from wherever you stand — a property
 a test pins.
+
+## The trail
+
+There is one path, it runs the length of the valley, and five separate parts of
+the project read it:
+
+- `world/terrain.js` levels the ground **across** it — taken from the height at
+  its own centre line — and wears it down a little. Only across: it still
+  climbs and falls with the land, which is what makes it a path through a
+  valley rather than a canal. Without the levelling it runs along every
+  hillside at a camber and reads as a texture painted on a slope.
+- `world/ground.js` paints it as bare earth, with a scuffed band either side so
+  its edge is not a drawn line.
+- `world/scatter.js` multiplies every species' weight by `1 - pathFactor`, so
+  nothing grows on it at all, and adds a `vergeWeight` term that crowds flowers
+  and grass onto its edge. Both terms are additive, which is what lets a flower
+  be worth almost nothing in open forest and a great deal beside the path.
+- `render/camera.js` walks it, and aims at the centre line further along rather
+  than down the z axis, so a bend swings the whole view with it.
+
+The centre line is a function of z alone. That is a real constraint — the trail
+can never fork or double back — and it buys the thing that makes the rest
+affordable: "how far am I from the trail?" is a couple of operations with no
+curve to search, and the planting asks it a hundred thousand times at load.
+
+## Eye level
+
+The camera is nine units off the ground, which is about a person; one unit is
+roughly a fifth of a metre, and every size in `config/flora.js` is scaled to
+that. This is the single decision the look depends on. Above the canopy the
+same world is legible, tidy and completely inert — a map of a landscape. Down
+on the trail the trees tower, the grass reaches your knees, the path leads
+somewhere, and the biome change arrives as something noticed on a walk.
+
+Everything else follows from it: fog measured in hundreds of units rather than
+thousands, a tight shadow frustum, undergrowth dense enough to carpet the
+floor, and instancing tiled in both axes because at eye level most of the
+valley is behind you or in the haze.
 
 ## Two ground surfaces, and why it matters
 
@@ -115,6 +154,19 @@ Fetched models take the same path: `render/model-upgrade.js` normalises a glTF
 onto the same unit contract as the procedural shapes and re-instances the same
 item list, so an asset that arrives changes what a species looks like and
 nothing else. An asset that never arrives changes nothing at all.
+
+Each species lists its models best first — the Quaternius pack model a human
+installed, then the Kenney one that can be fetched anywhere — and `main.js`
+takes the first that loads, requesting nothing after it.
+
+Two of the shapes' conventions are worth knowing before adding one. Everything
+is normalised to unit height with its base at zero and placed with a single
+uniform scale, so a species' size lives in the world model rather than in its
+geometry. And `finish` flat-shades by default but takes `{ smooth: true }`:
+rocks, cacti and conifers want hard facets, while broadleaf crowns, bushes and
+flower heads want smooth normals and a vertical colour gradient — soft lighting
+is a deliberate choice here, and the gradient is what gives a canopy its
+volume instead.
 
 ## The camera
 

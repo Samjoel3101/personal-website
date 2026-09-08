@@ -5,10 +5,40 @@
  * suite can assert the same rules CI enforces, rather than a second copy of
  * them that can drift.
  */
-const REQUIRED_FIELDS = ['id', 'kind', 'file', 'url', 'license', 'source', 'role'];
+const REQUIRED_FIELDS = ['id', 'kind', 'file', 'license', 'source', 'role'];
+
+/**
+ * Where an asset comes from.
+ *
+ * "remote" is the normal case: a URL the fetch script can download and pin.
+ * "local" means the file cannot be fetched here and has to be supplied by
+ * whoever is building — a pack behind a download page, or a host this
+ * environment's egress policy blocks. A local entry still declares its
+ * licence, author and source, so `CREDITS.md` is complete whether or not the
+ * file was ever installed, and it is still optional: the renderer falls back
+ * to procedural geometry exactly as it does for a remote asset nobody fetched.
+ */
+const PROVENANCE = ['remote', 'local'];
 
 export function needsAttribution(manifest, asset) {
   return manifest.licenses.attributionRequired.includes(asset.license);
+}
+
+/** Where the file comes from, and what that obliges the entry to carry. */
+function provenanceProblems(asset, id) {
+  const provenance = asset.provenance ?? 'remote';
+  if (!PROVENANCE.includes(provenance)) {
+    return [`${id}: provenance must be one of ${PROVENANCE.join(', ')}`];
+  }
+  if (provenance === 'remote') {
+    return asset.url ? [] : [`${id}: missing "url"`];
+  }
+
+  const problems = [];
+  if (asset.url) problems.push(`${id}: a local asset must not carry a "url"`);
+  if (!asset.install) problems.push(`${id}: a local asset needs "install" telling a human how`);
+  if (asset.required) problems.push(`${id}: a local asset can never be required`);
+  return problems;
 }
 
 /** Checks one asset entry. @returns {string[]} */
@@ -19,6 +49,8 @@ export function validateAsset(manifest, asset) {
   for (const field of REQUIRED_FIELDS) {
     if (!asset[field]) problems.push(`${id}: missing "${field}"`);
   }
+
+  problems.push(...provenanceProblems(asset, id));
 
   if (asset.license && !manifest.licenses.allowed.includes(asset.license)) {
     problems.push(

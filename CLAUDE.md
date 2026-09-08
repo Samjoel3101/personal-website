@@ -1,14 +1,16 @@
 # Start here
 
-A procedurally generated valley you fly through, drawn in WebGL. It runs five
-and a half kilometres from a pine forest, through thinning woodland and dry
-scrub, into open desert — hills into dunes, ferns into cacti, a pond into an
-oasis. Nothing in it is hand-placed and nothing is a photograph.
+A procedurally generated valley you **walk** through, drawn in WebGL. A trail
+runs its whole length, from a pine forest through thinning woodland and dry
+scrub into open desert — hills into dunes, ferns into cacti, a pond into an
+oasis — and the camera walks that trail at eye level. Nothing in it is
+hand-placed and nothing is a photograph.
 
-The art direction is Quaternius's Nature Mega Pack: flat-shaded, chunky,
-saturated, a species reduced to a dozen facets. Everything you see is built in
-code to that language; fetched models are an optional upgrade, never a
-dependency.
+The art direction is Quaternius's Stylized Nature MegaKit: bright, saturated,
+smooth-shaded crowns over faceted ground, flower-lined paths. Everything you
+see is built in code to that language. The pack itself cannot be downloaded
+from the environment this is built in (see _Assets_), so the manifest declares
+it as an install-it-yourself upgrade and the procedural shapes stand in.
 
 **If you are picking up work on this repository, read this file, then
 `docs/ARCHITECTURE.md`, then the task you were given. Nothing else is required
@@ -69,6 +71,13 @@ There is no other setup. Third-party assets are optional — see _Assets_ below.
    are planted — is a blend keyed by it. Do not add a second notion of where
    the desert starts.
 
+6. **The trail is the composition.** `src/world/path.js` owns one centre line;
+   the terrain levels across it, the ground turns to earth on it, the planting
+   refuses it and lines its edge with flowers, and the camera walks it at eye
+   level. Anything that changes where the path goes has to keep it inside the
+   valley, out of the pools, and gentle enough to walk — `tests/path.test.js`
+   pins all three.
+
 ## Where things are
 
 ```
@@ -108,11 +117,31 @@ src/
   frustum can reject most of them. A new instanced mesh needs
   `computeBoundingSphere()` or it will be culled at the wrong moment, usually
   by vanishing when you look straight at it.
+- **Eye level is the whole design.** `CAMERA.HEIGHT` is 9 units, which is
+  about a person; a unit is roughly a fifth of a metre, and every size in
+  `src/config/flora.js` is scaled to that. Raising the camera above the canopy
+  turns the scene back into a map of itself.
+- **`finish` is flat by default, `{ smooth: true }` is not.** Rocks, cacti and
+  conifers want hard facets; broadleaf crowns, bushes and flower heads want
+  smooth normals and a vertical gradient, or they read as crystals. See
+  `paintGradient` in `src/render/geometry/shapes.js`.
 - **A fetched model wins.** If you edit a procedural shape and the browser
   does not change, that species has an `asset` in `src/config/flora.js` and you
   have run `assets:fetch`: what you are looking at is the model, repainted by
   `KIT_TINTS`. Half a day went into a boulder that turned out to be a
   grass-topped Kenney rock.
+- **Two bands, not one.** The trail has a tight band where nothing grows
+  (`pathFactor`) and a wide one that biases flowers and stones toward it
+  (`vergeFactor`). Widening the first to get more flowers leaves the path
+  sitting in a mown strip of bare earth. Trees keep back further still —
+  `SCATTER.CANOPY_CLEARANCE` — because at eye level a trunk on the path's lip
+  swallows the frame as you pass it.
+- **A wide model sized by height becomes a wall.** Shapes are normalised to
+  unit height, which is right for anything that stands up and a trap for
+  anything that lies down: a stone four times wider than it is tall, scaled to
+  a twenty-unit height, is an eighty-unit slab across the forest.
+  `normalisedParts` caps that ratio — see the note in
+  `src/render/model-upgrade.js`.
 - **Ground cover scales with quality, canopy does not.** `createValley` takes a
   `groundCover` density; thinning it must never move a tree, and a test pins
   that.
@@ -128,12 +157,30 @@ attribution or a hash mismatch. Add assets by editing the manifest, never by
 dropping files into `public/`.
 
 A manifest entry with `role: "flora"` replaces one species' procedural shape:
-the id has to match the `asset` field of a species in `src/config/flora.js`, or
-nothing ever requests it. Everything is pinned to a commit on
-`raw.githubusercontent.com` rather than to a branch — quaternius.com,
-poly.pizza, kenney.nl, ambientcg.com and polyhaven.com are all blocked by the
-egress policy this is built under, and a branch URL would fail its own recorded
-hash the next time upstream pushed.
+the id has to appear in that species' `assets` list in `src/config/flora.js`,
+best first, or nothing ever requests it.
+
+There are two provenances, and the difference is only about who fetches the
+file:
+
+- **remote** — a URL the fetch script downloads and pins. Everything remote is
+  pinned to a commit on `raw.githubusercontent.com` rather than to a branch: a
+  branch URL would fail its own recorded hash the next time upstream pushed.
+- **local** — a file this environment cannot download. quaternius.com,
+  itch.io, poly.pizza, kenney.nl, ambientcg.com and polyhaven.com are all
+  blocked by the egress policy here, and the Quaternius pack is behind a
+  download page in any case. A local entry still carries its licence, author
+  and source, so `CREDITS.md` is complete either way, and it names the file it
+  wants. To install one: download the pack, then
+
+  ```bash
+  npm run assets:link -- ~/Downloads/StylizedNatureMegaKit/glTF
+  npm run assets:fetch -- --record     # pins the hashes of what landed
+  ```
+
+  `assets:link` matches the pack's file names against each slot's `match`
+  keywords and copies the best one into place. A slot it cannot match keeps its
+  procedural shape, which is always complete.
 
 `assets:fetch` writes the manifest and `CREDITS.md` through Prettier, so a
 `--record` run leaves `npm run check` green.

@@ -67,11 +67,29 @@ export function normalisedParts(model) {
     bounds.union(part.geometry.boundingBox);
   }
   const centre = bounds.getCenter(new Vector3());
-  const height = bounds.getSize(new Vector3()).y || 1;
+  const size = bounds.getSize(new Vector3());
+
+  /*
+   * Normalised by height, unless the model is a pancake.
+   *
+   * Every shape in this project is one unit tall and placed with a scale equal
+   * to the height the world model asked for. That is the right contract for
+   * anything that stands up — a tree, a cactus, a flower — and it is a trap for
+   * anything that lies down. Kenney's large stone is four times wider than it
+   * is tall, so scaling it to a twenty-unit "height" produces an eighty-unit
+   * slab: from eye level, a white wall across the forest.
+   *
+   * So a model wider than this ratio is normalised by its footprint instead,
+   * which keeps the number the world model chose meaning roughly "how big is
+   * this thing" for both kinds.
+   */
+  const WIDEST = 1.8;
+  const footprint = Math.max(size.x, size.z);
+  const unit = Math.max(size.y || 1, footprint / WIDEST);
 
   for (const part of parts) {
     part.geometry.translate(-centre.x, -bounds.min.y, -centre.z);
-    part.geometry.scale(1 / height, 1 / height, 1 / height);
+    part.geometry.scale(1 / unit, 1 / unit, 1 / unit);
   }
   return parts;
 }

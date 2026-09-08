@@ -3,6 +3,8 @@ import { clamp, lerp, smoothstep } from '../core/math.js';
 import { fbm, noise2, ridged } from '../core/noise.js';
 import { biomeWeights, blendValue, journeyAt } from './biome.js';
 import { basinFactor, basinTarget } from './water.js';
+import { PATH } from '../config/world.js';
+import { flattenFactor, pathCentre, pathFactor } from './path.js';
 
 /**
  * The shape of the ground: one pure function of position, and the sampled grid
@@ -19,7 +21,64 @@ import { basinFactor, basinTarget } from './water.js';
  * lumpy, the desert is combed.
  */
 export function heightAt(x, z) {
-  return carveBasins(x, z, naturalHeightAt(x, z));
+  return carveBasins(x, z, levelTrail(x, z, naturalHeightAt(x, z)));
+}
+
+/**
+ * The trail's own elevation profile: the land at its centre line, smoothed
+ * along it.
+ *
+ * Smoothed, because a path takes a gentler line than the ground it crosses.
+ * Following the raw field puts a metre-high hump in the middle of the trail
+ * every twenty paces — from eye level you walk into a mound and the path
+ * disappears behind it, which is exactly what the unsmoothed version did.
+ *
+ * Cached by z rounded to two units. It is called for every terrain sample near
+ * the trail and for every plant that has to decide whether it is on it, and
+ * each call is five evaluations of the whole noise stack.
+ */
+const TRAIL_WINDOW = [
+  [-70, 0.45],
+  [-35, 0.85],
+  [0, 1],
+  [35, 0.85],
+  [70, 0.45],
+];
+const trailProfile = new Map();
+
+export function trailHeight(z) {
+  const key = Math.round(z / 2);
+  const cached = trailProfile.get(key);
+  if (cached !== undefined) return cached;
+
+  let sum = 0;
+  let total = 0;
+  for (const [offset, weight] of TRAIL_WINDOW) {
+    const along = clamp(key * 2 + offset, 0, WORLD.LENGTH);
+    sum += naturalHeightAt(pathCentre(along), along) * weight;
+    total += weight;
+  }
+
+  const height = sum / total;
+  trailProfile.set(key, height);
+  return height;
+}
+
+/**
+ * Levels the ground across the trail and wears it down a little.
+ *
+ * Across, and gently along. At any point the ground is level from one side of
+ * the trail to the other — without that it runs along every hillside at a
+ * camber and reads as a texture painted on a slope — and along its length it
+ * follows the smoothed profile above rather than every bump in the field.
+ *
+ * The levelling reaches several times wider than the earth itself so the
+ * ground eases down onto it instead of stepping off a kerb.
+ */
+function levelTrail(x, z, height) {
+  const flatten = flattenFactor(x, z);
+  if (flatten <= 0) return height;
+  return lerp(height, trailHeight(z) - PATH.SINK * pathFactor(x, z), flatten);
 }
 
 /**

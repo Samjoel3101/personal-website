@@ -38,10 +38,20 @@ describe('asset manifest', () => {
     for (const asset of manifest.assets) expect(asset.role).toBeTruthy();
   });
 
-  it('backs every species that names a model with a manifest entry', () => {
+  it('backs every model a species names with a manifest entry', () => {
     const ids = new Set(manifest.assets.map((asset) => asset.id));
     for (const species of SPECIES) {
-      if (species.asset) expect(ids, `species ${species.id}`).toContain(species.asset);
+      for (const id of species.assets ?? []) {
+        expect(ids, `species ${species.id}`).toContain(id);
+      }
+    }
+  });
+
+  it('tells a human how to install everything it cannot fetch', () => {
+    for (const asset of manifest.assets) {
+      if (asset.provenance !== 'local') continue;
+      expect(asset.install, `asset ${asset.id}`).toMatch(/assets:link|public\/assets/);
+      expect(asset.url ?? null).toBeNull();
     }
   });
 

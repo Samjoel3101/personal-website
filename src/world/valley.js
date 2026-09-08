@@ -19,7 +19,11 @@ import { poolLevel, sampleGrid, surfaceHeight, surfaceNormal, surfaceSlope } fro
 export function createValley({ groundCover = 1 } = {}) {
   const grid = sampleGrid();
 
-  const canopy = plant(grid, { species: CANOPY, cell: SCATTER.CANOPY_CELL });
+  const canopy = plant(grid, {
+    species: CANOPY,
+    cell: SCATTER.CANOPY_CELL,
+    clearance: SCATTER.CANOPY_CLEARANCE,
+  });
   const cover = plant(grid, {
     species: GROUND_COVER,
     cell: SCATTER.GROUND_CELL,

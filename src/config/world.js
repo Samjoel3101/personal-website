@@ -15,8 +15,14 @@ export const WORLD = Object.freeze({
   HALF_WIDTH: 800,
   /** Length of the journey, forest to desert. */
   LENGTH: 5600,
-  /** Terrain mesh lattice spacing. Divides WIDTH and LENGTH exactly. */
-  CELL: 20,
+  /**
+   * Terrain mesh lattice spacing. Divides WIDTH and LENGTH exactly.
+   *
+   * Ten rather than twenty because the trail is only eighteen units across:
+   * on a coarser lattice its edge is interpolated over most of its own width
+   * and it reads as a brown smear rather than as a path with sides.
+   */
+  CELL: 10,
 });
 
 /**
@@ -46,6 +52,40 @@ export const BIOMES = Object.freeze([
  */
 export const BIOME_WARP = Object.freeze({ AMOUNT: 420, SCALE: 0.0016 });
 
+/**
+ * The trail.
+ *
+ * There is one, it runs the whole length of the valley, and it is the single
+ * most important thing in the scene: it is what makes the forest somewhere a
+ * person could walk rather than a field of trees seen from a helicopter. The
+ * camera follows it, the terrain flattens across it, the ground is bare earth
+ * on it, nothing is planted on it, and flowers crowd its edges.
+ *
+ * WANDER is how far it swings off the centre line. Keep it well inside the
+ * valley walls, and clear of the pools — a trail that walks into a lake is
+ * worse than no trail at all; `tests/path.test.js` pins both.
+ */
+export const PATH = Object.freeze({
+  /** Half the width of the bare earth. A footpath, not a fire road: at eye
+   *  level anything wider fills the bottom of the frame with dirt. */
+  HALF_WIDTH: 7,
+  /** How far past the earth the verge reaches — where the flowers go. Tight,
+   *  because this band is also where nothing else may grow, and a wide one
+   *  leaves a mown strip of bare ground either side of the path. */
+  VERGE: 6,
+  /** How far the centre line swings off x = 0, at most. */
+  WANDER: 210,
+  /** Frequencies of the two swings that make up the wander. A single sine
+   *  reads as a slalom; two incommensurable ones read as a path. */
+  WANDER_SCALE: 0.0007,
+  WANDER_SCALE_2: 0.0013,
+  /** How far the trail is worn below the land it crosses. */
+  SINK: 1.4,
+  /** How far out the cross-slope is levelled, as a multiple of HALF_WIDTH.
+   *  This is what stops the trail running along a hillside at a camber. */
+  FLATTEN: 3.4,
+});
+
 /** Terrain relief. Amplitudes are per band and blended by biome weight. */
 export const TERRAIN = Object.freeze({
   /** Rolling ground under the forest, in world units of peak height. */
@@ -71,15 +111,24 @@ export const TERRAIN = Object.freeze({
 /**
  * Flat-topped desert buttes. Placed by hand rather than scattered: three
  * silhouettes on the horizon is scenery, thirty is noise.
+ *
+ * Each one stands clear of the trail, and that is not cosmetic. The trail
+ * levels the ground it crosses; run it into a butte and it either cuts a shelf
+ * through the cliff or climbs a one-in-one gradient, and at eye level you walk
+ * into a wall of sand. `tests/path.test.js` pins the clearance.
  */
 export const MESAS = Object.freeze([
-  { x: -430, z: 4180, radius: 300, height: 210 },
+  { x: -500, z: 4180, radius: 260, height: 210 },
   { x: 470, z: 5030, radius: 240, height: 165 },
-  { x: -110, z: 5450, radius: 190, height: 120 },
+  { x: 190, z: 5450, radius: 190, height: 120 },
 ]);
 
 /**
  * Standing water: one forest pond, one desert oasis.
+ *
+ * Both are placed to sit a little way off the trail rather than on it — near
+ * enough to walk past, far enough that the path never wades in. A test pins
+ * that clearance, because moving either the trail or a pool can break it.
  *
  * A pool's surface height is not written here, because a fixed height in a
  * landscape that rolls is a pool halfway up a hillside. It is taken from the
@@ -90,8 +139,8 @@ export const MESAS = Object.freeze([
  * in every dip nearby.
  */
 export const POOLS = Object.freeze([
-  { id: 'pond', x: -250, z: 900, radius: 185, depth: 30, bank: 20 },
-  { id: 'oasis', x: 300, z: 4600, radius: 130, depth: 20, bank: 16 },
+  { id: 'pond', x: -344, z: 900, radius: 185, depth: 30, bank: 20 },
+  { id: 'oasis', x: 353, z: 4600, radius: 130, depth: 20, bank: 16 },
 ]);
 
 export const BASIN_FALLOFF = 1.9;

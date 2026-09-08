@@ -10,3 +10,6 @@ test-results/
 # Keeping them out of git keeps the repository small and the licensing
 # auditable from the manifest rather than from binary history.
 public/assets/
+
+# Local screenshot harnesses used while iterating on the look.
+*.tmp.mjs

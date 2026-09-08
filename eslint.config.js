@@ -12,6 +12,9 @@ export default [
   {
     ignores: [
       'dist/**',
+      // Local screenshot harnesses, gitignored; they are throwaway Node
+      // scripts and not part of the project's source.
+      '*.tmp.mjs',
       'node_modules/**',
       'public/assets/**',
       'coverage/**',

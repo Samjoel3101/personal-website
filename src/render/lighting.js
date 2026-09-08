@@ -38,7 +38,7 @@ export function createLighting(scene) {
   // The bounce's ground colour is soil rather than grey: everything under this
   // sky is earth, and a grey bounce puts a cold rim under every rock.
   scene.add(new HemisphereLight(SKY.MIDDLE, GROUND.woodland.bare, SUN.AMBIENT_INTENSITY));
-  scene.add(new AmbientLight(0xfff4e2, 0.12));
+  scene.add(new AmbientLight(0xfff4e2, 0.22));
 
   return {
     sun,

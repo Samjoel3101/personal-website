@@ -9,6 +9,8 @@ by this project and carries no third-party licence.
 
 ## Third-party assets
 
+Fetched and pinned by `npm run assets:fetch`.
+
 | Asset                      | Licence | Author | Source                                      |
 | -------------------------- | ------- | ------ | ------------------------------------------- |
 | Nature Kit — pine          | CC0-1.0 | Kenney | [link](https://github.com/shorepine/kenney) |
@@ -17,10 +19,40 @@ by this project and carries no third-party licence.
 | Nature Kit — palm          | CC0-1.0 | Kenney | [link](https://github.com/shorepine/kenney) |
 | Nature Kit — saguaro       | CC0-1.0 | Kenney | [link](https://github.com/shorepine/kenney) |
 | Nature Kit — barrel cactus | CC0-1.0 | Kenney | [link](https://github.com/shorepine/kenney) |
-| Nature Kit — bush          | CC0-1.0 | Kenney | [link](https://github.com/shorepine/kenney) |
-| Nature Kit — stone         | CC0-1.0 | Kenney | [link](https://github.com/shorepine/kenney) |
-| Nature Kit — small stone   | CC0-1.0 | Kenney | [link](https://github.com/shorepine/kenney) |
-| Nature Kit — fallen log    | CC0-1.0 | Kenney | [link](https://github.com/shorepine/kenney) |
+
+## Packs you install yourself
+
+These cannot be downloaded from the environment this project is built in,
+so they are declared here with their licence and left to a human to supply:
+download the pack and run `npm run assets:link -- <folder>`. Nothing here is
+shipped in this repository, and the scene is complete without any of it.
+
+| Asset                                    | Licence | Author     | Source                                                     |
+| ---------------------------------------- | ------- | ---------- | ---------------------------------------------------------- |
+| Stylized Nature MegaKit — conifer        | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — tall conifer   | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — birch          | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — aspen          | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — oak            | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — red maple      | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — golden maple   | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — dead tree      | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — palm           | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — tall cactus    | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — short cactus   | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — bush           | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — grass tuft     | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — tall grass     | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — fern           | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — blue flowers   | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — purple flowers | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — pink flowers   | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — yellow flowers | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — large rock     | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — small rock     | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — standing rock  | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — fallen log     | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
+| Stylized Nature MegaKit — mushroom       | CC0-1.0 | Quaternius | [link](https://quaternius.itch.io/stylized-nature-megakit) |
 
 ## Fonts
 

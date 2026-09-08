@@ -22,6 +22,7 @@
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "assets:fetch": "node scripts/fetch-assets.mjs",
+    "assets:link": "node scripts/link-assets.mjs",
     "assets:verify": "node scripts/verify-assets.mjs",
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "check": "npm run lint && npm run format:check && npm run check:boundaries && npm run assets:verify && npm run test && npm run build"

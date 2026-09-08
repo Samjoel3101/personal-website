@@ -1,15 +1,16 @@
 # Forest to desert
 
-A procedurally generated valley you fly through, drawn in WebGL. Five and a
-half kilometres of it, running from a pine forest through thinning woodland and
-dry scrub into open desert — hills into dunes, ferns into cacti, a pond into an
-oasis.
+A procedurally generated valley you walk through, drawn in WebGL. A trail runs
+its whole length — a kilometre of it — from a pine forest through thinning
+woodland and dry scrub into open desert, past a pond and an oasis, with hills
+turning into dunes and ferns into cacti along the way.
 
-Everything in it is generated: the terrain is a noise field, the ground colour
-is blended from four biome palettes, and every tree, cactus, rock and tuft of
-grass is placed by a deterministic scatter and drawn from geometry built in
-code. Nothing is hand-placed and nothing is a photograph. The art direction is
-Quaternius's Nature Mega Pack — flat-shaded, chunky, saturated.
+Everything in it is generated: the terrain is a noise field, the trail is a
+curve the terrain levels itself across, the ground colour is blended from four
+biome palettes, and every tree, flower, rock and tuft of grass is placed by a
+deterministic scatter and drawn from geometry built in code. Nothing is
+hand-placed and nothing is a photograph. The art direction is Quaternius's
+Stylized Nature MegaKit — bright, saturated, smooth crowns over faceted ground.
 
 ```bash
 npm install
@@ -40,8 +41,27 @@ Three ideas carry the whole thing:
   blends keyed by it. There is no threshold anywhere that says "the desert
   starts here".
 - **Assets are an upgrade, never a dependency.** Every species has a procedural
-  shape. Optional Kenney models replace them if `npm run assets:fetch` has been
-  run; with none of them present the valley is complete.
+  shape. Optional models replace them if they are on disk; with none present
+  the valley is complete.
+
+## Using the Quaternius pack
+
+The look is modelled on [Quaternius's Stylized Nature
+MegaKit](https://quaternius.itch.io/stylized-nature-megakit) (CC0). The pack is
+behind a download page rather than at a URL, so it is not vendored here and the
+build environment cannot fetch it. To use the real meshes:
+
+```bash
+# download and unzip the pack, then:
+npm run assets:link -- ~/Downloads/StylizedNatureMegaKit/glTF
+npm run assets:fetch -- --record     # pins the hashes of what landed
+npm run dev
+```
+
+`assets:link` matches the pack's file names onto the manifest's slots — pine,
+birch, maple, bush, rock, cactus, flowers and the rest — and copies them into
+`public/assets/`. Anything it cannot match keeps its procedural shape. Kenney's
+Nature Kit is pinned as a fallback and is fetched automatically.
 
 `docs/ARCHITECTURE.md` has the rest, and `CLAUDE.md` is the working brief for
 anyone — human or agent — picking the project up.

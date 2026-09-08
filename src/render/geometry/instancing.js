@@ -1,18 +1,23 @@
 import { Color, InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
 
 /**
- * Instanced placement, cut into chunks along the valley.
+ * Instanced placement, cut into tiles.
  *
  * One InstancedMesh per species would be one draw call for the whole world,
- * which sounds ideal until you notice it also means every tree in the valley
- * is transformed on the GPU every frame, including the eight thousand behind
+ * which sounds ideal until you notice it also means every plant in the valley
+ * is transformed on the GPU every frame, including the sixty thousand behind
  * the camera. A single mesh cannot be culled in halves.
  *
- * So each species is split into slabs of `chunk` units along z. A slab that is
- * behind you, or beyond the fog, is rejected by the frustum test for the cost
- * of one bounding-sphere check — and `computeBoundingSphere` is what makes
- * that test true rather than a guess, since an InstancedMesh's own geometry
- * bounds say nothing about where its instances ended up.
+ * So each species is split into square tiles of `chunk` units. A tile behind
+ * you, or beyond the fog, is rejected by the frustum test for the cost of one
+ * bounding-sphere check — and `computeBoundingSphere` is what makes that test
+ * true rather than a guess, since an InstancedMesh's own geometry bounds say
+ * nothing about where its instances ended up.
+ *
+ * Tiles rather than slabs across the valley because the camera walks the floor
+ * of it: at eye level with fog at a thousand units, a slab spanning the full
+ * width is mostly plants you cannot see, and there are now tens of thousands
+ * of them per species rather than a few hundred.
  *
  * Scale is uniform and comes from the item's height, which is the contract
  * every shape in ./shapes.js is built to.
@@ -24,22 +29,22 @@ const scale = new Vector3();
 const tint = new Color();
 const UP = new Vector3(0, 1, 0);
 
-export function instancedChunks(geometry, material, items, { chunk = 600, shadows = true } = {}) {
-  const slabs = new Map();
+export function instancedChunks(geometry, material, items, { chunk = 400, shadows = true } = {}) {
+  const tiles = new Map();
   for (const item of items) {
-    const key = Math.floor(item.z / chunk);
-    if (!slabs.has(key)) slabs.set(key, []);
-    slabs.get(key).push(item);
+    const key = `${Math.floor(item.x / chunk)}:${Math.floor(item.z / chunk)}`;
+    if (!tiles.has(key)) tiles.set(key, []);
+    tiles.get(key).push(item);
   }
 
   const meshes = [];
-  for (const slab of slabs.values()) {
-    meshes.push(buildSlab(geometry, material, slab, shadows));
+  for (const tile of tiles.values()) {
+    meshes.push(buildTile(geometry, material, tile, shadows));
   }
   return meshes;
 }
 
-function buildSlab(geometry, material, items, shadows) {
+function buildTile(geometry, material, items, shadows) {
   const mesh = new InstancedMesh(geometry, material, items.length);
   mesh.castShadow = shadows;
   mesh.receiveShadow = false;

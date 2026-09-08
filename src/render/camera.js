@@ -1,35 +1,43 @@
 import { PerspectiveCamera, Vector3 } from 'three';
 import { CAMERA, JOURNEY } from '../config/render.js';
-import { WORLD } from '../config/world.js';
+import { PATH, WORLD } from '../config/world.js';
+import { pathCentre } from '../world/path.js';
 import { clamp, damp } from '../core/math.js';
 
 /**
- * The flight down the valley.
+ * The walk down the valley.
  *
- * The camera is the only thing in this scene that moves, and it is what turns
- * a landscape into a journey: it drifts forward on its own, holds a fixed
- * height above whatever ground is beneath it, and hands the viewer steering,
- * throttle and a look-around on top. Reaching the far end turns it round
- * rather than stopping, so the scene never settles into a state where nothing
- * is happening.
+ * The camera follows the trail rather than a straight line, at the eye level
+ * of someone on it, and that single decision is what makes this a place rather
+ * than a diorama: the path leads the eye, the trees close over it, and the
+ * biome changes arrive as things noticed on the way rather than as a map.
  *
- * Height and aim both come from the drawn surface, which is why this needs the
- * valley: flying at a constant altitude over rolling ground means skimming the
- * hills and losing the hollows.
+ * Steering is an offset from the trail, not a free position — you can walk on
+ * the verge, or a little way into the trees, and the trail pulls you back if
+ * you let go. That keeps the viewer somewhere the scene is composed for
+ * without ever taking the controls away.
  */
-const EDGE_MARGIN = 140;
+
+/** How far off the trail the viewer may wander, in units. */
+const WANDER_LIMIT = PATH.HALF_WIDTH + PATH.VERGE + 34;
+/** How firmly the trail reclaims an unsteered camera, per second. */
+const RECENTRE_LAMBDA = 0.35;
 
 export function createJourneyCamera(valley) {
   const camera = new PerspectiveCamera(CAMERA.FOV, 1, CAMERA.NEAR, CAMERA.FAR);
   const target = new Vector3();
 
   let travel = JOURNEY.TURN_MARGIN;
-  let across = 0;
+  let offset = 0;
   let heading = 1;
   let speed = JOURNEY.DRIFT_SPEED;
   let yaw = 0;
   let pitch = 0;
-  let height = valley.heightAt(0, travel) + CAMERA.HEIGHT;
+  let height = valley.heightAt(pathCentre(travel), travel) + CAMERA.HEIGHT;
+  camera.position.set(pathCentre(travel), height, travel);
+
+  const acrossAt = (z, sideways) =>
+    clamp(pathCentre(z) + sideways, -WORLD.HALF_WIDTH, WORLD.HALF_WIDTH);
 
   function advance(controls, dt) {
     const wanted =
@@ -39,11 +47,16 @@ export function createJourneyCamera(valley) {
     speed = damp(speed, controls.paused ? 0 : wanted, JOURNEY.SPEED_LAMBDA, dt);
 
     travel += speed * heading * dt;
-    across = clamp(
-      across + controls.strafe * JOURNEY.STRAFE_SPEED * dt,
-      -WORLD.HALF_WIDTH + EDGE_MARGIN,
-      WORLD.HALF_WIDTH - EDGE_MARGIN,
-    );
+
+    if (controls.strafe !== 0) {
+      offset = clamp(
+        offset + controls.strafe * JOURNEY.STRAFE_SPEED * dt,
+        -WANDER_LIMIT,
+        WANDER_LIMIT,
+      );
+    } else {
+      offset = damp(offset, 0, RECENTRE_LAMBDA, dt);
+    }
 
     // Turn around at either end rather than stopping at a wall.
     const far = WORLD.LENGTH - JOURNEY.TURN_MARGIN;
@@ -56,27 +69,45 @@ export function createJourneyCamera(valley) {
     }
   }
 
-  function aim(dt) {
-    const ahead = CAMERA.LOOK_AHEAD;
-    const lookX = clamp(
-      across + Math.sin(yaw) * ahead * heading,
-      -WORLD.HALF_WIDTH,
-      WORLD.HALF_WIDTH,
-    );
-    const lookZ = clamp(travel + Math.cos(yaw) * ahead * heading, 0, WORLD.LENGTH);
+  /**
+   * Where the view is aimed: a point on the trail's own centre line, further
+   * along it.
+   *
+   * Down the trail rather than down the z axis, so a bend swings the whole view
+   * with it and the path keeps running away from the viewer into the trees.
+   * Aiming along the axis instead leaves the trail sliding out of frame on
+   * every corner.
+   */
+  function aimPoint() {
+    const ahead = clamp(travel + CAMERA.LOOK_AHEAD * heading, 0, WORLD.LENGTH);
+    const lean = Math.sin(yaw) * CAMERA.LOOK_AHEAD * heading;
+    const lookX = clamp(acrossAt(ahead, offset * 0.4) + lean, -WORLD.HALF_WIDTH, WORLD.HALF_WIDTH);
+    const lookY = valley.heightAt(lookX, ahead) + CAMERA.LOOK_HEIGHT + pitch * CAMERA.LOOK_AHEAD;
+    return { x: lookX, y: lookY, z: ahead };
+  }
 
-    target.set(
-      damp(target.x, lookX, CAMERA.LAMBDA, dt),
-      damp(
-        target.y,
-        valley.heightAt(lookX, lookZ) + CAMERA.LOOK_HEIGHT + pitch * ahead,
-        CAMERA.LAMBDA,
-        dt,
-      ),
-      damp(target.z, lookZ, CAMERA.LAMBDA, dt),
-    );
+  /**
+   * Eases the aim toward that point.
+   *
+   * `dt` of zero snaps instead, which is what the first frame and every jump
+   * need: a camera easing in from wherever the vector happened to be
+   * initialised spends its opening seconds pointed at the ground, and the
+   * opening seconds are what sits behind the title card.
+   */
+  function aim(dt) {
+    const wanted = aimPoint();
+    if (dt <= 0) target.set(wanted.x, wanted.y, wanted.z);
+    else {
+      target.set(
+        damp(target.x, wanted.x, CAMERA.LAMBDA, dt),
+        damp(target.y, wanted.y, CAMERA.LAMBDA, dt),
+        damp(target.z, wanted.z, CAMERA.LAMBDA, dt),
+      );
+    }
     camera.lookAt(target);
   }
+
+  aim(0);
 
   return {
     camera,
@@ -87,25 +118,29 @@ export function createJourneyCamera(valley) {
 
       advance(controls, dt);
 
-      // Damped rather than snapped: the ground under the camera is a
-      // heightfield, and following it exactly turns every facet into a jolt.
+      const across = acrossAt(travel, offset);
+      // Damped rather than snapped: the ground is a heightfield, and following
+      // it exactly turns every facet into a jolt at head height.
       height = damp(height, valley.heightAt(across, travel) + CAMERA.HEIGHT, CAMERA.LAMBDA, dt);
       camera.position.set(across, height, travel);
       aim(dt);
     },
 
     /**
-     * Puts the flight somewhere along the valley immediately.
+     * Puts the walk somewhere along the trail immediately.
      *
-     * Exists for the end-to-end tests and the console: waiting out five and a
-     * half kilometres of drift to look at the desert is not a test, it is a
+     * Exists for the end-to-end tests and the console: waiting out a kilometre
+     * of valley at walking pace to look at the desert is not a test, it is a
      * timeout. Nothing in the running scene calls it.
      */
-    jumpTo({ x = across, z = travel } = {}) {
-      across = clamp(x, -WORLD.HALF_WIDTH + EDGE_MARGIN, WORLD.HALF_WIDTH - EDGE_MARGIN);
+    jumpTo({ x, z = travel } = {}) {
       travel = clamp(z, JOURNEY.TURN_MARGIN, WORLD.LENGTH - JOURNEY.TURN_MARGIN);
+      offset =
+        x === undefined ? offset : clamp(x - pathCentre(travel), -WANDER_LIMIT, WANDER_LIMIT);
+      const across = acrossAt(travel, offset);
       height = valley.heightAt(across, travel) + CAMERA.HEIGHT;
-      target.set(across, height, travel);
+      camera.position.set(across, height, travel);
+      aim(0);
     },
 
     setAspect(aspect) {
@@ -119,7 +154,7 @@ export function createJourneyCamera(valley) {
     },
 
     get state() {
-      return { x: across, z: travel, heading, speed, yaw, pitch };
+      return { x: acrossAt(travel, offset), z: travel, heading, speed, yaw, pitch };
     },
   };
 }

@@ -6,6 +6,7 @@ import { clamp, lerp } from '../core/math.js';
 import { biomeWeights, blendValue, journeyAt } from './biome.js';
 import { surfaceHeight, surfaceSlope } from './terrain.js';
 import { bankFactor, isSubmerged } from './water.js';
+import { pathFactor, vergeFactor } from './path.js';
 
 /**
  * Where everything grows.
@@ -27,8 +28,15 @@ import { bankFactor, isSubmerged } from './water.js';
  */
 
 /** Everything a cell needs to know about the ground it is standing on. */
-function siteAt(x, z) {
-  return { weights: biomeWeights(journeyAt(x, z)), bank: bankFactor(x, z) };
+function siteAt(x, z, clearance) {
+  return {
+    x,
+    z,
+    weights: biomeWeights(journeyAt(x, z)),
+    bank: bankFactor(x, z),
+    path: pathFactor(x, z, clearance),
+    verge: vergeFactor(x, z),
+  };
 }
 
 /** Willing to grow on any shoreline, which is what a species gets by default. */
@@ -52,7 +60,18 @@ function weightOf(species, site, densityScale) {
   const shoreline = species.bankWeight
     ? species.bankWeight * site.bank * blendValue(site.weights, species.bankBands ?? EVERYWHERE)
     : 0;
-  return (base + shoreline) * densityScale;
+  // The verge term is the same idea applied to the trail's edge, and it is
+  // what lines the path with colour instead of leaving a bare gap through the
+  // undergrowth.
+  const edge = species.vergeWeight ? species.vergeWeight * site.verge : 0;
+
+  // Nothing grows on the trail. Last, and multiplicative, so it overrules
+  // every reason a species might otherwise have had to be here. A species may
+  // keep further back than its pass does — see `clearance` — which is how a
+  // pine stands off the path while a pebble sits on its lip.
+  const path =
+    species.clearance === undefined ? site.path : pathFactor(site.x, site.z, species.clearance);
+  return (base + shoreline + edge) * densityScale * (1 - path);
 }
 
 /** Weighted pick over `species`, or null for an empty cell. */
@@ -83,9 +102,10 @@ function choose(species, site, densityScale, roll) {
  * @param {Array} options.species candidates, from src/config/flora.js
  * @param {number} options.cell grid spacing for this pass
  * @param {number} [options.density] overall multiplier, for the quality ladder
+ * @param {number} [options.clearance] how far this pass keeps off the trail
  * @returns {Map<string, Array>} items keyed by species id
  */
-export function plant(grid, { species, cell, density = 1, seed = SCATTER.SEED }) {
+export function plant(grid, { species, cell, density = 1, seed = SCATTER.SEED, clearance = 0 }) {
   const items = new Map(species.map((entry) => [entry.id, []]));
   const columns = Math.round(WORLD.WIDTH / cell);
   const rows = Math.round(WORLD.LENGTH / cell);
@@ -97,7 +117,7 @@ export function plant(grid, { species, cell, density = 1, seed = SCATTER.SEED })
       const z = bounds.minZ + (j + 0.5 + (rng() - 0.5) * SCATTER.JITTER) * cell;
       if (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ) continue;
 
-      const chosen = choose(species, siteAt(x, z), density, rng());
+      const chosen = choose(species, siteAt(x, z, clearance), density, rng());
       if (!chosen) continue;
 
       const item = place(grid, chosen, x, z, rng);

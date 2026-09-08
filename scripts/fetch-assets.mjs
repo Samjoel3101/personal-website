@@ -38,6 +38,7 @@ async function fetchOne(asset) {
   if (asset.file.endsWith('/')) {
     return { status: 'skipped', reason: 'archive assets need a manual unpack step' };
   }
+  if ((asset.provenance ?? 'remote') === 'local') return checkLocal(asset);
   if (await alreadyCorrect(asset)) return { status: 'cached' };
 
   const body = await download(asset);
@@ -63,6 +64,36 @@ async function fetchOne(asset) {
   return { status: 'fetched', bytes: body.length, digest };
 }
 
+/**
+ * A local asset is never downloaded — it is checked.
+ *
+ * Present and matching its hash: nothing to do. Present and unpinned: record
+ * the hash so it is pinned from now on. Absent: say where to get it and carry
+ * on, because it is optional like everything else here.
+ */
+async function checkLocal(asset) {
+  const path = destinationFor(asset);
+  let body;
+  try {
+    body = await readFile(path);
+  } catch {
+    return { status: 'supply', reason: asset.install };
+  }
+
+  const digest = hash(body);
+  if (asset.sha256 && asset.sha256 !== digest) {
+    throw new Error(`sha256 mismatch: expected ${asset.sha256}, got ${digest}`);
+  }
+  if (!asset.sha256) {
+    if (!record) {
+      return { status: 'unpinned', reason: 're-run with --record to pin it', digest };
+    }
+    asset.sha256 = digest;
+    return { status: 'pinned', digest };
+  }
+  return { status: 'cached' };
+}
+
 const manifest = await readManifest();
 let failures = 0;
 let changed = false;
@@ -76,6 +107,11 @@ for (const asset of manifest.assets) {
       changed = true;
     } else if (result.status === 'cached') {
       console.log('cached, hash matches');
+    } else if (result.status === 'pinned') {
+      console.log('supplied locally, hash recorded');
+      changed = true;
+    } else if (result.status === 'supply') {
+      console.log(`not installed — ${result.reason}`);
     } else if (result.status === 'unpinned') {
       console.log(`downloaded but NOT saved — ${result.reason}\n      sha256 ${result.digest}`);
     } else {

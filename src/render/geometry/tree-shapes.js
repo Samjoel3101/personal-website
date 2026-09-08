@@ -3,7 +3,11 @@ import { FLORA } from '../../config/palette.js';
 import { finish, part, roughen } from './shapes.js';
 
 /**
- * Everything with a trunk.
+ * The evergreens, the palm, the cacti and the dead wood.
+ *
+ * The deciduous trees live next door in ./broadleaf-shapes.js: they are all
+ * one shape with different crowns, and keeping them together is what lets a
+ * new autumn colour be four lines rather than a new file.
  *
  * Each builder returns one merged, flat-shaded, vertex-coloured geometry
  * normalised to unit height — see ./shapes.js for the contract — so the whole
@@ -47,38 +51,6 @@ export function coniferTall() {
     );
   }
   return finish(parts, 'conifer-tall');
-}
-
-/** Pale trunk, loose crown: the tree that takes over as the forest thins. */
-export function birch() {
-  return finish(
-    [
-      part(new CylinderGeometry(0.028, 0.042, 0.66, 6), FLORA.BIRCH_BARK, { y: 0.33 }),
-      part(new IcosahedronGeometry(0.24, 0), FLORA.BROADLEAF_MID, { y: 0.76 }),
-      part(new IcosahedronGeometry(0.18, 0), FLORA.BROADLEAF_LIGHT, { x: 0.15, y: 0.66, z: 0.06 }),
-      part(new IcosahedronGeometry(0.15, 0), FLORA.BROADLEAF_DARK, { x: -0.12, y: 0.7, z: -0.1 }),
-    ],
-    'birch',
-  );
-}
-
-/** A broad, heavy crown on a short trunk. */
-export function broadleaf() {
-  const blobs = [
-    { r: 0.3, x: 0, y: 0.66, z: 0, hex: FLORA.BROADLEAF_MID },
-    { r: 0.24, x: 0.2, y: 0.58, z: 0.08, hex: FLORA.BROADLEAF_DARK },
-    { r: 0.22, x: -0.18, y: 0.62, z: -0.1, hex: FLORA.BROADLEAF_LIGHT },
-    { r: 0.2, x: 0.02, y: 0.82, z: -0.04, hex: FLORA.BROADLEAF_LIGHT },
-  ];
-  return finish(
-    [
-      part(new CylinderGeometry(0.05, 0.09, 0.46, 6), FLORA.BARK, { y: 0.23 }),
-      ...blobs.map((blob) =>
-        part(new IcosahedronGeometry(blob.r, 0), blob.hex, { x: blob.x, y: blob.y, z: blob.z }),
-      ),
-    ],
-    'broadleaf',
-  );
 }
 
 /** Bare, forked, bleached: the first thing to appear as the water runs out. */

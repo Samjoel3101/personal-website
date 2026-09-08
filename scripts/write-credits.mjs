@@ -1,11 +1,24 @@
 import { join } from 'node:path';
 import { ROOT, needsAttribution, writeFormatted } from './asset-manifest.mjs';
 
+/** One row of the attribution table. */
+function row(manifest, asset) {
+  const author = asset.author ?? (needsAttribution(manifest, asset) ? '**MISSING**' : '—');
+  return `| ${asset.title ?? asset.id} | ${asset.license} | ${author} | [link](${asset.source}) |`;
+}
+
 /**
  * Regenerates CREDITS.md from the manifest, so attribution can never drift out
  * of sync with what is actually shipped. Edit the manifest, not this output.
+ *
+ * Fetched assets and assets a human has to install are listed separately, and
+ * that separation is the honest part: a credits file that lists a pack nobody
+ * has downloaded is claiming to ship something it does not.
  */
 export async function writeCredits(manifest) {
+  const fetched = manifest.assets.filter((asset) => asset.provenance !== 'local');
+  const local = manifest.assets.filter((asset) => asset.provenance === 'local');
+
   const lines = [
     '# Credits',
     '',
@@ -18,14 +31,26 @@ export async function writeCredits(manifest) {
     '',
     '## Third-party assets',
     '',
+    'Fetched and pinned by `npm run assets:fetch`.',
+    '',
     '| Asset | Licence | Author | Source |',
     '| --- | --- | --- | --- |',
+    ...fetched.map((asset) => row(manifest, asset)),
   ];
 
-  for (const asset of manifest.assets) {
-    const author = asset.author ?? (needsAttribution(manifest, asset) ? '**MISSING**' : '—');
+  if (local.length > 0) {
     lines.push(
-      `| ${asset.title ?? asset.id} | ${asset.license} | ${author} | [link](${asset.source}) |`,
+      '',
+      '## Packs you install yourself',
+      '',
+      'These cannot be downloaded from the environment this project is built in,',
+      'so they are declared here with their licence and left to a human to supply:',
+      'download the pack and run `npm run assets:link -- <folder>`. Nothing here is',
+      'shipped in this repository, and the scene is complete without any of it.',
+      '',
+      '| Asset | Licence | Author | Source |',
+      '| --- | --- | --- | --- |',
+      ...local.map((asset) => row(manifest, asset)),
     );
   }
 

@@ -1,6 +1,6 @@
-import { ConeGeometry, CylinderGeometry, IcosahedronGeometry } from 'three';
-import { FLORA, ROCK } from '../../config/palette.js';
-import { finish, part, roughen } from './shapes.js';
+import { ConeGeometry, CylinderGeometry, SphereGeometry } from 'three';
+import { FLORA } from '../../config/palette.js';
+import { finish, part } from './shapes.js';
 
 /**
  * Undergrowth, stones and dead wood: the dense pass.
@@ -15,17 +15,29 @@ import { finish, part, roughen } from './shapes.js';
  * See ./shapes.js.
  */
 
-/** A splay of blades. Everything grassy is this with different numbers. */
-function blades({ count, hex, tipHex, spread, lean, thickness }) {
+/**
+ * A splay of blades. Everything grassy is this with different numbers.
+ *
+ * Each blade is a three-sided cone squashed on one axis, which is the cheapest
+ * shape that still reads as a blade rather than as a spike: nine triangles a
+ * tuft, and there are fifty thousand tufts. Unsquashed they are wedges, and a
+ * meadow of wedges is what the first version of this looked like from eye
+ * level.
+ */
+function blades({ count, hex, tipHex, spread, lean, thickness, flatten = 0.34 }) {
   const parts = [];
   for (let i = 0; i < count; i += 1) {
     const angle = (i / count) * Math.PI * 2 + i * 0.7;
     const blade = new ConeGeometry(thickness, 1, 3);
     blade.translate(0, 0.5, 0);
     parts.push(
-      part(blade, i % 3 === 0 ? tipHex : hex, {
-        scale: [1, 0.7 + (i % 3) * 0.15, 1],
-        lean,
+      part(blade, hex, {
+        // Dark at the root, light at the tip, up the blade's own axis. Grass
+        // is the largest single thing in the scene by instance count and the
+        // gradient costs nothing per instance.
+        gradient: i % 3 === 0 ? FLORA.GRASS_LIGHT : tipHex,
+        scale: [1, 0.7 + (i % 3) * 0.15, flatten],
+        lean: lean * (0.6 + (i % 4) * 0.22),
         spin: angle,
         x: Math.cos(angle) * spread,
         z: Math.sin(angle) * spread,
@@ -38,26 +50,47 @@ function blades({ count, hex, tipHex, spread, lean, thickness }) {
 export function grass() {
   return finish(
     blades({
-      count: 5,
+      count: 11,
       hex: FLORA.GRASS_GREEN,
-      tipHex: FLORA.BROADLEAF_LIGHT,
-      spread: 0.1,
-      lean: 0.26,
-      thickness: 0.07,
+      tipHex: FLORA.GRASS_LIGHT,
+      spread: 0.16,
+      lean: 0.3,
+      thickness: 0.035,
     }),
     'grass',
+  );
+}
+
+/**
+ * The same tuft grown tall and leaning.
+ *
+ * Most of what carpets the forest floor in the reference art is not one grass
+ * but two at different heights, and the taller one is what breaks the
+ * silhouette of everything standing in it.
+ */
+export function tallGrass() {
+  return finish(
+    blades({
+      count: 11,
+      hex: FLORA.GRASS_LIGHT,
+      tipHex: FLORA.GRASS_GREEN,
+      spread: 0.13,
+      lean: 0.34,
+      thickness: 0.03,
+    }),
+    'tall-grass',
   );
 }
 
 export function grassDry() {
   return finish(
     blades({
-      count: 5,
+      count: 7,
       hex: FLORA.GRASS_DRY,
       tipHex: FLORA.DEAD_WOOD,
-      spread: 0.13,
-      lean: 0.4,
-      thickness: 0.06,
+      spread: 0.2,
+      lean: 0.44,
+      thickness: 0.055,
     }),
     'grass-dry',
   );
@@ -67,12 +100,13 @@ export function grassDry() {
 export function fern() {
   return finish(
     blades({
-      count: 7,
+      count: 11,
       hex: FLORA.BROADLEAF_DARK,
       tipHex: FLORA.PINE_MID,
-      spread: 0.16,
-      lean: 0.62,
-      thickness: 0.11,
+      spread: 0.14,
+      lean: 0.7,
+      thickness: 0.048,
+      flatten: 0.5,
     }),
     'fern',
   );
@@ -96,29 +130,26 @@ export function reed() {
 export function bush() {
   return finish(
     [
-      part(new IcosahedronGeometry(0.42, 0), FLORA.BROADLEAF_DARK, { y: 0.4, scale: [1, 0.9, 1] }),
-      part(new IcosahedronGeometry(0.3, 0), FLORA.BROADLEAF_MID, { x: 0.24, y: 0.3, z: 0.1 }),
-      part(new IcosahedronGeometry(0.26, 0), FLORA.BROADLEAF_LIGHT, { x: -0.2, y: 0.34, z: -0.14 }),
+      part(new SphereGeometry(0.42, 6, 4), FLORA.BROADLEAF_DARK, {
+        gradient: FLORA.BROADLEAF_MID,
+        y: 0.4,
+        scale: [1, 0.9, 1],
+      }),
+      part(new SphereGeometry(0.3, 5, 3), FLORA.BROADLEAF_MID, {
+        gradient: FLORA.BROADLEAF_LIGHT,
+        x: 0.24,
+        y: 0.3,
+        z: 0.1,
+      }),
+      part(new SphereGeometry(0.26, 5, 3), FLORA.BROADLEAF_DARK, {
+        gradient: FLORA.BROADLEAF_MID,
+        x: -0.2,
+        y: 0.34,
+        z: -0.14,
+      }),
     ],
     'bush',
-  );
-}
-
-export function flower() {
-  return finish(
-    [
-      ...blades({
-        count: 3,
-        hex: FLORA.GRASS_GREEN,
-        tipHex: FLORA.GRASS_GREEN,
-        spread: 0.05,
-        lean: 0.12,
-        thickness: 0.045,
-      }),
-      part(new IcosahedronGeometry(0.14, 0), FLORA.FLOWER_A, { y: 0.86, x: 0.05 }),
-      part(new IcosahedronGeometry(0.11, 0), FLORA.FLOWER_B, { y: 0.72, x: -0.09, z: 0.06 }),
-    ],
-    'flower',
+    { smooth: true },
   );
 }
 
@@ -129,37 +160,6 @@ export function mushroom() {
       part(new ConeGeometry(0.32, 0.42, 8), FLORA.MUSHROOM_CAP, { y: 0.72 }),
     ],
     'mushroom',
-  );
-}
-
-/** A stone. Two sizes of the same idea, because a jittered icosahedron at two
- *  subdivision levels is the whole of low-poly rock art. */
-export function rock() {
-  return finish(
-    [
-      part(roughen(new IcosahedronGeometry(0.5, 0), 0.5, 3), ROCK.COOL, {
-        scale: [1.15, 0.85, 1],
-        y: 0.34,
-      }),
-    ],
-    'rock',
-  );
-}
-
-export function boulder() {
-  return finish(
-    [
-      part(roughen(new IcosahedronGeometry(0.5, 1), 0.36, 5), ROCK.COOL, {
-        scale: [1.15, 1, 1.05],
-        y: 0.44,
-      }),
-      part(roughen(new IcosahedronGeometry(0.18, 0), 0.5, 9), ROCK.WARM, {
-        x: 0.4,
-        y: 0.14,
-        z: 0.22,
-      }),
-    ],
-    'boulder',
   );
 }
 

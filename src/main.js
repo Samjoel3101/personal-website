@@ -33,22 +33,27 @@ async function boot() {
 /**
  * Pulls in whatever third-party models are actually present.
  *
- * Every species that names an `asset` gets one attempt at replacing its
- * procedural shape with a fetched model. Failures are expected and non-fatal:
- * a fresh clone with no `npm run assets:fetch` behind it renders the whole
- * valley out of procedural geometry, which is the point of the rule.
+ * Each species lists its models best first — a Quaternius pack model a human
+ * installed, then the Kenney one that can be fetched anywhere — and takes the
+ * first that loads. Everything after it is dropped rather than requested, so a
+ * fully installed pack costs no wasted downloads and a bare clone costs none
+ * at all.
+ *
+ * Failures are expected and non-fatal by design: with nothing on disk the
+ * whole valley draws from procedural geometry, which is the rule this project
+ * is built on.
  */
 async function loadOptionalAssets(session) {
   const assets = createAssetLoader();
-  const wanted = new Set(SPECIES.map((species) => species.asset).filter(Boolean));
 
   await Promise.all(
-    assetIds
-      .filter((id) => wanted.has(id) && assetInfo(id)?.role === 'flora')
-      .map(async (id) => {
+    SPECIES.filter((species) => species.assets?.length).map(async (species) => {
+      for (const id of species.assets) {
+        if (!assetIds.includes(id) || assetInfo(id)?.role !== 'flora') continue;
         const model = await assets.model(id);
-        if (model) session.stage.useModel(id, model);
-      }),
+        if (model && session.stage.useModel(id, model)) return;
+      }
+    }),
   );
 
   if (assets.failures.length > 0) {
