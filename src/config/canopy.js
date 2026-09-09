@@ -122,6 +122,7 @@ export const CANOPY = Object.freeze([
      *  gathers them — and the same community thins the grass around them. */
     patch: { stony: 1.9, dry: 0.4, meadow: 0.2 },
     assets: [['pack.nature.rock', 'pack.nature.rock-2']],
+    modelBands: ['forest', 'woodland', 'scrub'],
     shape: 'boulder',
     height: [8, 26],
     weight: { forest: 0.09, woodland: 0.06, scrub: 0.06, desert: 0.02 },
@@ -131,6 +132,7 @@ export const CANOPY = Object.freeze([
     id: 'shard',
     patch: { stony: 1.8, dry: 0.5, meadow: 0.25 },
     assets: [['pack.nature.rock-standing']],
+    modelBands: ['forest', 'woodland', 'scrub'],
     shape: 'shard',
     height: [10, 30],
     /** Pale rock breaking out of the undergrowth, in every band. It is the

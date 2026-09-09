@@ -248,3 +248,52 @@ None of these is needed for the shade problem. Sampling the grass texture's
 palette strip at different columns gives distinct greens and golds from the
 geometry already in the scene, at zero triangle cost, and applies to the
 procedural shapes too.
+
+---
+
+# Afterwards: what the work changed
+
+Measured the same way, after the scenery round. `npm run shoot -- --tier high`,
+1280×720, all 25 model species loaded.
+
+| waypoint | triangles before |     after | draws before | after |
+| -------- | ---------------: | --------: | -----------: | ----: |
+| forest   |        9,126,165 | 7,771,243 |          722 |   934 |
+| pond     |        8,989,761 | 7,521,291 |          705 |   841 |
+| woodland |        8,097,925 | 6,494,201 |          668 |   850 |
+| scrub    |        2,849,140 | 2,584,612 |          415 |   488 |
+| oasis    |        1,411,621 | 1,257,750 |          238 |   292 |
+| desert   |          454,533 |   650,260 |           76 |   143 |
+
+**The worst frame got cheaper, not dearer** — 9.13M down to 7.78M — while
+gaining pack grass, clover, flowers, pebbles and trail stones, three pines,
+five dead trees and a third more ground cover than before (the planting grid
+went from 7 units to 6, which is 112,323 instances up to 152,000).
+
+That is not a free lunch, it is the LOD arithmetic in §4 collected. The old
+build tiled the model form at 400/420 units and tested each tile's bounding
+sphere against a 340-unit radius, so a tile whose centre was 600 units away
+still drew as models. Tiling the model form at 200/90 units makes the radius
+mean what it says. Draw calls went up by a third in exchange, which is the
+right trade at these counts — they are instanced meshes, and 934 of them is
+not close to a bottleneck.
+
+Ground cover models now reach 150 units rather than 340, and the near-field
+cost is roughly a fifth of what a straight substitution would have been.
+
+## Still true, still not fixed
+
+- **`QUALITY_TIERS[].groundCover` still only applies at boot**, and the session
+  starts on `high`, so in practice it is still 1 on every machine. It is now
+  wired and documented rather than silently ignored, and the runtime lever that
+  replaced it — `detail`, which scales both LOD radii and is instant — is what
+  the ladder actually uses. `npm run shoot -- --tier low` draws the valley
+  entirely procedurally.
+- **The pack's stones are mossy forest rocks.** Their diffuse is a dark
+  green-grey, which is right in a wood and reads as holes punched in sand.
+  `modelBands` on a species keeps the model where it belongs and the procedural
+  shape everywhere else; the pebbles, boulders and shards use it. This is a
+  limitation of the free tier, not of the renderer.
+- **No pale trunks and no autumn foliage**, as §3 sets out. The palette shift
+  and the exposure lift get the _register_ of the reference — a bright ground
+  a trunk reads dark against — but a white birch trunk is not in the pack.

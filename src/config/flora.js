@@ -31,6 +31,11 @@ import { WORLD } from './world.js';
  * unit box differently. Where the two disagree the near form visibly grows as
  * you walk up to it, and the number here is what makes them meet.
  *
+ * `modelBands` limits a fetched model to the biomes it suits, and the species
+ * keeps its procedural shape in the others at every distance. It exists
+ * because the pack's stones are mossy forest rocks: correct in the woods and
+ * plainly wrong in a desert, where they read as dark holes in the sand.
+ *
  * `shape` names a builder in src/render/geometry — the world model itself
  * never draws anything. `asset` names an optional manifest entry that replaces
  * the procedural shape when it has been fetched; absent, the scene is complete

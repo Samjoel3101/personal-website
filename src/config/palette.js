@@ -10,6 +10,13 @@
  *
  * Anything keyed by biome id is blended by the same weights that drive the
  * terrain, so a colour only ever has to be right in the middle of its band.
+ *
+ * The greens are OLIVE, and that is measured rather than chosen. Sampling the
+ * floor of docs/reference/*.jpg gives #767e01, #4d7800, #8a9401, #b2bd01 —
+ * yellow-greens with red close to green and almost no blue at all. An earlier
+ * palette here used pure greens (#589f19 and friends, green a full third above
+ * red) and no amount of lighting made them sit next to the reference: a pure
+ * green floor reads as a lawn, and every one of these frames is a meadow.
  */
 
 /** The sky gradient. The horizon stop is blended toward the fog at runtime. */
@@ -29,8 +36,8 @@ export const HAZE = Object.freeze({
 
 /** Ground, per biome: the flat, the slope, and the bare earth under both. */
 export const GROUND = Object.freeze({
-  forest: { flat: '#529f36', slope: '#3f8130', bare: '#7c5e39' },
-  woodland: { flat: '#6fb23d', slope: '#568e32', bare: '#8b6b40' },
+  forest: { flat: '#5b9328', slope: '#456f1c', bare: '#7c5e39' },
+  woodland: { flat: '#84a626', slope: '#63831e', bare: '#8b6b40' },
   scrub: { flat: '#a9a44f', slope: '#8e8842', bare: '#a9814e' },
   desert: { flat: '#e4c586', slope: '#cea866', bare: '#be8b56' },
 });
@@ -45,8 +52,8 @@ export const GROUND = Object.freeze({
  * src/world/patches.js.
  */
 export const MEADOW = Object.freeze({
-  DRY: '#c9b45c',
-  RICH: '#3d7d2c',
+  DRY: '#c3b246',
+  RICH: '#4d7800',
 });
 
 /**
@@ -89,12 +96,12 @@ export const WATER = Object.freeze({
 
 /** Plant life. Species pick from here rather than inventing their own greens. */
 export const FLORA = Object.freeze({
-  PINE_DARK: '#35784a',
-  PINE_MID: '#4b9c57',
-  PINE_LIGHT: '#6bb964',
-  BROADLEAF_DARK: '#47953a',
-  BROADLEAF_MID: '#63b442',
-  BROADLEAF_LIGHT: '#93d554',
+  PINE_DARK: '#31703c',
+  PINE_MID: '#4a9247',
+  PINE_LIGHT: '#6cb055',
+  BROADLEAF_DARK: '#4f8f26',
+  BROADLEAF_MID: '#6fae2c',
+  BROADLEAF_LIGHT: '#9ccf3e',
   /** The autumn crowns. Half the reason the reference forest reads as warm. */
   AUTUMN_RED: '#c4402f',
   AUTUMN_RUST: '#9d3b2c',
@@ -110,8 +117,8 @@ export const FLORA = Object.freeze({
    *  read as the floor rather than as patches laid on it. */
   MAT_GREEN: '#4e9c33',
   MAT_DRY: '#b39f4e',
-  GRASS_GREEN: '#74c742',
-  GRASS_LIGHT: '#9ade56',
+  GRASS_GREEN: '#7fb92c',
+  GRASS_LIGHT: '#aad63c',
   GRASS_DRY: '#c7b55f',
   CACTUS: '#4c9e5d',
   CACTUS_DARK: '#357c4a',

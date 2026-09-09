@@ -40,8 +40,18 @@ export const WAYPOINTS = Object.freeze({
     reference: 'desert-wash-bare-trees.jpg',
   },
   desert: {
+    /* Not the 0.95 journey anchor at 5320, which lands on a bare dune face
+       looking at its own slope — a fine picture of the terrain and useless for
+       judging planting. This is open desert with the wash, the dead trees and
+       the cacti in frame, which is what the reference is of. */
+    z: 5020,
+    note: 'Open desert, the wash and the bare trees',
+    reference: 'desert-wash-bare-trees.jpg',
+  },
+
+  dune: {
     z: 5320,
-    note: 'Open desert — the journey anchor',
+    note: 'Deep desert — the emptiest the valley gets',
     reference: 'desert-wash-bare-trees.jpg',
   },
 });

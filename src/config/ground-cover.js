@@ -154,6 +154,8 @@ export const GROUND_COVER = Object.freeze([
      *  height, so a 'height' of four is four units *across*. Pulled in so they
      *  read as stones in the grass and not as paving. */
     modelScale: 0.42,
+    /** Mossy stones belong in the wood, not on the sand. */
+    modelBands: ['forest', 'woodland'],
     shape: 'rock',
     height: [1.4, 4],
     /** Heavily into the desert: stones are most of what breaks up open sand in

@@ -59,6 +59,7 @@ export function buildFlora(valley) {
   group.name = 'flora';
 
   const planted = new Map();
+  const bandAt = (item) => valley.biomeAt(item.x, item.z).id;
   add(planted, group, CANOPY, valley.canopy, {
     shadows: true,
     chunk: TILE.canopy.far,
@@ -101,8 +102,22 @@ export function buildFlora(valley) {
       const forms = models.map(normalisedParts).filter((parts) => parts.length > 0);
       if (forms.length === 0) return false;
 
+      /*
+       * A model is not always an upgrade.
+       *
+       * The pack's stones carry a mossy, dark-green diffuse — they are forest
+       * rocks, and 234 of them within 150 units of the desert waypoint read as
+       * holes punched in the sand. A species can name the bands its models
+       * belong to; everywhere else it keeps the procedural shape at every
+       * distance, which is the same path a fresh clone takes and needs no new
+       * machinery to be correct.
+       */
+      const bands = entry.species.modelBands;
       const buckets = forms.map(() => []);
-      for (const item of entry.items) buckets[variantOf(item, forms.length)].push(item);
+      for (const item of entry.items) {
+        if (bands && !bands.includes(bandAt(item))) continue;
+        buckets[variantOf(item, forms.length)].push(item);
+      }
 
       entry.model = forms.flatMap((parts, index) =>
         parts.flatMap((part) =>
