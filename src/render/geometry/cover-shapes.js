@@ -24,7 +24,7 @@ import { finish, part, roughen } from './shapes.js';
  * meadow of wedges is what the first version of this looked like from eye
  * level.
  */
-function blades({ count, hex, tipHex, spread, lean, thickness, flatten = 0.34 }) {
+function blades({ count, hex, tipHex, spread, lean, thickness, flatten = 0.5 }) {
   const parts = [];
   for (let i = 0; i < count; i += 1) {
     const angle = (i / count) * Math.PI * 2 + i * 0.7;
@@ -55,7 +55,7 @@ export function grass() {
       tipHex: FLORA.GRASS_LIGHT,
       spread: 0.16,
       lean: 0.3,
-      thickness: 0.035,
+      thickness: 0.024,
     }),
     'grass',
   );
@@ -76,7 +76,7 @@ export function tallGrass() {
       tipHex: FLORA.GRASS_GREEN,
       spread: 0.13,
       lean: 0.34,
-      thickness: 0.03,
+      thickness: 0.021,
     }),
     'tall-grass',
   );
@@ -99,9 +99,12 @@ function mat({ hex, tipHex }) {
   for (let i = 0; i < 13; i += 1) {
     const angle = (i / 13) * Math.PI * 2 + i * 1.3;
     const reach = 0.26 + (i % 4) * 0.15;
-    // Thin. A mat is read as grass or as leaves entirely by the width of one
-    // blade against its length, and these are drawn five metres wide.
-    const blade = new ConeGeometry(0.05, 1, 3);
+    // Thin, and thinner than looks right in isolation. A mat is read as grass
+    // or as a sheet of card entirely by the width of one blade against its
+    // length, and these are drawn five metres across: at 0.05 a blade is a
+    // hand's breadth wide in world terms and reads as a painted wedge from
+    // anywhere near it. There is no triangle in this — it is the same cone.
+    const blade = new ConeGeometry(0.032, 1, 3);
     blade.translate(0, 0.5, 0);
 
     parts.push(
@@ -109,7 +112,7 @@ function mat({ hex, tipHex }) {
         gradient: i % 3 === 0 ? tipHex : hex,
         // Splayed almost flat and shrinking outward, so the mat has a domed
         // middle and a feathered edge rather than a hard rim.
-        scale: [1, 0.78 - (i % 4) * 0.11, 0.34],
+        scale: [1, 0.78 - (i % 4) * 0.11, 0.5],
         lean: 0.62 + (i % 3) * 0.16,
         spin: angle,
         x: Math.cos(angle) * reach,
@@ -133,12 +136,12 @@ export function dryMat() {
 export function grassDry() {
   return finish(
     blades({
-      count: 7,
+      count: 9,
       hex: FLORA.GRASS_DRY,
       tipHex: FLORA.DEAD_WOOD,
       spread: 0.2,
       lean: 0.44,
-      thickness: 0.055,
+      thickness: 0.03,
     }),
     'grass-dry',
   );
