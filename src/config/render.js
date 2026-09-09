@@ -88,11 +88,42 @@ export const SUN = Object.freeze({
   SHADOW_RADIUS: 260,
 });
 
-/** The runtime picks a tier from measured frame intervals; see render/quality.js. */
+/**
+ * How far the fetched models reach, in world units, per planting pass.
+ *
+ * Two numbers because the two passes have opposite arithmetic. Instance count
+ * grows with the square of the radius, and there are thirty times more plants
+ * than trees: at 340 units the canopy is ~200 instances and the undergrowth is
+ * ~7,200. So the trees get a generous ring — they are the silhouettes you walk
+ * between, and the pack's whole value is in them — and the ground cover gets a
+ * tight one, where a blade of grass is still a blade of grass rather than four
+ * pixels. See the note at the top of src/render/flora.js.
+ *
+ * Both are chosen against the fog at 800, not by eye: far enough that the swap
+ * happens where haze has already taken the detail, near enough to be worth it.
+ */
+export const LOD = Object.freeze({
+  CANOPY_MODELS: 340,
+  COVER_MODELS: 150,
+});
+
+/**
+ * The runtime picks a tier from measured frame intervals; see render/quality.js.
+ *
+ * `detail` scales both LOD radii above, and is the lever that pays for the
+ * pack: it is instant, costs nothing to change, and at 0 the whole valley
+ * draws from procedural geometry — the same path a fresh clone with no assets
+ * takes, so it is exercised rather than hoped for.
+ *
+ * `groundCover` is applied when the valley is built and therefore only by the
+ * tier the session starts on; changing tier at runtime never re-plants,
+ * because generating the valley is three seconds of noise sampling and a
+ * quality ladder that freezes the picture to save a frame has the wrong idea.
+ */
 export const QUALITY_TIERS = Object.freeze([
-  { name: 'low', pixelRatio: 0.7, shadows: false, groundCover: 0.35 },
-  { name: 'medium', pixelRatio: 1.0, shadows: true, groundCover: 0.7 },
-  { name: 'high', pixelRatio: 1.5, shadows: true, groundCover: 1 },
+  { name: 'low', pixelRatio: 0.7, shadows: false, groundCover: 0.35, detail: 0 },
+  { name: 'medium', pixelRatio: 1.0, shadows: true, groundCover: 0.7, detail: 0.6 },
+  { name: 'high', pixelRatio: 1.5, shadows: true, groundCover: 1, detail: 1 },
 ]);
 
 export const DEFAULT_QUALITY_INDEX = 2;

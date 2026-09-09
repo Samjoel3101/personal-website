@@ -41,8 +41,22 @@ describe('asset manifest', () => {
   it('backs every model a species names with a manifest entry', () => {
     const ids = new Set(manifest.assets.map((asset) => asset.id));
     for (const species of SPECIES) {
-      for (const id of species.assets ?? []) {
+      // A species' `assets` is a list of choices, best first, and a choice may
+      // itself be a list of interchangeable variants. Both shapes flatten to
+      // the same question: is every id something we could actually fetch?
+      for (const id of (species.assets ?? []).flat()) {
         expect(ids, `species ${species.id}`).toContain(id);
+      }
+    }
+  });
+
+  it('never names the same model twice within one species', () => {
+    // Two variants pointing at the same file is a silent way to weight one
+    // silhouette double, and it looks exactly like variety in the table.
+    for (const species of SPECIES) {
+      for (const choice of species.assets ?? []) {
+        const ids = Array.isArray(choice) ? choice : [choice];
+        expect(new Set(ids).size, `species ${species.id}`).toBe(ids.length);
       }
     }
   });

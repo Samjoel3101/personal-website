@@ -1,4 +1,4 @@
-import { ACESFilmicToneMapping, PCFShadowMap, WebGLRenderer } from 'three';
+import { NeutralToneMapping, PCFShadowMap, WebGLRenderer } from 'three';
 import { clamp } from '../core/math.js';
 
 /** Above this the extra pixels cost frames and buy nothing anyone can see. */
@@ -22,10 +22,24 @@ export function createRenderer(canvas) {
   // and silently falls back to this anyway, having printed a warning into
   // everyone's console on the way.
   renderer.shadowMap.type = PCFShadowMap;
-  // Filmic tone mapping keeps the bright sky from clipping to flat white
-  // without desaturating the earth and moss the palette depends on.
-  renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
+  /*
+   * Neutral rather than filmic, and this is a look decision with a reason.
+   *
+   * ACES is built for photographic footage: it rolls the midtones down and
+   * desaturates as it goes, which is exactly right for a rendered-real image
+   * and exactly wrong here. The palette in src/config/palette.js is a
+   * deliberately high-key, saturated illustration — see the note at the top of
+   * it — and ACES was quietly undoing that, turning a bright green forest into
+   * a slightly grey one and then inviting the palette to be pushed further to
+   * compensate. Khronos' neutral curve leaves the midtones where the palette
+   * put them and only rolls off the highlights, which is all that was ever
+   * wanted from tone mapping in a scene with no real dynamic range.
+   *
+   * The exposure lift is the sunlit register of the reference art: the ground
+   * is bright enough that a trunk in front of it reads pale.
+   */
+  renderer.toneMapping = NeutralToneMapping;
+  renderer.toneMappingExposure = 1.18;
 
   // Post-processing renders several passes per frame, and info resets on every
   // one of them. Manual reset makes `drawInfo` the whole frame's cost rather

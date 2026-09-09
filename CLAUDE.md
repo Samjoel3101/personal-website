@@ -7,11 +7,18 @@ oasis — and the camera walks that trail at eye level. Nothing in it is
 hand-placed and nothing is a photograph.
 
 The art direction is Quaternius's Stylized Nature MegaKit, and the trees, rocks
-and undergrowth near you are the pack itself, fetched from a CC0 mirror. Beyond
-four hundred units they are swapped for procedural shapes built in code to the
-same language — that swap is what makes a five-thousand-triangle tree
-affordable in a forest of two thousand of them. With no assets fetched at all,
-the procedural shapes draw the whole valley and it is still finished.
+and undergrowth near you are the pack itself, fetched from a CC0 mirror. Further
+out they are swapped for procedural shapes built in code to the same language —
+that swap is what makes a five-thousand-triangle tree affordable in a forest of
+two thousand of them. There are **two** swap radii, not one (`LOD` in
+`src/config/render.js`): trees at 340 units, ground cover at 150, because there
+are thirty times more plants than trees and instance count grows with the square
+of the radius. With no assets fetched at all, the procedural shapes draw the
+whole valley and it is still finished.
+
+Most species have **several** models, not one, and which form a plant takes is a
+hash of where it stands. One pine model for every pine was most of why the
+forest read as synthetic.
 
 **If you are picking up work on this repository, read this file, then
 `docs/ARCHITECTURE.md`, then the task you were given. Nothing else is required
@@ -112,7 +119,16 @@ src/
 - **The colour trap.** `vertexColors: true` on a geometry with no `color`
   attribute renders black, silently. Read the note at the top of
   `src/render/materials.js` before adding an instanced mesh — a fetched glTF
-  has no colour attribute and a procedural shape always does.
+  gets its own material in `model-upgrade.js` with `vertexColors: false`, and a
+  procedural shape always carries the attribute.
+- **The pack's colour is in its UVs, not its vertices.** The MegaKit models are
+  white-based-colour with a texture, and several of them share one atlas: all
+  four grasses use a single image that is mostly white with a strip of colour
+  bands down one edge, and green grass and gold grass differ only by which band
+  their UVs land in. Their `COLOR_0` is a greyscale ambient-occlusion ramp and
+  carries no hue at all. So `uv` must survive `normalisedParts` — dropping it
+  turns the whole pack white — and recolouring a pack plant means moving UVs,
+  not tinting. See `docs/SCENERY-DIAGNOSIS.md` §3.
 - **Merging geometries.** `mergeGeometries` refuses a mix of indexed and
   non-indexed inputs and signals it by returning `null`, which fails much later
   as a null dereference. Use `mergeParts` from `src/render/geometry/merge.js`.
@@ -141,9 +157,21 @@ src/
   smooth normals and a vertical gradient, or they read as crystals. See
   `paintGradient` in `src/render/geometry/shapes.js`.
 - **A fetched model wins, near the camera.** If you edit a procedural shape and
-  the browser does not change, walk backwards: past `MODEL_DISTANCE` in
-  `src/render/flora.js` the procedural form is what draws. Half a day went into
-  a boulder that turned out to be a grass-topped Kenney rock.
+  the browser does not change, walk backwards: past `LOD.CANOPY_MODELS` (340)
+  or `LOD.COVER_MODELS` (150) the procedural form is what draws. Half a day went
+  into a boulder that turned out to be a grass-topped Kenney rock. `npm run
+shoot -- --tier low` draws the whole valley procedurally, which is the fastest
+  way to see what a fresh clone gets.
+- **A model and the shape it replaces are not the same plant.** Both are
+  normalised to unit height, so both are drawn at the species' `height` — but
+  the pack's grass is a dense little clump where the procedural one is a few
+  broad blades built to read from fifty units. Given the same height the near
+  form towers over the far one and visibly grows as you walk up to it.
+  `modelScale` on the species is what makes them meet; it is not a fudge.
+- **`assets` is a list of choices, and a choice may be a list.** A string is one
+  model; a nested array is _variants of the same thing_, all used, one per
+  plant. The first choice that yields any model wins, so the Kenney fallbacks
+  still work.
 - **A fetched geometry may be quantised.** The MegaKit models are Meshopt-packed
   with 16-bit normalised positions, so `applyMatrix4` on them writes floats into
   an int16 array and produces a hundred-metre plank of bark. `normalisedParts`

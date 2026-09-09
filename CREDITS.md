@@ -11,28 +11,57 @@ by this project and carries no third-party licence.
 
 Fetched and pinned by `npm run assets:fetch`.
 
-| Asset                                        | Licence | Author     | Source                                                          |
-| -------------------------------------------- | ------- | ---------- | --------------------------------------------------------------- |
-| Nature Kit — pine                            | CC0-1.0 | Kenney     | [link](https://github.com/shorepine/kenney)                     |
-| Nature Kit — tall pine                       | CC0-1.0 | Kenney     | [link](https://github.com/shorepine/kenney)                     |
-| Nature Kit — oak                             | CC0-1.0 | Kenney     | [link](https://github.com/shorepine/kenney)                     |
-| Nature Kit — palm                            | CC0-1.0 | Kenney     | [link](https://github.com/shorepine/kenney)                     |
-| Nature Kit — saguaro                         | CC0-1.0 | Kenney     | [link](https://github.com/shorepine/kenney)                     |
-| Nature Kit — barrel cactus                   | CC0-1.0 | Kenney     | [link](https://github.com/shorepine/kenney)                     |
-| Stylized Nature MegaKit — pine               | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
-| Stylized Nature MegaKit — narrow pine        | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
-| Stylized Nature MegaKit — broadleaf tree     | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
-| Stylized Nature MegaKit — slender broadleaf  | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
-| Stylized Nature MegaKit — twisted tree       | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
-| Stylized Nature MegaKit — dead tree          | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
-| Stylized Nature MegaKit — bush               | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
-| Stylized Nature MegaKit — fern               | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
-| Stylized Nature MegaKit — broad-leaved plant | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
-| Stylized Nature MegaKit — mushroom           | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
-| Stylized Nature MegaKit — rock               | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
-| Stylized Nature MegaKit — standing rock      | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
-| Stylized Nature MegaKit — broad tree         | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
-| Stylized Nature MegaKit — path stone         | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Asset                                               | Licence | Author     | Source                                                          |
+| --------------------------------------------------- | ------- | ---------- | --------------------------------------------------------------- |
+| Nature Kit — pine                                   | CC0-1.0 | Kenney     | [link](https://github.com/shorepine/kenney)                     |
+| Nature Kit — tall pine                              | CC0-1.0 | Kenney     | [link](https://github.com/shorepine/kenney)                     |
+| Nature Kit — oak                                    | CC0-1.0 | Kenney     | [link](https://github.com/shorepine/kenney)                     |
+| Nature Kit — palm                                   | CC0-1.0 | Kenney     | [link](https://github.com/shorepine/kenney)                     |
+| Nature Kit — saguaro                                | CC0-1.0 | Kenney     | [link](https://github.com/shorepine/kenney)                     |
+| Nature Kit — barrel cactus                          | CC0-1.0 | Kenney     | [link](https://github.com/shorepine/kenney)                     |
+| Stylized Nature MegaKit — pine                      | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — narrow pine               | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — broadleaf tree            | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — slender broadleaf         | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — twisted tree              | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — dead tree                 | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — bush                      | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — fern                      | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — broad-leaved plant        | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — mushroom                  | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — rock                      | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — standing rock             | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — broad tree                | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — path stone                | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — pine, second form         | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — pine, broad form          | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — tall pine, second form    | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — broadleaf, tall form      | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — broadleaf, round form     | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — twisted tree, second form | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — twisted tree, third form  | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — dead tree, second form    | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — dead tree, third form     | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — dead tree, fourth form    | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — dead tree, fifth form     | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — boulder, second form      | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — green grass, short        | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — green grass, tall         | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — golden grass, short       | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — golden grass, tall        | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — clover                    | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — clover, second form       | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — rounded pebble            | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — rounded pebble, second    | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — angular pebble            | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — angular pebble, second    | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — broad low plant           | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — flowering green bush      | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — bracket fungus            | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — trail stones, second      | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — trail stones, third       | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — coral flowers             | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
+| Stylized Nature MegaKit — yellow flowers            | CC0-1.0 | Quaternius | [link](https://quaternius.com/packs/stylizednaturemegakit.html) |
 
 ## Fonts
 

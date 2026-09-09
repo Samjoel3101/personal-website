@@ -33,11 +33,17 @@ async function boot() {
 /**
  * Pulls in whatever third-party models are actually present.
  *
- * Each species lists its models best first — a Quaternius pack model a human
- * installed, then the Kenney one that can be fetched anywhere — and takes the
- * first that loads. Everything after it is dropped rather than requested, so a
- * fully installed pack costs no wasted downloads and a bare clone costs none
- * at all.
+ * A species' `assets` is an ordered list of *choices*, best first, and the
+ * first choice that yields anything wins — a Quaternius pack model, then the
+ * Kenney one that can be fetched anywhere. Everything after it is dropped
+ * rather than requested, so a fully installed pack costs no wasted downloads
+ * and a bare clone costs none at all.
+ *
+ * A choice may itself be a list, and that means something different: those are
+ * *variants of the same thing*, all of them used, one picked per plant by
+ * where it stands. One pine model for every pine is most of why a forest reads
+ * as synthetic, and this is the fix. A variant that fails to download simply
+ * leaves fewer forms in the mix.
  *
  * Failures are expected and non-fatal by design: with nothing on disk the
  * whole valley draws from procedural geometry, which is the rule this project
@@ -50,10 +56,14 @@ async function loadOptionalAssets(session) {
 
   await Promise.all(
     wanted.map(async (species) => {
-      for (const id of species.assets) {
-        if (!assetIds.includes(id) || assetInfo(id)?.role !== 'flora') continue;
-        const model = await assets.model(id);
-        if (model && session.stage.useModel(id, model)) {
+      for (const choice of species.assets) {
+        const ids = (Array.isArray(choice) ? choice : [choice]).filter(
+          (id) => assetIds.includes(id) && assetInfo(id)?.role === 'flora',
+        );
+        if (ids.length === 0) continue;
+
+        const models = (await Promise.all(ids.map((id) => assets.model(id)))).filter(Boolean);
+        if (models.length > 0 && session.stage.useModels(species.id, models)) {
           loaded += 1;
           return;
         }

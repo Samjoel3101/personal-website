@@ -24,6 +24,13 @@ import { WORLD } from './world.js';
  *   `onPath`  inverts the trail rule: this grows on the bare earth and nowhere
  *             else. For the stones worn into the track.
  *
+ * `modelScale` multiplies the height a *fetched* model is drawn at, and only
+ * that. It is not a fudge factor: a species' `height` is the size of the plant
+ * in the world, and the procedural shape is built to fill it, but the pack's
+ * model of the same plant may be a denser, shorter thing that fills its own
+ * unit box differently. Where the two disagree the near form visibly grows as
+ * you walk up to it, and the number here is what makes them meet.
+ *
  * `shape` names a builder in src/render/geometry — the world model itself
  * never draws anything. `asset` names an optional manifest entry that replaces
  * the procedural shape when it has been fetched; absent, the scene is complete
@@ -40,10 +47,13 @@ export const SCATTER = Object.freeze({
    * mats that spread six or eight is what finally closed the gaps.
    *
    * It is also the single biggest number in the build: halving it quadruples
-   * the cells the planting walks, and the planting is most of the two seconds
-   * the loading card is there for.
+   * the cells the planting walks, and the planting is most of the three
+   * seconds the loading card is there for. Six rather than seven is a third
+   * more plants and about a second more loading, bought deliberately — at
+   * seven the floor still showed through between the mats in open ground,
+   * which is the one thing the reference art never does.
    */
-  GROUND_CELL: 7,
+  GROUND_CELL: 6,
   /** How far an item may wander inside its cell, as a fraction of the cell.
    *  Below 1 the grid still shows; at 1 items from adjacent cells collide. */
   JITTER: 0.86,

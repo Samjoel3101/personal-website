@@ -51,9 +51,9 @@ export function createStage(canvas, valley) {
       quality.sample(ms);
     },
 
-    /** Upgrade a species with a fetched model, if one arrived. */
-    useModel(assetId, model) {
-      return world.useModel(assetId, model);
+    /** Upgrade a species with the models that arrived for it, if any did. */
+    useModels(id, models) {
+      return world.useModels(id, models);
     },
 
     /** Pin the quality tier, for `npm run shoot`. See render/quality.js. */

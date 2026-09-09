@@ -14,9 +14,12 @@ export const GROUND_COVER = Object.freeze([
      *  coverage and the tufts merely stand in it. */
     patch: { meadow: 1.2, clover: 0.95, flowery: 0.9, shade: 0.75, stony: 0.8, dry: 0.5 },
     shape: 'grass-mat',
-    /** A height; the mat spreads about twice this across. */
-    height: [2.4, 4.2],
-    weight: { forest: 0.55, woodland: 0.55, scrub: 0.26, desert: 0.02 },
+    /** A height; the mat spreads about twice this across. Raised, because
+     *  coverage is the whole job: a mat that stops short of its neighbours
+     *  leaves the ground colour showing, and the ground colour is the one
+     *  thing the reference floor never shows. */
+    height: [3, 5],
+    weight: { forest: 0.72, woodland: 0.7, scrub: 0.3, desert: 0.008 },
     vergeWeight: 0.5,
   },
   {
@@ -25,12 +28,25 @@ export const GROUND_COVER = Object.freeze([
     patch: { dry: 1.9, stony: 0.4, meadow: 0.15 },
     shade: -0.7,
     shape: 'dry-mat',
-    height: [2.6, 4.6],
-    weight: { forest: 0.16, woodland: 0.3, scrub: 0.55, desert: 0.08 },
+    height: [3.2, 5.4],
+    /** Almost nothing in the desert. A mat is a *carpet*, and it only reads as
+     *  one where mats overlap; scattered thinly across open sand each one is a
+     *  lone splayed star with bare ground all round it, which is the one thing
+     *  a wide low shape must never be. The desert floor is sand, tufts and
+     *  stones — see docs/reference/desert-wash-bare-trees.jpg. */
+    weight: { forest: 0.16, woodland: 0.3, scrub: 0.5, desert: 0.012 },
   },
   {
     id: 'tuft',
     patch: { meadow: 1, flowery: 0.7, clover: 0.45, stony: 0.35, shade: 0.4, dry: 0.25 },
+    /** Two of the pack's grasses, near the camera. They share one texture and
+     *  differ by where their UVs land in it, which is where the shades come
+     *  from — see docs/SCENERY-DIAGNOSIS.md §3. */
+    assets: [['pack.nature.grass-short', 'pack.nature.grass-tall']],
+    /** The pack's tuft is a dense clump of fine blades; the procedural one is a
+     *  few broad blades built to still read as grass from fifty units. Drawn
+     *  at the same height the pack form towers, so it is drawn at half. */
+    modelScale: 0.55,
     shape: 'grass',
     height: [3, 6.4],
     weight: { forest: 0.3, woodland: 0.3, scrub: 0.14, desert: 0.01 },
@@ -40,6 +56,11 @@ export const GROUND_COVER = Object.freeze([
     id: 'tall-tuft',
     patch: { meadow: 1.1, flowery: 0.5, dry: 0.35, clover: 0.2 },
     shade: -0.3,
+    /** Green and gold together: this is the species that stands in the open,
+     *  and a stand of it with both in it is most of the tonal variation the
+     *  reference has and a single-colour sward never will. */
+    assets: [['pack.nature.grass-tall', 'pack.nature.grass-dry-tall']],
+    modelScale: 0.6,
     shape: 'tall-grass',
     height: [5, 8.5],
     weight: { forest: 0.3, woodland: 0.24, scrub: 0.1, desert: 0 },
@@ -52,24 +73,29 @@ export const GROUND_COVER = Object.freeze([
      *  a scrub-only species. */
     patch: { dry: 1.8, stony: 0.35, meadow: 0.12 },
     shade: -0.8,
+    assets: [['pack.nature.grass-dry-short', 'pack.nature.grass-dry-tall']],
+    modelScale: 0.55,
     shape: 'grass-dry',
     height: [3, 6],
-    weight: { forest: 0.1, woodland: 0.16, scrub: 0.26, desert: 0.06 },
+    weight: { forest: 0.1, woodland: 0.16, scrub: 0.28, desert: 0.1 },
   },
   {
     id: 'fern',
     patch: { shade: 1.7, clover: 0.5 },
     shade: 1,
-    assets: ['pack.nature.fern'],
+    assets: [['pack.nature.fern']],
     shape: 'fern',
     height: [3.2, 5.6],
     weight: { forest: 0.3, woodland: 0.12, scrub: 0.01, desert: 0 },
   },
   {
     id: 'bush',
-    /** The green one, and the common one. Procedural at every distance: the
-     *  pack's bush is the red accent below. */
+    /** The green one, and the common one. The pack's flowering bush is green
+     *  with a scatter of purple, which is what a shrub in the reference art
+     *  looks like; its plain bush carries the twisted tree's blood red and is
+     *  the accent below, not this. */
     patch: { meadow: 0.7, shade: 0.6, stony: 0.5, clover: 0.4 },
+    assets: [['pack.nature.bush-flowers']],
     shape: 'bush',
     height: [4, 8],
     weight: { forest: 0.05, woodland: 0.07, scrub: 0.07, desert: 0 },
@@ -80,7 +106,7 @@ export const GROUND_COVER = Object.freeze([
      *  gorgeous once and oppressive by the hundred — it was most of what you
      *  saw in the mid-ground. An accent now: a fraction of the green bushes,
      *  weighted onto stony and dry ground where a turning shrub belongs. */
-    assets: ['pack.nature.bush'],
+    assets: [['pack.nature.bush']],
     patch: { stony: 1.4, dry: 1.1, meadow: 0.2 },
     shape: 'bush',
     height: [4.5, 8.5],
@@ -92,6 +118,8 @@ export const GROUND_COVER = Object.freeze([
      *  low: its job is coverage, where grass's is height and movement. */
     patch: { clover: 1.9, shade: 0.7, meadow: 0.25 },
     shade: 0.7,
+    assets: [['pack.nature.clover', 'pack.nature.clover-2']],
+    modelScale: 0.85,
     shape: 'clover',
     /** Read as a height; the mat spreads about three times this across. */
     height: [1.6, 2.8],
@@ -105,15 +133,32 @@ export const GROUND_COVER = Object.freeze([
     shape: 'fern',
     height: [3.5, 6.5],
     weight: { forest: 0.18, woodland: 0.14, scrub: 0.04, desert: 0 },
-    assets: ['pack.nature.plant'],
+    assets: [['pack.nature.plant']],
   },
   {
     id: 'pebble',
     patch: { stony: 1.9, dry: 0.4, meadow: 0.15 },
     shade: -0.4,
+    /** Four forms, two rounded and two angular. Pebbles are the one species
+     *  where repetition is unmistakable: they are small, they sit still, and
+     *  you walk past several hundred of them. */
+    assets: [
+      [
+        'pack.nature.pebble-1',
+        'pack.nature.pebble-2',
+        'pack.nature.pebble-3',
+        'pack.nature.pebble-4',
+      ],
+    ],
+    /** The pack's pebbles are pancakes: normalised by footprint rather than
+     *  height, so a 'height' of four is four units *across*. Pulled in so they
+     *  read as stones in the grass and not as paving. */
+    modelScale: 0.42,
     shape: 'rock',
     height: [1.4, 4],
-    weight: { forest: 0.06, woodland: 0.07, scrub: 0.14, desert: 0.12 },
+    /** Heavily into the desert: stones are most of what breaks up open sand in
+     *  the reference, and they are the cheapest thing that can do it. */
+    weight: { forest: 0.06, woodland: 0.07, scrub: 0.18, desert: 0.26 },
     maxSlope: 1.3,
     vergeWeight: 0.2,
   },
@@ -123,7 +168,7 @@ export const GROUND_COVER = Object.freeze([
     shade: -0.2,
     shape: 'flower-blue',
     height: [2.2, 3.6],
-    weight: { forest: 0.035, woodland: 0.035, scrub: 0.004, desert: 0 },
+    weight: { forest: 0.016, woodland: 0.014, scrub: 0.002, desert: 0 },
     /** Flowers line the trail. This is the single cheapest thing in the whole
      *  scene and close to the most effective: a path with colour along its
      *  edge reads as a path, and one without reads as a gap. */
@@ -135,25 +180,27 @@ export const GROUND_COVER = Object.freeze([
     shade: -0.2,
     shape: 'flower-purple',
     height: [2.4, 3.8],
-    weight: { forest: 0.03, woodland: 0.03, scrub: 0.004, desert: 0 },
+    weight: { forest: 0.014, woodland: 0.013, scrub: 0.002, desert: 0 },
     vergeWeight: 1.2,
   },
   {
     id: 'flower-pink',
     patch: { flowery: 1.9, meadow: 0.35 },
     shade: -0.2,
+    assets: [['pack.nature.flower-coral']],
     shape: 'flower-pink',
     height: [2, 3.2],
-    weight: { forest: 0.02, woodland: 0.025, scrub: 0.004, desert: 0 },
+    weight: { forest: 0.05, woodland: 0.055, scrub: 0.008, desert: 0 },
     vergeWeight: 0.8,
   },
   {
     id: 'flower-yellow',
     patch: { flowery: 1.9, meadow: 0.35 },
     shade: -0.2,
+    assets: [['pack.nature.flower-gold']],
     shape: 'flower-yellow',
     height: [1.9, 3],
-    weight: { forest: 0.02, woodland: 0.03, scrub: 0.05, desert: 0.008 },
+    weight: { forest: 0.045, woodland: 0.06, scrub: 0.07, desert: 0.012 },
     vergeWeight: 1,
   },
   {
@@ -172,7 +219,7 @@ export const GROUND_COVER = Object.freeze([
     patch: { shade: 1.8, clover: 0.7 },
     shade: 1,
     vergeWeight: 0.3,
-    assets: ['pack.nature.mushroom'],
+    assets: [['pack.nature.mushroom', 'pack.nature.mushroom-2']],
     shape: 'mushroom',
     height: [1.4, 3],
     weight: { forest: 0.07, woodland: 0.02, scrub: 0, desert: 0 },
@@ -182,7 +229,7 @@ export const GROUND_COVER = Object.freeze([
     /** Worn into the path, and the only species that grows on it. Small,
      *  flat, and scattered the way stones surface on a walked track — without
      *  them the trail is a painted stripe rather than a surface. */
-    assets: ['pack.nature.trail-stone'],
+    assets: [['pack.nature.trail-stone', 'pack.nature.trail-stone-2', 'pack.nature.trail-stone-3']],
     shape: 'flat-stone',
     height: [1, 2.4],
     onPath: true,

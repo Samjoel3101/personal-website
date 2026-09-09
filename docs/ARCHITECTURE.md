@@ -191,13 +191,24 @@ They do not replace the procedural meshes, though — they join them. Every tile
 of a species with a model has two forms, and one distance test a frame decides
 which is visible. That is the only reason the pack is affordable: a Quaternius
 pine is five thousand triangles against the procedural one's eighty, and a
-forest of two thousand of them is fifteen million triangles a frame. Swapping
-at four hundred units — where the fog has already taken most of the detail —
-brings that under seven, and the two silhouettes are close enough that the
-change is hard to catch.
+forest of two thousand of them is fifteen million triangles a frame.
 
-Each species lists its models best first (pack, then Kenney's kit for the palm
-and cactus the free tier lacks) and `main.js` takes the first that loads.
+There are two radii, and the difference between them is the whole reason ground
+cover can use the pack at all. Instance count grows with the square of the
+radius, and the undergrowth outnumbers the trees thirty to one: at 340 units
+there are ~200 trees within the disc and ~7,200 plants. So trees swap at 340,
+where the fog has already taken most of the detail, and ground cover swaps at
+150, where a blade of grass is still a blade of grass. The model form is also
+tiled far more finely than the procedural one (90 units against 420), because
+the test is per tile against its own bounding sphere and a coarse tile
+straddling a tight radius throws the tight radius away.
+
+Each species lists its models as a list of _choices_, best first (pack, then
+Kenney's kit for the palm and cactus the free tier lacks). A choice may itself
+be a list, and that means variants of one thing: all of them are used, and which
+one a given plant takes is a hash of where it stands. Deterministic, so a tree's
+shape survives a reload and a test; position-keyed rather than index-keyed, so
+thinning the undergrowth does not reshuffle every plant that survived.
 
 Two of the shapes' conventions are worth knowing before adding one. Everything
 is normalised to unit height with its base at zero and placed with a single

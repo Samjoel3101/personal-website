@@ -20,7 +20,12 @@ import { Color, InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
  * of them per species rather than a few hundred.
  *
  * Scale is uniform and comes from the item's height, which is the contract
- * every shape in ./shapes.js is built to.
+ * every shape in ./shapes.js is built to. `scale` multiplies it, and exists
+ * for one reason: a fetched model and the procedural shape standing in for it
+ * are both normalised to unit height, but they are not the same *plant*. The
+ * pack's grass is a small dense tuft where the procedural one is a few broad
+ * blades built to read from fifty units away, and giving them the same height
+ * makes the near form tower over the far one at the moment they swap.
  */
 const matrix = new Matrix4();
 const position = new Vector3();
@@ -29,7 +34,12 @@ const scale = new Vector3();
 const tint = new Color();
 const UP = new Vector3(0, 1, 0);
 
-export function instancedChunks(geometry, material, items, { chunk = 400, shadows = true } = {}) {
+export function instancedChunks(
+  geometry,
+  material,
+  items,
+  { chunk = 400, shadows = true, scale: sizing = 1 } = {},
+) {
   const tiles = new Map();
   for (const item of items) {
     const key = `${Math.floor(item.x / chunk)}:${Math.floor(item.z / chunk)}`;
@@ -39,12 +49,12 @@ export function instancedChunks(geometry, material, items, { chunk = 400, shadow
 
   const meshes = [];
   for (const tile of tiles.values()) {
-    meshes.push(buildTile(geometry, material, tile, shadows));
+    meshes.push(buildTile(geometry, material, tile, shadows, sizing));
   }
   return meshes;
 }
 
-function buildTile(geometry, material, items, shadows) {
+function buildTile(geometry, material, items, shadows, sizing) {
   const mesh = new InstancedMesh(geometry, material, items.length);
   mesh.castShadow = shadows;
   mesh.receiveShadow = false;
@@ -52,7 +62,7 @@ function buildTile(geometry, material, items, shadows) {
   items.forEach((item, index) => {
     position.set(item.x, item.y ?? 0, item.z);
     quaternion.setFromAxisAngle(UP, item.rotationY ?? 0);
-    scale.setScalar(item.height ?? 1);
+    scale.setScalar((item.height ?? 1) * sizing);
     mesh.setMatrixAt(index, matrix.compose(position, quaternion, scale));
     if (item.tint !== undefined) mesh.setColorAt(index, tint.setScalar(item.tint));
   });

@@ -51,11 +51,12 @@ export function createValleyScene(valley) {
 
     setQuality(tier) {
       lighting.setShadowsEnabled(tier.shadows);
+      flora.setDetail(tier.detail ?? 1);
     },
 
-    /** Swap a species' procedural shape for a fetched model. */
-    useModel(assetId, model) {
-      return flora.useModel(assetId, model);
+    /** Give a species the fetched models it uses near the camera. */
+    useModels(id, models) {
+      return flora.useModels(id, models);
     },
   };
 }

@@ -7,14 +7,17 @@
 export const CANOPY = Object.freeze([
   {
     id: 'pine',
-    assets: ['pack.nature.pine', 'kit.nature.tree.pine'],
+    assets: [
+      ['pack.nature.pine', 'pack.nature.pine-2', 'pack.nature.pine-broad'],
+      'kit.nature.tree.pine',
+    ],
     shape: 'conifer',
     height: [46, 88],
     weight: { forest: 0.42, woodland: 0.08, scrub: 0.01, desert: 0 },
   },
   {
     id: 'spire',
-    assets: ['pack.nature.pine-slim', 'kit.nature.tree.spire'],
+    assets: [['pack.nature.pine-slim', 'pack.nature.pine-slim-2'], 'kit.nature.tree.spire'],
     shape: 'conifer-tall',
     height: [70, 120],
     weight: { forest: 0.2, woodland: 0.03, scrub: 0, desert: 0 },
@@ -22,20 +25,20 @@ export const CANOPY = Object.freeze([
   {
     id: 'birch',
     shape: 'birch',
-    assets: ['pack.nature.tree-broad'],
+    assets: [['pack.nature.tree-broad', 'pack.nature.tree-tall']],
     height: [44, 72],
     weight: { forest: 0.3, woodland: 0.26, scrub: 0.02, desert: 0 },
   },
   {
     id: 'aspen',
-    assets: ['pack.nature.tree-slim'],
+    assets: [['pack.nature.tree-slim', 'pack.nature.tree-tall']],
     shape: 'aspen',
     height: [40, 68],
     weight: { forest: 0.2, woodland: 0.24, scrub: 0.02, desert: 0 },
   },
   {
     id: 'oak',
-    assets: ['pack.nature.tree', 'kit.nature.tree.oak'],
+    assets: [['pack.nature.tree', 'pack.nature.tree-round'], 'kit.nature.tree.oak'],
     shape: 'oak',
     height: [38, 62],
     weight: { forest: 0.18, woodland: 0.24, scrub: 0.03, desert: 0 },
@@ -64,14 +67,26 @@ export const CANOPY = Object.freeze([
     /** Sparingly. Its crown is the pack's deep red, which is striking as an
      *  accent in a green wood and overwhelming as a third of it. */
     weight: { forest: 0.025, woodland: 0.07, scrub: 0.07, desert: 0 },
-    assets: ['pack.nature.twisted'],
+    assets: [['pack.nature.twisted', 'pack.nature.twisted-2', 'pack.nature.twisted-3']],
   },
   {
     id: 'deadwood',
-    assets: ['pack.nature.dead'],
+    assets: [
+      [
+        'pack.nature.dead',
+        'pack.nature.dead-2',
+        'pack.nature.dead-3',
+        'pack.nature.dead-4',
+        'pack.nature.dead-5',
+      ],
+    ],
     shape: 'dead-tree',
     height: [26, 52],
-    weight: { forest: 0.02, woodland: 0.05, scrub: 0.13, desert: 0.04 },
+    /** The desert's only silhouette, and the strongest value contrast in that
+     *  half of the valley: five near-black bare forms against pale sand. Five
+     *  *forms* — this is the species that most obviously repeats when it is one
+     *  model, because there is nothing else in frame to look at. */
+    weight: { forest: 0.02, woodland: 0.05, scrub: 0.14, desert: 0.11 },
   },
   {
     id: 'palm',
@@ -106,16 +121,16 @@ export const CANOPY = Object.freeze([
     /** Rocks come in outcrops, not one at a time. The stony community is what
      *  gathers them — and the same community thins the grass around them. */
     patch: { stony: 1.9, dry: 0.4, meadow: 0.2 },
-    assets: ['pack.nature.rock'],
+    assets: [['pack.nature.rock', 'pack.nature.rock-2']],
     shape: 'boulder',
     height: [8, 26],
-    weight: { forest: 0.09, woodland: 0.06, scrub: 0.08, desert: 0.06 },
+    weight: { forest: 0.09, woodland: 0.06, scrub: 0.06, desert: 0.02 },
     maxSlope: 1.3,
   },
   {
     id: 'shard',
     patch: { stony: 1.8, dry: 0.5, meadow: 0.25 },
-    assets: ['pack.nature.rock-standing'],
+    assets: [['pack.nature.rock-standing']],
     shape: 'shard',
     height: [10, 30],
     /** Pale rock breaking out of the undergrowth, in every band. It is the
