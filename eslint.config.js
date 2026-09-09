@@ -68,6 +68,14 @@ export default [
     rules: { 'no-console': 'off' },
   },
 
+  // The snapshot tool drives a browser: its `page.evaluate` callbacks are
+  // serialised and run in the page, so they see `window` and not Node. Same
+  // arrangement the end-to-end suite has, and for the same reason.
+  {
+    files: ['scripts/shoot/**/*.mjs'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+
   // Tests may be longer and noisier than production modules.
   {
     files: ['**/*.test.js', 'e2e/**/*.js'],
