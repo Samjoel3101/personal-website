@@ -13,3 +13,7 @@ public/assets/
 
 # Local screenshot harnesses used while iterating on the look.
 *.tmp.mjs
+
+# `npm run shoot` output: screenshots, the contact sheet and the model
+# catalogue. Regenerated on demand and far too large to keep in git.
+shots/

@@ -86,6 +86,9 @@ export function createSession(elements) {
       get camera() {
         return stage.diagnostics.camera;
       },
+      /** Pin the quality tier so a headless shot is not a picture of the
+       *  fallback the software rasteriser drops to. See scripts/shoot.mjs. */
+      forceQuality: (name) => stage.forceQuality(name),
     },
 
     dispose() {

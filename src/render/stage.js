@@ -56,6 +56,11 @@ export function createStage(canvas, valley) {
       return world.useModel(assetId, model);
     },
 
+    /** Pin the quality tier, for `npm run shoot`. See render/quality.js. */
+    forceQuality(name) {
+      return quality.force(name);
+    },
+
     /** Move the flight along the valley. For the tests and the console. */
     jumpTo(where) {
       view.jumpTo(where);

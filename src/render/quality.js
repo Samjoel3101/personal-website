@@ -22,6 +22,7 @@ export function createQualityController(onChange) {
   let sum = 0;
   let count = 0;
   let cooldown = 0;
+  let pinned = false;
 
   function moveTo(next) {
     const clamped = clamp(next, 0, QUALITY_TIERS.length - 1);
@@ -35,8 +36,26 @@ export function createQualityController(onChange) {
       return QUALITY_TIERS[index];
     },
 
+    /**
+     * Pin the tier and stop measuring. For `npm run shoot`, and nothing else.
+     *
+     * A software rasteriser draws a frame in about a second, so the ladder
+     * collapses to `low` within the first few frames of any headless run —
+     * which makes every screenshot a picture of the fallback rather than of
+     * the thing being judged. Pinning is what makes two shots comparable.
+     */
+    force(name) {
+      const next = QUALITY_TIERS.findIndex((tier) => tier.name === name);
+      if (next < 0) return false;
+      pinned = true;
+      index = next;
+      onChange(QUALITY_TIERS[index]);
+      return true;
+    },
+
     /** Feed one frame interval, in milliseconds. */
     sample(ms) {
+      if (pinned) return;
       if (ms > 200) return; // a tab that was backgrounded
       sum += ms;
       count += 1;
