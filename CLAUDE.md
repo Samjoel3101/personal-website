@@ -2,9 +2,10 @@
 
 A procedurally generated valley you **walk** through, drawn in WebGL. A trail
 runs its whole length, from a pine forest through thinning woodland and dry
-scrub into open desert — hills into dunes, ferns into cacti, a pond into an
-oasis — and the camera walks that trail at eye level. Nothing in it is
-hand-placed and nothing is a photograph.
+scrub into open desert — the ground keeps the same gentle roll the whole way,
+drying out rather than turning to dunes, while ferns give way to cacti and a
+pond to an oasis — and the camera walks that trail at eye level. Nothing in it
+is hand-placed and nothing is a photograph.
 
 The art direction is Quaternius's Stylized Nature MegaKit, and the trees, rocks
 and undergrowth near you are the pack itself, fetched from a CC0 mirror. Further

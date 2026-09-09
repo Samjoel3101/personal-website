@@ -46,8 +46,9 @@ into geometry. Nothing goes the other way.
 two are ever non-zero, and **every** difference between the two ends of the
 valley is a blend keyed by those weights:
 
-- the amplitude of the hills and of the dune ridges (`config/world.js`,
-  `TERRAIN.HILLS` and `TERRAIN.DUNES`);
+- the amplitude of the hills, and a shallow dune comb over the drier end
+  (`config/world.js`, `TERRAIN.HILLS` and `TERRAIN.DUNES`) — the roll itself is
+  the same forest to desert;
 - the colour of the ground and of the haze (`config/palette.js`);
 - the weight of every species in the planting (`config/flora.js`).
 
@@ -99,9 +100,8 @@ valley is behind you or in the haze.
 
 ## Two ground surfaces, and why it matters
 
-`heightAt(x, z)` is a smooth analytic field: four noise terms, plus the valley
-walls, plus the mesas, with the water basins carved in. It is not the ground
-you can see.
+`heightAt(x, z)` is a smooth analytic field: three noise terms plus the valley
+walls, with the water basins carved in. It is not the ground you can see.
 
 The ground you can see is `buildHeightfield`'s triangles between samples of
 that field on a 20-unit lattice, and between lattice lines the two disagree —

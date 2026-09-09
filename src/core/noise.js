@@ -59,8 +59,9 @@ export function fbm(x, y, { octaves = 4, seed = 0, lacunarity = 2, gain = 0.5 } 
 
 /**
  * Ridged noise: the absolute value of the field, inverted, so the peaks become
- * sharp crests and the troughs become broad flats. That is the shape of a dune
- * field, and it is why the desert does not look like the forest repainted.
+ * sharp crests and the troughs become broad flats — the shape of a wind-combed
+ * surface. The terrain uses it only for a shallow dune texture over the drier
+ * end of the valley; the elevation itself rolls the same forest to desert.
  * Returns [0, 1].
  */
 export function ridged(x, y, options = {}) {

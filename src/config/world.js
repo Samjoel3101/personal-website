@@ -108,10 +108,20 @@ export const PATCH = Object.freeze({
 
 /** Terrain relief. Amplitudes are per band and blended by biome weight. */
 export const TERRAIN = Object.freeze({
-  /** Rolling ground under the forest, in world units of peak height. */
-  HILLS: { forest: 78, woodland: 56, scrub: 34, desert: 15 },
-  /** Wind-blown dune ridges. Desert only, or the forest floor corrugates. */
-  DUNES: { forest: 0, woodland: 0, scrub: 12, desert: 34 },
+  /**
+   * Rolling ground, in world units of peak height. The same gentle roll carries
+   * the whole valley: the desert sits within ~10% of the forest, so its ground
+   * reads as forest relief that has been recoloured and replanted, not as a
+   * different landform. Only palette, fog and planting say "desert".
+   */
+  HILLS: { forest: 78, woodland: 56, scrub: 66, desert: 70 },
+  /**
+   * A shallow ridged comb laid over the scrub and desert for a hint of
+   * wind-blown dune texture. Single digits on purpose: `naturalHeightAt` adds
+   * it without any downward bias, so it lifts a crest a few units over tens of
+   * metres and never digs a hollow or raises a wall.
+   */
+  DUNES: { forest: 0, woodland: 0, scrub: 3, desert: 6 },
   /** Frequencies of the two relief fields, in cycles per world unit. */
   HILL_SCALE: 0.0016,
   DUNE_SCALE: 0.0075,
@@ -127,21 +137,6 @@ export const TERRAIN = Object.freeze({
   WALL_START: 0.55,
   WALL_HEIGHT: 300,
 });
-
-/**
- * Flat-topped desert buttes. Placed by hand rather than scattered: three
- * silhouettes on the horizon is scenery, thirty is noise.
- *
- * Each one stands clear of the trail, and that is not cosmetic. The trail
- * levels the ground it crosses; run it into a butte and it either cuts a shelf
- * through the cliff or climbs a one-in-one gradient, and at eye level you walk
- * into a wall of sand. `tests/path.test.js` pins the clearance.
- */
-export const MESAS = Object.freeze([
-  { x: -500, z: 4180, radius: 260, height: 210 },
-  { x: 470, z: 5030, radius: 240, height: 165 },
-  { x: 190, z: 5450, radius: 190, height: 120 },
-]);
 
 /**
  * Standing water: one forest pond, one desert oasis.

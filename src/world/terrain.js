@@ -1,4 +1,4 @@
-import { MESAS, TERRAIN, WORLD } from '../config/world.js';
+import { TERRAIN, WORLD } from '../config/world.js';
 import { clamp, lerp, smoothstep } from '../core/math.js';
 import { fbm, noise2, ridged } from '../core/noise.js';
 import { biomeWeights, blendValue, journeyAt } from './biome.js';
@@ -10,15 +10,16 @@ import { flattenFactor, pathCentre, pathFactor } from './path.js';
  * The shape of the ground: one pure function of position, and the sampled grid
  * the renderer and the planting both stand on.
  *
- * Four fields are summed. Rolling hills carry the forest; ridged noise builds
- * dune crests that only exist in the desert; a fine detail field keeps any
- * slope from being perfectly smooth; and the valley walls climb at both edges
- * so the world can be finite without ever showing an edge. Mesas and water
- * basins are then blended in over the top.
+ * Three fields are summed. Rolling hills carry the whole valley, forest to
+ * desert, at very nearly the same amplitude either end; a shallow ridged term
+ * combs a few units of dune texture over the scrub and desert without ever
+ * digging a hollow; a fine detail field keeps any slope from being perfectly
+ * smooth; and the valley walls climb at both edges so the world can be finite
+ * without ever showing an edge. Water basins are then carved in over the top.
  *
- * Every amplitude is blended by biome weight, so the ground itself changes
- * character along the journey rather than being repainted — the forest is
- * lumpy, the desert is combed.
+ * The desert's elevation profile is the forest's — the same gentle, continuous
+ * roll. What makes it a desert is its colour, its fog, its planting and its
+ * ground texture, none of which live here.
  */
 export function heightAt(x, z) {
   return carveBasins(x, z, levelTrail(x, z, naturalHeightAt(x, z)));
@@ -94,12 +95,11 @@ export function naturalHeightAt(x, z) {
     fbm(x * TERRAIN.HILL_SCALE, z * TERRAIN.HILL_SCALE, { octaves: 4, seed: 11 }) *
     blendValue(weights, TERRAIN.HILLS);
   const dunes =
-    (ridged(x * TERRAIN.DUNE_SCALE, z * TERRAIN.DUNE_SCALE * 0.34, { seed: 23 }) - 0.45) *
-    blendValue(weights, TERRAIN.DUNES) *
-    2;
+    ridged(x * TERRAIN.DUNE_SCALE, z * TERRAIN.DUNE_SCALE * 0.34, { seed: 23 }) *
+    blendValue(weights, TERRAIN.DUNES);
   const detail =
     noise2(x * TERRAIN.DETAIL_SCALE, z * TERRAIN.DETAIL_SCALE, 41) * TERRAIN.DETAIL_AMOUNT;
-  return hills + dunes + detail + wallHeight(x, z) + mesaHeight(x, z);
+  return hills + dunes + detail + wallHeight(x, z);
 }
 
 /** Surface height of a pool, memoised: the natural ground at its centre. */
@@ -116,20 +116,6 @@ function wallHeight(x, z) {
   const rise = smoothstep(TERRAIN.WALL_START, 1.05, across);
   const roughness = 1 + 0.4 * fbm(x * 0.004, z * 0.004, { octaves: 3, seed: 77 });
   return rise * rise * TERRAIN.WALL_HEIGHT * roughness;
-}
-
-/** Flat-topped buttes: a plateau inside 62% of the radius, a cliff outside it. */
-function mesaHeight(x, z) {
-  let sum = 0;
-  for (const mesa of MESAS) {
-    const distance = Math.hypot(x - mesa.x, z - mesa.z) / mesa.radius;
-    const shape = smoothstep(1, 0.62, distance);
-    if (shape > 0) {
-      const notch = 1 + 0.12 * noise2(x * 0.01, z * 0.01, mesa.radius | 0);
-      sum += mesa.height * shape * notch;
-    }
-  }
-  return sum;
 }
 
 /** Pulls the ground into a pool's basin, leaving a raised bank around it. */

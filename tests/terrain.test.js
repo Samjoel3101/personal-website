@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MESAS, POOLS, WORLD } from '../src/config/world.js';
+import { POOLS, WORLD } from '../src/config/world.js';
 import {
   heightAt,
   naturalHeightAt,
@@ -38,19 +38,61 @@ describe('the terrain field', () => {
     }
   });
 
-  it('raises a flat top on every mesa', () => {
-    for (const mesa of MESAS) {
-      const top = heightAt(mesa.x, mesa.z);
-      // Sampled along z, not x: a mesa is close enough to the valley side
-      // that a step across would land in the wall rather than on the floor.
-      const outside = heightAt(mesa.x, mesa.z - mesa.radius * 1.6);
-      expect(top).toBeGreaterThan(outside + mesa.height * 0.6);
-      // Flat, not domed: the whole point of a butte. Not perfectly flat —
-      // the dunes and the detail field still run over the top of it — so the
-      // tolerance is a quarter of the rise rather than nothing.
-      const across = Math.abs(top - heightAt(mesa.x, mesa.z + mesa.radius * 0.3));
-      expect(across).toBeLessThan(mesa.height * 0.25);
-    }
+  it('rolls the desert the way it rolls the forest — no pits, no isolated peaks', () => {
+    // The relief of a 200-unit patch: how far the ground moves under your feet
+    // as you cross it.
+    const patchSpread = (cx, cz) => {
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (let dx = -100; dx <= 100; dx += 20) {
+        for (let dz = -100; dz <= 100; dz += 20) {
+          const h = naturalHeightAt(cx + dx, cz + dz);
+          lo = Math.min(lo, h);
+          hi = Math.max(hi, h);
+        }
+      }
+      return hi - lo;
+    };
+    // How far a point sits below the ring of ground around it: a hole.
+    const dipBelow = (cx, cz) => {
+      let sum = 0;
+      let n = 0;
+      for (let a = 0; a < Math.PI * 2; a += 0.5) {
+        sum += naturalHeightAt(cx + Math.cos(a) * 70, cz + Math.sin(a) * 70);
+        n += 1;
+      }
+      return sum / n - naturalHeightAt(cx, cz);
+    };
+
+    const xs = [-400, -200, -50, 0, 50, 200, 400];
+    const survey = (z0, z1) => {
+      let spreadMax = 0;
+      let spreadSum = 0;
+      let dipMax = 0;
+      let count = 0;
+      for (const x of xs) {
+        for (let z = z0; z <= z1; z += 50) {
+          const spread = patchSpread(x, z);
+          spreadMax = Math.max(spreadMax, spread);
+          spreadSum += spread;
+          dipMax = Math.max(dipMax, dipBelow(x, z));
+          count += 1;
+        }
+      }
+      return { spreadMax, spreadAvg: spreadSum / count, dipMax };
+    };
+
+    const forest = survey(200, 1600);
+    const desert = survey(4500, WORLD.LENGTH);
+
+    // The desert's relief is in the same band as the forest's, not a different
+    // landform: same gentle roll, only recoloured and replanted.
+    expect(desert.spreadAvg).toBeLessThan(forest.spreadAvg * 1.8);
+    expect(desert.spreadMax).toBeLessThan(forest.spreadMax * 1.6);
+    // And nothing digs a hole: the old ridged dune field dropped the centre of
+    // a patch tens of units below its surroundings.
+    expect(desert.dipMax).toBeLessThan(16);
+    expect(forest.dipMax).toBeLessThan(16);
   });
 });
 
