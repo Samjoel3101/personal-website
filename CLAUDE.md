@@ -25,6 +25,27 @@ forest read as synthetic.
 `docs/ARCHITECTURE.md`, then the task you were given. Nothing else is required
 reading.**
 
+## How work happens here: worktree-first
+
+Every change — a feature, a bug fix, a doc edit — is made on a **fresh branch
+inside its own git worktree**, off up-to-date `origin/main`. Never in the
+primary checkout, never on `main`. A `PreToolUse` hook
+(`.claude/hooks/require-worktree.mjs`) blocks edits that break that rule.
+
+```bash
+npm run wt:new -- <slug>            # ../personal-website-worktrees/<slug> on branch claude/<slug>
+cd ../personal-website-worktrees/<slug>
+# ...do the work, then...
+npm run check
+git push -u origin claude/<slug> && gh pr create
+# after the PR merges:
+cd -   &&   npm run wt:rm -- <slug>
+```
+
+The escape hatch `VALLEY_ALLOW_MAIN_WRITES=1` lets a write through on `main` or
+in the primary checkout, and exists only for editing the harness itself or a
+true hotfix. `docs/WORKTREE-WORKFLOW.md` is the full workflow.
+
 ## Get it running
 
 ```bash
@@ -52,6 +73,9 @@ upgraded, and the console says so too when none did.
 | `npm run format`                    | Prettier                                                                                           |
 | `npm run assets:fetch -- --record`  | Download third-party models and pin their hashes (`dev`/`build` do the download part on their own) |
 | `npm run assets:verify`             | Check the asset manifest and hashes                                                                |
+| `npm run wt:new -- <slug>`          | Create a worktree on branch `claude/<slug>` off `origin/main` and `npm install` it                 |
+| `npm run wt:list`                   | List the worktrees                                                                                 |
+| `npm run wt:rm -- <slug>`           | Remove that worktree and delete its local branch (after the PR merges)                             |
 
 ## The five rules
 

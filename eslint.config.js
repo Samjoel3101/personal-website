@@ -61,9 +61,9 @@ export default [
     languageOptions: { globals: globals.browser },
   },
 
-  // Build scripts and config run in Node.
+  // Build scripts, Claude Code hooks and config run in Node.
   {
-    files: ['scripts/**/*.mjs', '*.config.js', 'e2e/**/*.js'],
+    files: ['scripts/**/*.mjs', '.claude/hooks/**/*.mjs', '*.config.js', 'e2e/**/*.js'],
     languageOptions: { globals: globals.node },
     rules: { 'no-console': 'off' },
   },
