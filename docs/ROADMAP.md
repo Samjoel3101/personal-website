@@ -4,6 +4,9 @@ The valley is complete and correct as it stands: it generates, it plants, it
 draws, and it flies. What follows is work that would make it better, broken
 into tasks that can be done one at a time. Each names the files it touches.
 
+Each task is its own branch in its own worktree — see
+`docs/WORKTREE-WORKFLOW.md`. Start with `npm run wt:new -- <slug>`.
+
 ## 1. Wind
 
 Nothing moves except the camera, and a landscape where nothing moves reads as a

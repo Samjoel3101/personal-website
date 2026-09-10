@@ -28,6 +28,9 @@
     "assets:link": "node scripts/link-assets.mjs",
     "assets:verify": "node scripts/verify-assets.mjs",
     "check:boundaries": "node scripts/check-boundaries.mjs",
+    "wt:new": "bash scripts/worktree.sh new",
+    "wt:list": "bash scripts/worktree.sh list",
+    "wt:rm": "bash scripts/worktree.sh rm",
     "check": "npm run lint && npm run format:check && npm run check:boundaries && npm run assets:verify && npm run test && npm run build"
   },
   "dependencies": {

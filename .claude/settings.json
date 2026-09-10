@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '\\n=== Worktree-first workflow ===\\nBuild a feature / fix a bug => work in a git worktree on a fresh branch, never in the primary checkout or on `main`.\\n  npm run wt:new -- <slug>   then   cd ../personal-website-worktrees/<slug>\\nRun `npm run check` there, push, open a PR with gh. Full workflow: docs/WORKTREE-WORKFLOW.md\\n\\nCurrent worktrees:\\n'; git worktree list"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-worktree.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}
