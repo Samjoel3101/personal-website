@@ -33,7 +33,6 @@ export function createSession(elements) {
         progress: stage.progress,
       });
     },
-    onFrameTime: (ms) => stage.sampleFrameTime(ms),
   });
 
   function resize() {

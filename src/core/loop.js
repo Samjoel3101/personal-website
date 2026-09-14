@@ -9,7 +9,7 @@
  */
 const MAX_FRAME_SECONDS = 1 / 15;
 
-export function createLoop({ frame, onFrameTime }) {
+export function createLoop({ frame }) {
   let running = false;
   let previous = 0;
   let handle = 0;
@@ -21,7 +21,6 @@ export function createLoop({ frame, onFrameTime }) {
     const elapsedMs = now - previous;
     previous = now;
     frame(Math.min(elapsedMs / 1000, MAX_FRAME_SECONDS), now);
-    onFrameTime?.(elapsedMs);
   }
 
   return {
