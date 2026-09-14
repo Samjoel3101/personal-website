@@ -21,7 +21,11 @@ const BASE_GROUND_COVER = [
      *  leaves the ground colour showing, and the ground colour is the one
      *  thing the reference floor never shows. */
     height: [3, 5],
-    weight: { forest: 0.72, woodland: 0.7, scrub: 0.3, desert: 0.008 },
+    /** Forest and woodland now belong to leaf-litter-mat and needle-mat — the
+     *  same coverage job, the same wide-low-cheap shape, but built from the
+     *  actual kit instead of a flat cone. A residual share stays so the floor
+     *  isn't one texture end to end; scrub and desert are untouched. */
+    weight: { forest: 0.05, woodland: 0.05, scrub: 0.3, desert: 0.008 },
     vergeWeight: 0.5,
   },
   {
@@ -36,7 +40,10 @@ const BASE_GROUND_COVER = [
      *  lone splayed star with bare ground all round it, which is the one thing
      *  a wide low shape must never be. The desert floor is sand, tufts and
      *  stones — see docs/reference/desert-wash-bare-trees.jpg. */
-    weight: { forest: 0.16, woodland: 0.3, scrub: 0.5, desert: 0.012 },
+    /** Forest and woodland reduced the same way grass-mat is, for the same
+     *  reason — the kit's mats now carry coverage there. Scrub and desert
+     *  keep their share; the golden-drift job is still all this. */
+    weight: { forest: 0.02, woodland: 0.04, scrub: 0.5, desert: 0.012 },
   },
   {
     id: 'tuft',
@@ -51,7 +58,10 @@ const BASE_GROUND_COVER = [
     modelScale: 0.55,
     shape: 'grass',
     height: [3, 6.4],
-    weight: { forest: 0.3, woodland: 0.3, scrub: 0.14, desert: 0.01 },
+    /** Forest and woodland cut hard: sedge, vernal-grass and fescue now do
+     *  this job with the kit's own dense-bladed geometry instead of the
+     *  pack's clump. Scrub and desert untouched. */
+    weight: { forest: 0.03, woodland: 0.03, scrub: 0.14, desert: 0.01 },
     vergeWeight: 1,
   },
   {
@@ -65,7 +75,9 @@ const BASE_GROUND_COVER = [
     modelScale: 0.6,
     shape: 'tall-grass',
     height: [5, 8.5],
-    weight: { forest: 0.3, woodland: 0.24, scrub: 0.1, desert: 0 },
+    /** Same cut as 'tuft': fescue now carries the tall, gold-tinted grass job
+     *  under the canopy. */
+    weight: { forest: 0.04, woodland: 0.04, scrub: 0.1, desert: 0 },
     vergeWeight: 0.8,
   },
   {
@@ -79,7 +91,8 @@ const BASE_GROUND_COVER = [
     modelScale: 0.55,
     shape: 'grass-dry',
     height: [3, 6],
-    weight: { forest: 0.1, woodland: 0.16, scrub: 0.28, desert: 0.1 },
+    /** Same cut again, for the same reason. */
+    weight: { forest: 0.02, woodland: 0.03, scrub: 0.28, desert: 0.1 },
   },
   {
     id: 'fern',
@@ -91,7 +104,7 @@ const BASE_GROUND_COVER = [
     modelBands: ['forest', 'woodland'],
     shape: 'fern',
     height: [3.2, 5.6],
-    weight: { forest: 0.3, woodland: 0.12, scrub: 0.01, desert: 0 },
+    weight: { forest: 0.38, woodland: 0.16, scrub: 0.01, desert: 0 },
   },
   {
     id: 'bush',
@@ -132,7 +145,7 @@ const BASE_GROUND_COVER = [
     shape: 'clover',
     /** Read as a height; the mat spreads about three times this across. */
     height: [1.6, 2.8],
-    weight: { forest: 0.32, woodland: 0.26, scrub: 0.04, desert: 0 },
+    weight: { forest: 0.36, woodland: 0.32, scrub: 0.04, desert: 0 },
     vergeWeight: 0.3,
   },
   {
@@ -220,7 +233,9 @@ const BASE_GROUND_COVER = [
     shade: -0.2,
     shape: 'flower-white',
     height: [2.2, 3.4],
-    weight: { forest: 0.025, woodland: 0.02, scrub: 0.008, desert: 0 },
+    /** wood-anemone is the same small white star, built from the kit, and now
+     *  does this job under the canopy — this one keeps only its scrub sliver. */
+    weight: { forest: 0, woodland: 0, scrub: 0.008, desert: 0 },
     vergeWeight: 0.7,
   },
   {
@@ -233,7 +248,7 @@ const BASE_GROUND_COVER = [
     assets: [['ground.woodland-mushroom-cluster']],
     shape: 'mushroom',
     height: [1.4, 3],
-    weight: { forest: 0.07, woodland: 0.02, scrub: 0, desert: 0 },
+    weight: { forest: 0.1, woodland: 0.04, scrub: 0, desert: 0 },
   },
   {
     id: 'trail-stone',

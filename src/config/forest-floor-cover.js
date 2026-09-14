@@ -22,17 +22,16 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     modelScale: 1.4,
     shape: 'bramble',
     height: [4, 7.5],
-    weight: { forest: 0.03, woodland: 0.045, scrub: 0.01, desert: 0 },
+    weight: { forest: 0.06, woodland: 0.08, scrub: 0.01, desert: 0 },
     /** Brambles classically crowd a path's edge — a deliberate choice, not an
      *  accident. */
     vergeWeight: 0.4,
   },
   {
     id: 'leaf-litter-mat',
-    /** Coverage, the same job grass-mat and dry-mat do — patches of fallen
-     *  leaves among the green, not a wholesale replacement of the floor. Read
-     *  as a height; the model spreads about twice this across, matching
-     *  grass-mat. */
+    /** Coverage — now the primary job under the canopy, the one grass-mat and
+     *  dry-mat used to carry there. Read as a height; the model spreads about
+     *  twice this across, matching grass-mat. */
     patch: { meadow: 0.6, clover: 0.9, shade: 1.1, stony: 0.5 },
     shade: 0.9,
     assets: [['ground.forest-floor-leaf-litter']],
@@ -44,12 +43,17 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     modelScale: 1.1,
     shape: 'leaf-litter-mat',
     height: [2.5, 4.5],
-    weight: { forest: 0.12, woodland: 0.18, scrub: 0.02, desert: 0 },
+    /** Broadleaf woodland is where fallen leaves belong most; needle-mat takes
+     *  the deeper pine forest instead — between the two the floor is covered
+     *  in kit mats end to end. */
+    weight: { forest: 0.36, woodland: 0.46, scrub: 0.02, desert: 0 },
   },
   {
     id: 'needle-mat',
     /** Concentrated in the deep, pine-heavy forest specifically rather than
-     *  the broadleaf woodland further along. */
+     *  the broadleaf woodland further along — this and leaf-litter-mat
+     *  together are now the floor's default coverage, the job grass-mat and
+     *  dry-mat used to have. */
     patch: { shade: 1.2, clover: 0.5, stony: 0.4 },
     shade: 1,
     assets: [['ground.pine-needle-bed']],
@@ -58,7 +62,7 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     modelScale: 1.1,
     shape: 'needle-mat',
     height: [2.5, 4.5],
-    weight: { forest: 0.22, woodland: 0.05, scrub: 0, desert: 0 },
+    weight: { forest: 0.5, woodland: 0.14, scrub: 0, desert: 0 },
   },
   {
     id: 'moss',
@@ -71,7 +75,7 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     modelScale: 1.2,
     shape: 'moss',
     height: [1, 2],
-    weight: { forest: 0.05, woodland: 0.03, scrub: 0, desert: 0 },
+    weight: { forest: 0.08, woodland: 0.05, scrub: 0, desert: 0 },
   },
   {
     id: 'sedge',
@@ -85,7 +89,9 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     modelScale: 0.6,
     shape: 'sedge-tussock',
     height: [3.5, 6],
-    weight: { forest: 0.1, woodland: 0.08, scrub: 0, desert: 0 },
+    /** Carries the dense-grass job 'tuft' used to, in the same order of
+     *  magnitude. */
+    weight: { forest: 0.32, woodland: 0.3, scrub: 0, desert: 0 },
   },
   {
     id: 'vernal-grass',
@@ -98,7 +104,8 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     /** Same procedural shape as 'tuft' — see the note in shape-registry.js. */
     shape: 'vernal-grass',
     height: [3, 5.5],
-    weight: { forest: 0.08, woodland: 0.1, scrub: 0, desert: 0 },
+    /** Carries the job 'tuft' used to, alongside sedge. */
+    weight: { forest: 0.26, woodland: 0.3, scrub: 0, desert: 0 },
   },
   {
     id: 'fescue',
@@ -111,7 +118,8 @@ export const FOREST_FLOOR_COVER = Object.freeze([
      *  shape-registry.js. */
     shape: 'fescue',
     height: [4, 7],
-    weight: { forest: 0.06, woodland: 0.09, scrub: 0, desert: 0 },
+    /** Carries the job 'tall-tuft' and 'dry-tuft' used to under the canopy. */
+    weight: { forest: 0.24, woodland: 0.3, scrub: 0, desert: 0 },
   },
   {
     id: 'wild-garlic',
@@ -123,7 +131,7 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     modelScale: 0.85,
     shape: 'wild-garlic',
     height: [2.5, 4],
-    weight: { forest: 0.02, woodland: 0.03, scrub: 0, desert: 0 },
+    weight: { forest: 0.05, woodland: 0.06, scrub: 0, desert: 0 },
   },
   {
     id: 'wood-anemone',
@@ -132,7 +140,9 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     assets: [['ground.wood-anemone-cluster']],
     shape: 'wood-anemone',
     height: [1.6, 2.6],
-    weight: { forest: 0.018, woodland: 0.022, scrub: 0, desert: 0 },
+    /** Takes over the small-white-star-flower job flower-white used to carry
+     *  under the canopy. */
+    weight: { forest: 0.045, woodland: 0.05, scrub: 0, desert: 0 },
   },
   {
     id: 'bluebell',
@@ -141,7 +151,7 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     assets: [['ground.woodland-bluebells']],
     shape: 'bluebell',
     height: [2.8, 4.5],
-    weight: { forest: 0.02, woodland: 0.03, scrub: 0, desert: 0 },
+    weight: { forest: 0.05, woodland: 0.06, scrub: 0, desert: 0 },
     /** A classic drift along a woodland path edge. */
     vergeWeight: 0.6,
   },
