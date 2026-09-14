@@ -24,7 +24,7 @@ import { finish, part, roughen } from './shapes.js';
  * meadow of wedges is what the first version of this looked like from eye
  * level.
  */
-function blades({ count, hex, tipHex, spread, lean, thickness, flatten = 0.5 }) {
+export function blades({ count, hex, tipHex, spread, lean, thickness, flatten = 0.5 }) {
   const parts = [];
   for (let i = 0; i < count; i += 1) {
     const angle = (i / count) * Math.PI * 2 + i * 0.7;
@@ -94,7 +94,7 @@ export function tallGrass() {
  * instance count is fixed by the grid, and this is simply a far better use of
  * it. Tufts then stand *in* the mats rather than on a lawn.
  */
-function mat({ hex, tipHex }) {
+export function mat({ hex, tipHex, thickness = 0.032, flatten = 0.5 }) {
   const parts = [];
   for (let i = 0; i < 13; i += 1) {
     const angle = (i / 13) * Math.PI * 2 + i * 1.3;
@@ -104,7 +104,7 @@ function mat({ hex, tipHex }) {
     // length, and these are drawn five metres across: at 0.05 a blade is a
     // hand's breadth wide in world terms and reads as a painted wedge from
     // anywhere near it. There is no triangle in this — it is the same cone.
-    const blade = new ConeGeometry(0.032, 1, 3);
+    const blade = new ConeGeometry(thickness, 1, 3);
     blade.translate(0, 0.5, 0);
 
     parts.push(
@@ -112,7 +112,7 @@ function mat({ hex, tipHex }) {
         gradient: i % 3 === 0 ? tipHex : hex,
         // Splayed almost flat and shrinking outward, so the mat has a domed
         // middle and a feathered edge rather than a hard rim.
-        scale: [1, 0.78 - (i % 4) * 0.11, 0.5],
+        scale: [1, 0.78 - (i % 4) * 0.11, flatten],
         lean: 0.62 + (i % 3) * 0.16,
         spin: angle,
         x: Math.cos(angle) * reach,

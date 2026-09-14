@@ -131,6 +131,21 @@ export const FLORA = Object.freeze({
   FLOWER_WHITE: '#f5f2e5',
   MUSHROOM_CAP: '#d4503c',
   MUSHROOM_STEM: '#f1e9d3',
+  /** Fallen leaves: warm rust rather than the muddy brown a real forest floor
+   *  turns to — see the note at the top of this file. */
+  MAT_LITTER: '#b5702f',
+  LITTER_LIGHT: '#dd9c52',
+  /** A pine-needle bed: still a rust, but carried toward the pines it fell
+   *  from rather than toward the broadleaf litter beside it. */
+  MAT_NEEDLE: '#8f7a3a',
+  NEEDLE_LIGHT: '#c0a05a',
+  /** Deep-shade moss: the richest, most saturated green in the palette,
+   *  because moss is the one thing in the reference that really does glow. */
+  MOSS_GREEN: '#3f9a2c',
+  /** Bluebells: violet-blue, and deliberately not FLOWER_BLUE — that one is a
+   *  sky cyan used for a different species and the two must not read the
+   *  same drift from a distance. */
+  BLUEBELL: '#5b4fd6',
 });
 
 /**

@@ -21,6 +21,8 @@ import {
   flowerWhite,
   flowerYellow,
 } from './flower-shapes.js';
+import { leafLitterMat, moss, needleMat, sedgeTussock } from './forest-floor-shapes.js';
+import { bluebell, bramble, wildGarlic, woodAnemone } from './woodland-flower-shapes.js';
 
 /**
  * The only thing joining the world model to the geometry.
@@ -62,4 +64,17 @@ export const SHAPES = Object.freeze({
   boulder,
   shard,
   log,
+  'leaf-litter-mat': leafLitterMat,
+  'needle-mat': needleMat,
+  moss,
+  'sedge-tussock': sedgeTussock,
+  /** No new geometry: a vernal grass and a fescue are the same tuft shapes
+   *  under a different species, the way a model gets swapped in without the
+   *  procedural fallback changing. */
+  'vernal-grass': grass,
+  fescue: tallGrass,
+  'wild-garlic': wildGarlic,
+  'wood-anemone': woodAnemone,
+  bluebell,
+  bramble,
 });

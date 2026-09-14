@@ -1,3 +1,5 @@
+import { FOREST_FLOOR_COVER } from './forest-floor-cover.js';
+
 /**
  * Undergrowth: the dense planting pass, and most of what the ground is.
  *
@@ -6,7 +8,7 @@
  * says whether it wants canopy over it, and between them they turn an even
  * sprinkle of everything into mats, drifts and clumps.
  */
-export const GROUND_COVER = Object.freeze([
+const BASE_GROUND_COVER = [
   {
     id: 'grass-mat',
     /** The floor itself. Wide, low and cheap — see the note on `mat` in
@@ -83,7 +85,10 @@ export const GROUND_COVER = Object.freeze([
     id: 'fern',
     patch: { shade: 1.7, clover: 0.5 },
     shade: 1,
-    assets: [['pack.nature.fern']],
+    assets: [['ground.wood-fern-cluster', 'ground.bracken-fern-frond']],
+    /** Temperate-woodland ferns; scrub's sliver of weight keeps its fern
+     *  procedural rather than showing one under an open, dry sky. */
+    modelBands: ['forest', 'woodland'],
     shape: 'fern',
     height: [3.2, 5.6],
     weight: { forest: 0.3, woodland: 0.12, scrub: 0.01, desert: 0 },
@@ -118,7 +123,11 @@ export const GROUND_COVER = Object.freeze([
      *  low: its job is coverage, where grass's is height and movement. */
     patch: { clover: 1.9, shade: 0.7, meadow: 0.25 },
     shade: 0.7,
-    assets: [['pack.nature.clover', 'pack.nature.clover-2']],
+    assets: [['ground.wood-sorrel-clover-patch']],
+    /** Wood sorrel, not the meadow clover this replaces — a temperate
+     *  woodland plant, out of place in the open scrub it has a sliver of
+     *  weight in. */
+    modelBands: ['forest', 'woodland'],
     modelScale: 0.85,
     shape: 'clover',
     /** Read as a height; the mat spreads about three times this across. */
@@ -221,7 +230,7 @@ export const GROUND_COVER = Object.freeze([
     patch: { shade: 1.8, clover: 0.7 },
     shade: 1,
     vergeWeight: 0.3,
-    assets: [['pack.nature.mushroom', 'pack.nature.mushroom-2']],
+    assets: [['ground.woodland-mushroom-cluster']],
     shape: 'mushroom',
     height: [1.4, 3],
     weight: { forest: 0.07, woodland: 0.02, scrub: 0, desert: 0 },
@@ -249,4 +258,6 @@ export const GROUND_COVER = Object.freeze([
     weight: { forest: 0, woodland: 0, scrub: 0, desert: 0 },
     bankWeight: 1.4,
   },
-]);
+];
+
+export const GROUND_COVER = Object.freeze([...BASE_GROUND_COVER, ...FOREST_FLOOR_COVER]);
