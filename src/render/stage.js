@@ -46,11 +46,6 @@ export function createStage(canvas, valley) {
       output.renderer.render(world.scene, view.camera);
     },
 
-    /** Feed a frame interval in milliseconds to the quality controller. */
-    sampleFrameTime(ms) {
-      quality.sample(ms);
-    },
-
     /** Upgrade a species with the models that arrived for it, if any did. */
     useModels(id, models) {
       return world.useModels(id, models);

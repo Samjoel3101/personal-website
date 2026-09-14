@@ -108,12 +108,15 @@ export const LOD = Object.freeze({
 });
 
 /**
- * The runtime picks a tier from measured frame intervals; see render/quality.js.
+ * Every visitor renders at `high` — see render/quality.js. The ladder below
+ * still exists for `npm run shoot`, which pins each tier in turn to render
+ * comparable screenshots (including `low`, the same path a fresh clone with
+ * no assets takes — a real thing worth being able to look at, just not one
+ * a live visitor is ever silently dropped into).
  *
  * `detail` scales both LOD radii above, and is the lever that pays for the
  * pack: it is instant, costs nothing to change, and at 0 the whole valley
- * draws from procedural geometry — the same path a fresh clone with no assets
- * takes, so it is exercised rather than hoped for.
+ * draws from procedural geometry.
  *
  * `groundCover` is applied when the valley is built and therefore only by the
  * tier the session starts on; changing tier at runtime never re-plants,
