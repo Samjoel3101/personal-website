@@ -41,18 +41,25 @@ describe('the valley', () => {
     }
   });
 
+  // Each of these re-runs createValley in full — terrain, every canopy and
+  // ground-cover species evaluated at every grid cell, a second time in the
+  // same test. That's comfortably under a second on ordinary dev hardware,
+  // but GitHub's shared runners are evidently slower, and the ground-cover
+  // table only grows over time; the default 5s vitest timeout has already
+  // been observed to fail there. See the browser suite's own timeout note in
+  // playwright.config.js for the same class of problem on a slower runner.
   it('can be thinned for a slower machine without moving the trees', () => {
     const sparse = createValley({ groundCover: 0.4 });
     expect(sparse.plantedCount).toBeLessThan(valley.plantedCount);
     for (const [id, items] of valley.canopy) {
       expect(sparse.canopy.get(id).length).toBe(items.length);
     }
-  });
+  }, 20_000);
 
   it('is identical on a second generation', () => {
     const again = createValley();
     expect(again.plantedCount).toBe(valley.plantedCount);
     expect(again.canopy.get('pine')[0]).toEqual(valley.canopy.get('pine')[0]);
     expect(again.grid.heights[12345]).toBe(valley.grid.heights[12345]);
-  });
+  }, 20_000);
 });
