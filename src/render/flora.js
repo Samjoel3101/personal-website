@@ -33,9 +33,11 @@ import { normalisedParts } from './model-upgrade.js';
  * the same generosity costs three million triangles for detail that is four
  * pixels tall.
  *
- * At 150 units it is ~1,400 instances — a fifth of the cost, in the band where
- * you can actually see a blade of grass. That is the whole trick, and it is
- * what makes the pack's grasses, clovers and pebbles affordable at all.
+ * At 200 units it is ~2,500 instances — well under half the canopy's cost, in
+ * the band where you can actually see a blade of grass. That is the whole
+ * trick, and it is what makes the pack's grasses, clovers and pebbles
+ * affordable at all. See the note on `COVER_MODELS` in src/config/render.js
+ * for why 200 and not the 150 this started at.
  * ---------------------------------------------------------------------------
  */
 
@@ -200,14 +202,33 @@ function add(planted, group, species, items, options) {
     const list = items.get(entry.id) ?? [];
     if (list.length === 0) continue;
 
-    const build = SHAPES[entry.shape];
-    if (!build) throw new Error(`No shape "${entry.shape}" for species "${entry.id}"`);
+    const builders = SHAPES[entry.shape];
+    if (!builders) throw new Error(`No shape "${entry.shape}" for species "${entry.id}"`);
+    const forms = Array.isArray(builders) ? builders : [builders];
 
-    const meshes = instancedChunks(build(), material, list, options);
+    const meshes =
+      forms.length === 1
+        ? instancedChunks(forms[0](), material, list, options)
+        : variantMeshes(forms, material, list, options);
     // Named for the console and the tests: a scene of anonymous InstancedMeshes
     // is very hard to reason about from a screenshot.
     for (const mesh of meshes) mesh.name = entry.id;
     group.add(...meshes);
     planted.set(entry.id, { species: entry, items: list, meshes, model: [], options });
   }
+}
+
+/**
+ * Splits `items` across several procedural forms by a hash of where they
+ * stand — see the note on `SHAPES` in ./geometry/shape-registry.js. Each form
+ * gets its own tiled InstancedMesh set, same as a single-form species; a
+ * plant's silhouette is then a stable property of its position, exactly like
+ * `variantOf` gives a fetched model's variant above.
+ */
+function variantMeshes(forms, material, items, options) {
+  const buckets = forms.map(() => []);
+  for (const item of items) buckets[variantOf(item, forms.length)].push(item);
+  return forms.flatMap((build, index) =>
+    buckets[index].length > 0 ? instancedChunks(build(), material, buckets[index], options) : [],
+  );
 }

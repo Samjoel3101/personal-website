@@ -12,7 +12,7 @@ and undergrowth near you are the pack itself, fetched from a CC0 mirror. Further
 out they are swapped for procedural shapes built in code to the same language —
 that swap is what makes a five-thousand-triangle tree affordable in a forest of
 two thousand of them. There are **two** swap radii, not one (`LOD` in
-`src/config/render.js`): trees at 340 units, ground cover at 150, because there
+`src/config/render.js`): trees at 340 units, ground cover at 200, because there
 are thirty times more plants than trees and instance count grows with the square
 of the radius. With no assets fetched at all, the procedural shapes draw the
 whole valley and it is still finished.

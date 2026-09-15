@@ -94,17 +94,25 @@ export const SUN = Object.freeze({
  * Two numbers because the two passes have opposite arithmetic. Instance count
  * grows with the square of the radius, and there are thirty times more plants
  * than trees: at 340 units the canopy is ~200 instances and the undergrowth is
- * ~7,200. So the trees get a generous ring — they are the silhouettes you walk
- * between, and the pack's whole value is in them — and the ground cover gets a
- * tight one, where a blade of grass is still a blade of grass rather than four
- * pixels. See the note at the top of src/render/flora.js.
+ * ~7,200 at the same radius. So the trees get a generous ring — they are the
+ * silhouettes you walk between, and the pack's whole value is in them — and
+ * the ground cover gets a tighter one. See the note at the top of
+ * src/render/flora.js.
+ *
+ * COVER_MODELS was 150 at first, ~1,400 instances, and it was too tight: the
+ * camera's own look-ahead is 130 units, so almost everything actually in
+ * frame at a given moment sat past the swap and drew as the raw procedural
+ * shape regardless of how well a species' kit model was wired up — asset
+ * coverage in src/config didn't translate to asset coverage on screen. 200
+ * units (~2,500 instances) pushes the swap out past where it was silently
+ * undoing the planting; still under half of 340's radius-adjusted cost.
  *
  * Both are chosen against the fog at 800, not by eye: far enough that the swap
  * happens where haze has already taken the detail, near enough to be worth it.
  */
 export const LOD = Object.freeze({
   CANOPY_MODELS: 340,
-  COVER_MODELS: 150,
+  COVER_MODELS: 200,
 });
 
 /**
