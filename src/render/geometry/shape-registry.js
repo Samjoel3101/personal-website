@@ -23,6 +23,7 @@ import {
 } from './flower-shapes.js';
 import { leafLitterMat, moss, needleMat, sedgeTussock } from './forest-floor-shapes.js';
 import { bluebell, bramble, wildGarlic, woodAnemone } from './woodland-flower-shapes.js';
+import { fernOpen, grassUpright, sedgeTussockLoose } from './cover-shape-variants.js';
 
 /**
  * The only thing joining the world model to the geometry.
@@ -31,6 +32,13 @@ import { bluebell, bramble, wildGarlic, woodAnemone } from './woodland-flower-sh
  * That one string is the entire coupling, which is why the planting can be
  * unit-tested in Node without a triangle existing — and why this table lives
  * apart from the flora renderer rather than inside it.
+ *
+ * A value may be a builder or a list of them. A list is variants of the one
+ * shape, the procedural equivalent of a species' `assets` list: flora.js
+ * splits a species' items across them by a hash of where they stand, so the
+ * same silhouette is not rotated and rescaled across every instance of a
+ * heavily-planted species. Reserved for the shapes with the most weight on
+ * the floor — see cover-shape-variants.js.
  */
 export const SHAPES = Object.freeze({
   conifer,
@@ -44,13 +52,13 @@ export const SHAPES = Object.freeze({
   palm,
   cactus,
   'cactus-round': cactusRound,
-  grass,
+  grass: [grass, grassUpright],
   'tall-grass': tallGrass,
   'grass-dry': grassDry,
   'grass-mat': grassMat,
   'dry-mat': dryMat,
   clover,
-  fern,
+  fern: [fern, fernOpen],
   bush,
   'flower-blue': flowerBlue,
   'flower-purple': flowerPurple,
@@ -67,11 +75,11 @@ export const SHAPES = Object.freeze({
   'leaf-litter-mat': leafLitterMat,
   'needle-mat': needleMat,
   moss,
-  'sedge-tussock': sedgeTussock,
+  'sedge-tussock': [sedgeTussock, sedgeTussockLoose],
   /** No new geometry: a vernal grass and a fescue are the same tuft shapes
    *  under a different species, the way a model gets swapped in without the
    *  procedural fallback changing. */
-  'vernal-grass': grass,
+  'vernal-grass': [grass, grassUpright],
   fescue: tallGrass,
   'wild-garlic': wildGarlic,
   'wood-anemone': woodAnemone,

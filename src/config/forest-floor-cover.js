@@ -22,7 +22,11 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     modelScale: 1.4,
     shape: 'bramble',
     height: [4, 7.5],
-    weight: { forest: 0.06, woodland: 0.08, scrub: 0.01, desert: 0 },
+    /** Raised from its original 0.06/0.08: at that weight it was losing every
+     *  contested cell to fern and clover and almost never actually got
+     *  planted, wired but invisible in practice. Still well behind the
+     *  coverage species — a thicket is an occasional feature, not a carpet. */
+    weight: { forest: 0.1, woodland: 0.13, scrub: 0.01, desert: 0 },
     /** Brambles classically crowd a path's edge — a deliberate choice, not an
      *  accident. */
     vergeWeight: 0.4,
@@ -75,7 +79,9 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     modelScale: 1.2,
     shape: 'moss',
     height: [1, 2],
-    weight: { forest: 0.08, woodland: 0.05, scrub: 0, desert: 0 },
+    /** Raised from 0.08/0.05 — the same "wired but too rare to notice" fix as
+     *  bramble's, above. */
+    weight: { forest: 0.16, woodland: 0.1, scrub: 0, desert: 0 },
   },
   {
     id: 'sedge',
@@ -131,7 +137,8 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     modelScale: 0.85,
     shape: 'wild-garlic',
     height: [2.5, 4],
-    weight: { forest: 0.05, woodland: 0.06, scrub: 0, desert: 0 },
+    /** Raised from 0.05/0.06 — see bramble's note above. */
+    weight: { forest: 0.09, woodland: 0.1, scrub: 0, desert: 0 },
   },
   {
     id: 'wood-anemone',
@@ -141,8 +148,8 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     shape: 'wood-anemone',
     height: [1.6, 2.6],
     /** Takes over the small-white-star-flower job flower-white used to carry
-     *  under the canopy. */
-    weight: { forest: 0.045, woodland: 0.05, scrub: 0, desert: 0 },
+     *  under the canopy. Raised from 0.045/0.05 — see bramble's note above. */
+    weight: { forest: 0.08, woodland: 0.09, scrub: 0, desert: 0 },
   },
   {
     id: 'bluebell',
@@ -151,7 +158,8 @@ export const FOREST_FLOOR_COVER = Object.freeze([
     assets: [['ground.woodland-bluebells']],
     shape: 'bluebell',
     height: [2.8, 4.5],
-    weight: { forest: 0.05, woodland: 0.06, scrub: 0, desert: 0 },
+    /** Raised from 0.05/0.06 — see bramble's note above. */
+    weight: { forest: 0.09, woodland: 0.1, scrub: 0, desert: 0 },
     /** A classic drift along a woodland path edge. */
     vergeWeight: 0.6,
   },

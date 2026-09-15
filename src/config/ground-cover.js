@@ -21,11 +21,14 @@ const BASE_GROUND_COVER = [
      *  leaves the ground colour showing, and the ground colour is the one
      *  thing the reference floor never shows. */
     height: [3, 5],
-    /** Forest and woodland now belong to leaf-litter-mat and needle-mat — the
-     *  same coverage job, the same wide-low-cheap shape, but built from the
-     *  actual kit instead of a flat cone. A residual share stays so the floor
-     *  isn't one texture end to end; scrub and desert are untouched. */
-    weight: { forest: 0.05, woodland: 0.05, scrub: 0.3, desert: 0.008 },
+    /** Forest and woodland belong entirely to leaf-litter-mat and needle-mat
+     *  now — the same coverage job, the same wide-low-cheap shape, but built
+     *  from the actual kit instead of a flat cone. Zeroed there rather than
+     *  left as a residual: a cone-splay mat with no model behind it, standing
+     *  next to a kit mat that has one, was the mismatch that read as leftover
+     *  low-poly filler. It still plants scrub and desert, where the kit has no
+     *  presence at all. */
+    weight: { forest: 0, woodland: 0, scrub: 0.3, desert: 0.008 },
     vergeWeight: 0.5,
   },
   {
@@ -40,10 +43,10 @@ const BASE_GROUND_COVER = [
      *  lone splayed star with bare ground all round it, which is the one thing
      *  a wide low shape must never be. The desert floor is sand, tufts and
      *  stones — see docs/reference/desert-wash-bare-trees.jpg. */
-    /** Forest and woodland reduced the same way grass-mat is, for the same
-     *  reason — the kit's mats now carry coverage there. Scrub and desert
+    /** Zeroed in forest and woodland, the same way and for the same reason as
+     *  grass-mat — the kit's mats carry coverage there now. Scrub and desert
      *  keep their share; the golden-drift job is still all this. */
-    weight: { forest: 0.02, woodland: 0.04, scrub: 0.5, desert: 0.012 },
+    weight: { forest: 0, woodland: 0, scrub: 0.5, desert: 0.012 },
   },
   {
     id: 'tuft',
