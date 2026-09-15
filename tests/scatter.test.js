@@ -222,6 +222,11 @@ describe('what grows where', () => {
     expect(beside / palms.length).toBeGreaterThan(0.3);
   });
 
+  // A second full planting pass, evaluating every species' weight at every
+  // grid cell a second time. Comfortably under a second locally, but with the
+  // ground-cover table's size (and it only grows), the default 5s timeout has
+  // been tight on GitHub's shared runners — see the same note on the two
+  // `createValley` re-runs in tests/valley.test.js.
   it('thins out with the density, without rearranging the valley', () => {
     const sparse = plant(grid, { ...COVER_PASS, density: 0.3 });
     expect(all(sparse).length).toBeLessThan(all(cover).length * 0.6);
@@ -230,7 +235,7 @@ describe('what grows where', () => {
     const full = new Set(all(cover).map((item) => `${item.x},${item.z}`));
     const kept = all(sparse).filter((item) => full.has(`${item.x},${item.z}`));
     expect(kept.length / all(sparse).length).toBeGreaterThan(0.9);
-  });
+  }, 20_000);
 
   it('covers the ground densely enough to hide the grid it was placed on', () => {
     expect(all(cover).length).toBeGreaterThan(5000);

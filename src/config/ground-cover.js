@@ -1,3 +1,5 @@
+import { FOREST_FLOOR_COVER } from './forest-floor-cover.js';
+
 /**
  * Undergrowth: the dense planting pass, and most of what the ground is.
  *
@@ -6,7 +8,7 @@
  * says whether it wants canopy over it, and between them they turn an even
  * sprinkle of everything into mats, drifts and clumps.
  */
-export const GROUND_COVER = Object.freeze([
+const BASE_GROUND_COVER = [
   {
     id: 'grass-mat',
     /** The floor itself. Wide, low and cheap — see the note on `mat` in
@@ -19,7 +21,11 @@ export const GROUND_COVER = Object.freeze([
      *  leaves the ground colour showing, and the ground colour is the one
      *  thing the reference floor never shows. */
     height: [3, 5],
-    weight: { forest: 0.72, woodland: 0.7, scrub: 0.3, desert: 0.008 },
+    /** Forest and woodland now belong to leaf-litter-mat and needle-mat — the
+     *  same coverage job, the same wide-low-cheap shape, but built from the
+     *  actual kit instead of a flat cone. A residual share stays so the floor
+     *  isn't one texture end to end; scrub and desert are untouched. */
+    weight: { forest: 0.05, woodland: 0.05, scrub: 0.3, desert: 0.008 },
     vergeWeight: 0.5,
   },
   {
@@ -34,7 +40,10 @@ export const GROUND_COVER = Object.freeze([
      *  lone splayed star with bare ground all round it, which is the one thing
      *  a wide low shape must never be. The desert floor is sand, tufts and
      *  stones — see docs/reference/desert-wash-bare-trees.jpg. */
-    weight: { forest: 0.16, woodland: 0.3, scrub: 0.5, desert: 0.012 },
+    /** Forest and woodland reduced the same way grass-mat is, for the same
+     *  reason — the kit's mats now carry coverage there. Scrub and desert
+     *  keep their share; the golden-drift job is still all this. */
+    weight: { forest: 0.02, woodland: 0.04, scrub: 0.5, desert: 0.012 },
   },
   {
     id: 'tuft',
@@ -49,7 +58,10 @@ export const GROUND_COVER = Object.freeze([
     modelScale: 0.55,
     shape: 'grass',
     height: [3, 6.4],
-    weight: { forest: 0.3, woodland: 0.3, scrub: 0.14, desert: 0.01 },
+    /** Forest and woodland cut hard: sedge, vernal-grass and fescue now do
+     *  this job with the kit's own dense-bladed geometry instead of the
+     *  pack's clump. Scrub and desert untouched. */
+    weight: { forest: 0.03, woodland: 0.03, scrub: 0.14, desert: 0.01 },
     vergeWeight: 1,
   },
   {
@@ -63,7 +75,9 @@ export const GROUND_COVER = Object.freeze([
     modelScale: 0.6,
     shape: 'tall-grass',
     height: [5, 8.5],
-    weight: { forest: 0.3, woodland: 0.24, scrub: 0.1, desert: 0 },
+    /** Same cut as 'tuft': fescue now carries the tall, gold-tinted grass job
+     *  under the canopy. */
+    weight: { forest: 0.04, woodland: 0.04, scrub: 0.1, desert: 0 },
     vergeWeight: 0.8,
   },
   {
@@ -77,16 +91,20 @@ export const GROUND_COVER = Object.freeze([
     modelScale: 0.55,
     shape: 'grass-dry',
     height: [3, 6],
-    weight: { forest: 0.1, woodland: 0.16, scrub: 0.28, desert: 0.1 },
+    /** Same cut again, for the same reason. */
+    weight: { forest: 0.02, woodland: 0.03, scrub: 0.28, desert: 0.1 },
   },
   {
     id: 'fern',
     patch: { shade: 1.7, clover: 0.5 },
     shade: 1,
-    assets: [['pack.nature.fern']],
+    assets: [['ground.wood-fern-cluster', 'ground.bracken-fern-frond']],
+    /** Temperate-woodland ferns; scrub's sliver of weight keeps its fern
+     *  procedural rather than showing one under an open, dry sky. */
+    modelBands: ['forest', 'woodland'],
     shape: 'fern',
     height: [3.2, 5.6],
-    weight: { forest: 0.3, woodland: 0.12, scrub: 0.01, desert: 0 },
+    weight: { forest: 0.38, woodland: 0.16, scrub: 0.01, desert: 0 },
   },
   {
     id: 'bush',
@@ -118,12 +136,16 @@ export const GROUND_COVER = Object.freeze([
      *  low: its job is coverage, where grass's is height and movement. */
     patch: { clover: 1.9, shade: 0.7, meadow: 0.25 },
     shade: 0.7,
-    assets: [['pack.nature.clover', 'pack.nature.clover-2']],
+    assets: [['ground.wood-sorrel-clover-patch']],
+    /** Wood sorrel, not the meadow clover this replaces — a temperate
+     *  woodland plant, out of place in the open scrub it has a sliver of
+     *  weight in. */
+    modelBands: ['forest', 'woodland'],
     modelScale: 0.85,
     shape: 'clover',
     /** Read as a height; the mat spreads about three times this across. */
     height: [1.6, 2.8],
-    weight: { forest: 0.32, woodland: 0.26, scrub: 0.04, desert: 0 },
+    weight: { forest: 0.36, woodland: 0.32, scrub: 0.04, desert: 0 },
     vergeWeight: 0.3,
   },
   {
@@ -211,7 +233,9 @@ export const GROUND_COVER = Object.freeze([
     shade: -0.2,
     shape: 'flower-white',
     height: [2.2, 3.4],
-    weight: { forest: 0.025, woodland: 0.02, scrub: 0.008, desert: 0 },
+    /** wood-anemone is the same small white star, built from the kit, and now
+     *  does this job under the canopy — this one keeps only its scrub sliver. */
+    weight: { forest: 0, woodland: 0, scrub: 0.008, desert: 0 },
     vergeWeight: 0.7,
   },
   {
@@ -221,10 +245,10 @@ export const GROUND_COVER = Object.freeze([
     patch: { shade: 1.8, clover: 0.7 },
     shade: 1,
     vergeWeight: 0.3,
-    assets: [['pack.nature.mushroom', 'pack.nature.mushroom-2']],
+    assets: [['ground.woodland-mushroom-cluster']],
     shape: 'mushroom',
     height: [1.4, 3],
-    weight: { forest: 0.07, woodland: 0.02, scrub: 0, desert: 0 },
+    weight: { forest: 0.1, woodland: 0.04, scrub: 0, desert: 0 },
   },
   {
     id: 'trail-stone',
@@ -249,4 +273,6 @@ export const GROUND_COVER = Object.freeze([
     weight: { forest: 0, woodland: 0, scrub: 0, desert: 0 },
     bankWeight: 1.4,
   },
-]);
+];
+
+export const GROUND_COVER = Object.freeze([...BASE_GROUND_COVER, ...FOREST_FLOOR_COVER]);

@@ -34,6 +34,9 @@ const ATTRIBUTES = [
   ['position', 3],
   ['normal', 3],
   ['uv', 2],
+  // Present on a minority of the forest-floor-detail kit's materials — see
+  // the note on `hasRealColour` below for why it is carried conditionally.
+  ['color', 3],
 ];
 
 /**
@@ -68,22 +71,59 @@ function toFloatGeometry(source) {
   return geometry;
 }
 
-function flatten(material) {
+/**
+ * Whether `COLOR_0` is carrying real hue rather than an ambient-occlusion
+ * ramp, on a material with no diffuse colour of its own.
+ *
+ * Most of the pack's `COLOR_0` data is exactly what the note above `flatten`
+ * describes for Kenney's kits: a greyscale shading ramp riding on top of a
+ * material that already has its own tinted `baseColorFactor`, safe to drop.
+ * But a few of the forest-floor-detail kit's materials — `sedge-tussock`'s
+ * `sedge_core`/`sedge_blade`/`sedge_tip` among them — shipped with
+ * `baseColorFactor` left at the glTF default (opaque white) and their actual
+ * authored colour living entirely in `COLOR_0`. Dropping it the way a shaded
+ * material's ramp is dropped renders the whole mesh flat white, silently —
+ * the same trap materials.js documents for `vertexColors`, in the opposite
+ * direction: here a colour attribute exists and gets ignored.
+ *
+ * Detected by the material colour being left at the unset default: a real
+ * white material would be deliberately authored, but nothing in this kit or
+ * Kenney's ever sets `color: '#ffffff'` on purpose.
+ */
+function hasRealColour(material, geometry) {
+  if (!geometry.getAttribute('color')) return false;
+  const { r, g, b } = material.color ?? {};
+  return r === 1 && g === 1 && b === 1;
+}
+
+function flatten(material, geometry) {
   if (!material || material.isMeshLambertMaterial) return material;
   if (flattened.has(material)) return flattened.get(material);
 
   const tint = KIT_TINTS[material.name];
+  // A material whose real colour lives in COLOR_0 (see hasRealColour) is
+  // treated exactly like a procedural shape: white base, vertex colour
+  // carries the hue, and the instance tint still multiplies through it.
+  const vertexColours = !tint && hasRealColour(material, geometry);
+  const color = tint
+    ? new Color(tint)
+    : vertexColours
+      ? new Color(0xffffff)
+      : (material.color?.clone() ?? new Color(0xffffff));
+
   const lambert = new MeshLambertMaterial({
-    color: tint ? new Color(tint) : (material.color?.clone() ?? new Color(0xffffff)),
+    color,
     map: material.map ?? null,
     transparent: material.transparent,
     opacity: material.opacity,
     alphaTest: material.alphaTest,
     side: material.side,
     // The instance tint multiplies through vertexColors on procedural shapes;
-    // a kit model has no colour attribute, so its tint arrives as instance
-    // colour alone and vertexColors must stay off. See ./materials.js.
-    vertexColors: false,
+    // a kit model normally has no meaningful colour attribute, so its tint
+    // arrives as instance colour alone and vertexColors stays off — except
+    // the rare material above, which needs it on to have any colour at all.
+    // See ./materials.js.
+    vertexColors: vertexColours,
   });
   lambert.name = material.name;
   flattened.set(material, lambert);
@@ -102,8 +142,9 @@ export function normalisedParts(model) {
   model.traverse((child) => {
     if (!child.isMesh || !child.geometry) return;
     const geometry = toFloatGeometry(child.geometry);
+    const material = flatten(child.material, geometry);
     geometry.applyMatrix4(child.matrixWorld);
-    parts.push({ geometry, material: flatten(child.material) });
+    parts.push({ geometry, material });
   });
   if (parts.length === 0) return [];
 
